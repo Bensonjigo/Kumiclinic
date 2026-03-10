@@ -111,9 +111,15 @@
             {% for visit in visits_today %}
             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-{% if visit.patient.patient_type == 'STUDENT' %}blue{% else %}green{% endif }-100 rounded-full flex items-center justify-center">
-                        <span class="text-{% if visit.patient.patient_type == 'STUDENT' %}blue{% else %}green{% endif }-600 font-bold text-sm">{{ visit.patient.full_name.0 }}</span>
+                    {% if visit.patient.patient_type == 'STUDENT' %}
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-blue-600 font-bold text-sm">{{ visit.patient.full_name.0 }}</span>
                     </div>
+                    {% else %}
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <span class="text-green-600 font-bold text-sm">{{ visit.patient.full_name.0 }}</span>
+                    </div>
+                    {% endif %}
                     <div>
                         <a href="{% url 'visit_detail' visit.id %}" class="font-medium text-gray-800 hover:text-blue-600">
                             {{ visit.patient.full_name }}
@@ -122,13 +128,19 @@
                     </div>
                 </div>
                 <div class="text-right">
-                    <span class="px-2 py-1 rounded text-xs font-medium
-                        {% if visit.status == 'COMPLETED' %}bg-green-100 text-green-700
-                        {% elif visit.status == 'WAITING_FOR_TRIAGE' %}bg-yellow-100 text-yellow-700
-                        {% elif visit.status == 'WAITING_FOR_DOCTOR' %}bg-orange-100 text-orange-700
-                        {% elif visit.status == 'IN_LAB' %}bg-purple-100 text-purple-700
-                        {% elif visit.status == 'WAITING_FOR_PHARMACY' %}bg-blue-100 text-blue-700
-                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {% if visit.status == 'COMPLETED' %}
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700">
+                    {% elif visit.status == 'WAITING_FOR_TRIAGE' %}
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700">
+                    {% elif visit.status == 'WAITING_FOR_DOCTOR' %}
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-700">
+                    {% elif visit.status == 'IN_LAB' %}
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                    {% elif visit.status == 'WAITING_FOR_PHARMACY' %}
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                    {% else %}
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                    {% endif %}
                         {{ visit.get_status_display }}
                     </span>
                     <p class="text-xs text-gray-400 mt-1">{{ visit.visit_date|date:"H:i" }}</p>
@@ -160,7 +172,11 @@
         {% if low_stock_medicines %}
         <div class="space-y-3">
             {% for medicine in low_stock_medicines %}
-            <div class="flex items-center justify-between p-3 {% if medicine.stock_quantity == 0 %}bg-red-50{% else %}bg-yellow-50{% endif %} rounded-lg border border-red-100">
+            {% if medicine.stock_quantity == 0 %}
+            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+            {% else %}
+            <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-red-100">
+            {% endif %}
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                         <i class="fas fa-pills text-red-600"></i>
@@ -171,9 +187,11 @@
                     </div>
                 </div>
                 <div class="text-right">
-                    <p class="font-bold {% if medicine.stock_quantity == 0 %}text-red-600{% else %}text-yellow-600{% endif %}">
-                        {{ medicine.stock_quantity }}
-                    </p>
+                    {% if medicine.stock_quantity == 0 %}
+                    <p class="font-bold text-red-600">{{ medicine.stock_quantity }}</p>
+                    {% else %}
+                    <p class="font-bold text-yellow-600">{{ medicine.stock_quantity }}</p>
+                    {% endif %}
                     <p class="text-xs text-gray-500">{{ medicine.unit }}</p>
                 </div>
             </div>
