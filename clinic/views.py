@@ -125,6 +125,16 @@ class PatientViewSet(viewsets.ModelViewSet):
         )[:10]
         serializer = self.get_serializer(patients, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def autocomplete(self, request):
+        query = request.query_params.get('q', '')
+        patients = Patient.objects.filter(
+            Q(full_name__icontains=query) | 
+            Q(university_id__icontains=query)
+        )[:10]
+        data = [{'id': p.id, 'name': p.full_name, 'university_id': p.university_id, 'type': p.get_patient_type_display()} for p in patients]
+        return Response(data)
 
 
 class VisitViewSet(viewsets.ModelViewSet):

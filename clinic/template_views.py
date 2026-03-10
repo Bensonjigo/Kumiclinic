@@ -43,6 +43,11 @@ def dashboard(request):
     
     low_stock_medicines = Medicine.objects.filter(stock_quantity__lte=db_models.F('minimum_stock_level'))[:5]
     
+    # Workflow queue counts
+    waiting_triage = Visit.objects.filter(status='WAITING_FOR_TRIAGE').count()
+    waiting_doctor = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
+    waiting_pharmacy = Visit.objects.filter(status='WAITING_FOR_PHARMACY').count()
+    
     context = {
         'total_patients_today': total_patients_today,
         'patients_waiting': patients_waiting,
@@ -51,6 +56,9 @@ def dashboard(request):
         'completed_today': completed_today,
         'visits_today': visits_today,
         'low_stock_medicines': low_stock_medicines,
+        'waiting_triage': waiting_triage,
+        'waiting_doctor': waiting_doctor,
+        'waiting_pharmacy': waiting_pharmacy,
     }
     return render(request, 'clinic/dashboard.html', context)
 
@@ -59,6 +67,34 @@ def dashboard(request):
 def patients_list(request):
     patients = Patient.objects.all().order_by('-created_at')
     return render(request, 'clinic/patients.html', {'patients': patients})
+
+
+@login_required
+def patient_detail(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    visits = patient.visits.select_related('consultation__doctor').prefetch_related(
+        'consultation__prescriptions__medicine', 'lab_requests'
+    ).order_by('-visit_date')
+    
+    from django.core.paginator import Paginator
+    paginator = Paginator(visits, 10)
+    page_number = request.GET.get('page')
+    visits_page = paginator.get_page(page_number)
+    
+    total_visits = visits.count()
+    completed_visits = visits.filter(status='COMPLETED').count()
+    total_prescriptions = sum(v.consultation.prescriptions.count() for v in visits if v.consultation)
+    total_lab_tests = visits.filter(lab_requests__isnull=False).count()
+    
+    context = {
+        'patient': patient,
+        'visits': visits_page,
+        'total_visits': total_visits,
+        'completed_visits': completed_visits,
+        'total_prescriptions': total_prescriptions,
+        'total_lab_tests': total_lab_tests,
+    }
+    return render(request, 'clinic/patient_detail.html', context)
 
 
 @login_required

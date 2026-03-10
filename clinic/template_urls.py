@@ -8,6 +8,7 @@ urlpatterns = [
     path('logout/', template_views.logout_view, name='logout'),
     path('dashboard/', template_views.dashboard, name='dashboard'),
     path('patients/', template_views.patients_list, name='patients'),
+    path('patient/<int:patient_id>/', template_views.patient_detail, name='patient_detail'),
     path('register/', template_views.register_patient, name='register_patient'),
     path('visits/', template_views.visits_list, name='visits'),
     path('visit/new/', template_views.new_visit, name='new_visit'),
