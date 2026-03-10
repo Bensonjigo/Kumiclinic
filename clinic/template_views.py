@@ -200,28 +200,38 @@ def pending_consultations(request):
 def consultation_form(request, visit_id):
     visit = get_object_or_404(Visit.objects.select_related('patient'), id=visit_id)
     
+    if hasattr(visit, 'consultation'):
+        messages.error(request, 'This visit already has a consultation!')
+        return redirect('pending_consultations')
+    
     if request.method == 'POST':
+        diagnosis = request.POST.get('diagnosis')
+        if not diagnosis:
+            messages.error(request, 'Diagnosis is required!')
+            return redirect('consultation_form', visit_id=visit.id)
+        
         consultation = Consultation.objects.create(
             visit=visit,
             doctor=request.user,
-            diagnosis=request.POST.get('diagnosis'),
-            doctor_notes=request.POST.get('doctor_notes'),
-            treatment_plan=request.POST.get('treatment_plan')
+            diagnosis=diagnosis,
+            doctor_notes=request.POST.get('doctor_notes', ''),
+            treatment_plan=request.POST.get('treatment_plan', '')
         )
         
         medicine_id = request.POST.get('medicine')
         dosage = request.POST.get('dosage')
-        quantity = request.POST.get('quantity')
+        quantity_str = request.POST.get('quantity')
         
-        if medicine_id and quantity:
+        if medicine_id and quantity_str:
             try:
-                quantity = int(quantity)
-                prescription = Prescription.objects.create(
-                    consultation=consultation,
-                    medicine_id=medicine_id,
-                    dosage=dosage or '',
-                    quantity=quantity
-                )
+                quantity = int(quantity_str)
+                if quantity > 0:
+                    prescription = Prescription.objects.create(
+                        consultation=consultation,
+                        medicine_id=medicine_id,
+                        dosage=dosage or '',
+                        quantity=quantity
+                    )
             except (ValueError, TypeError):
                 pass
         
