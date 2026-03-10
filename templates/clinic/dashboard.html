@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm">Patients Today</p>
+                <p class="text-3xl font-bold text-blue-600">{{ total_patients_today }}</p>
+            </div>
+            <div class="bg-blue-100 p-3 rounded-full">
+                <i class="fas fa-users text-blue-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm">Waiting</p>
+                <p class="text-3xl font-bold text-yellow-600">{{ patients_waiting }}</p>
+            </div>
+            <div class="bg-yellow-100 p-3 rounded-full">
+                <i class="fas fa-clock text-yellow-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm">Completed</p>
+                <p class="text-3xl font-bold text-green-600">{{ completed_today }}</p>
+            </div>
+            <div class="bg-green-100 p-3 rounded-full">
+                <i class="fas fa-check-circle text-green-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm">Pending Labs</p>
+                <p class="text-3xl font-bold text-purple-600">{{ pending_labs }}</p>
+            </div>
+            <div class="bg-purple-100 p-3 rounded-full">
+                <i class="fas fa-flask text-purple-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 {% if low_stock_count > 0 %}bg-red-50{% endif %}">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm">Low Stock</p>
+                <p class="text-3xl font-bold {% if low_stock_count > 0 %}text-red-600{% else %}text-gray-600{% endif %}">{{ low_stock_count }}</p>
+            </div>
+            <div class="bg-red-100 p-3 rounded-full">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Today's Visits</h3>
+        {% if visits_today %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b">
+                        <th class="text-left py-2">Patient</th>
+                        <th class="text-left py-2">Type</th>
+                        <th class="text-left py-2">Reason</th>
+                        <th class="text-left py-2">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for visit in visits_today %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2">
+                            <a href="{% url 'visit_detail' visit.id %}" class="text-blue-600 hover:underline">
+                                {{ visit.patient.full_name }}
+                            </a>
+                        </td>
+                        <td class="py-2">{{ visit.patient.get_patient_type_display }}</td>
+                        <td class="py-2 truncate max-w-xs">{{ visit.reason_for_visit }}</td>
+                        <td class="py-2">
+                            <span class="px-2 py-1 rounded text-xs font-medium
+                                {% if visit.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                {% elif visit.status == 'WAITING_FOR_TRIAGE' %}bg-yellow-100 text-yellow-800
+                                {% elif visit.status == 'WAITING_FOR_DOCTOR' %}bg-orange-100 text-orange-800
+                                {% elif visit.status == 'IN_LAB' %}bg-purple-100 text-purple-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ visit.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-4">No visits today</p>
+        {% endif %}
+        <div class="mt-4">
+            <a href="{% url 'visits' %}" class="text-blue-600 hover:underline">View all visits</a>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Low Stock Medicines</h3>
+        {% if low_stock_medicines %}
+        <div class="space-y-3">
+            {% for medicine in low_stock_medicines %}
+            <div class="flex items-center justify-between p-3 bg-red-50 rounded">
+                <div>
+                    <p class="font-medium">{{ medicine.name }}</p>
+                    <p class="text-sm text-gray-500">{{ medicine.category }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-red-600">{{ medicine.stock_quantity }} {{ medicine.unit }}</p>
+                    <p class="text-xs text-gray-500">Min: {{ medicine.minimum_stock_level }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-4">All medicines are well stocked</p>
+        {% endif %}
+        <div class="mt-4">
+            <a href="{% url 'medicines' %}" class="text-blue-600 hover:underline">Manage medicines</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

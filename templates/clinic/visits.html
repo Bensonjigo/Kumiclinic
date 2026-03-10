@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Visits - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Visits</h2>
+        <a href="{% url 'new_visit' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            <i class="fas fa-plus"></i> New Visit
+        </a>
+    </div>
+    
+    <div class="mb-4">
+        <form method="get" class="flex gap-4">
+            <select name="status" class="border rounded-lg px-4 py-2">
+                <option value="">All Statuses</option>
+                <option value="REGISTERED">Registered</option>
+                <option value="WAITING_FOR_TRIAGE">Waiting for Triage</option>
+                <option value="WAITING_FOR_DOCTOR">Waiting for Doctor</option>
+                <option value="IN_LAB">In Lab</option>
+                <option value="WAITING_FOR_PHARMACY">Waiting for Pharmacy</option>
+                <option value="COMPLETED">Completed</option>
+            </select>
+            <button type="submit" class="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300">Filter</button>
+        </form>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b bg-gray-50">
+                    <th class="text-left py-3 px-4">ID</th>
+                    <th class="text-left py-3 px-4">Patient</th>
+                    <th class="text-left py-3 px-4">Type</th>
+                    <th class="text-left py-3 px-4">Date</th>
+                    <th class="text-left py-3 px-4">Reason</th>
+                    <th class="text-left py-3 px-4">Status</th>
+                    <th class="text-left py-3 px-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for visit in visits %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-4">#{{ visit.id }}</td>
+                    <td class="py-3 px-4">
+                        <a href="{% url 'visit_detail' visit.id %}" class="text-blue-600 hover:underline">
+                            {{ visit.patient.full_name }}
+                        </a>
+                    </td>
+                    <td class="py-3 px-4">{{ visit.patient.get_patient_type_display }}</td>
+                    <td class="py-3 px-4">{{ visit.visit_date|date:"M d, H:i" }}</td>
+                    <td class="py-3 px-4 truncate max-w-xs">{{ visit.reason_for_visit }}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 rounded text-xs font-medium
+                            {% if visit.status == 'COMPLETED' %}bg-green-100 text-green-800
+                            {% elif visit.status == 'WAITING_FOR_TRIAGE' %}bg-yellow-100 text-yellow-800
+                            {% elif visit.status == 'WAITING_FOR_DOCTOR' %}bg-orange-100 text-orange-800
+                            {% elif visit.status == 'IN_LAB' %}bg-purple-100 text-purple-800
+                            {% elif visit.status == 'WAITING_FOR_PHARMACY' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ visit.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <a href="{% url 'visit_detail' visit.id %}" class="text-blue-600 hover:underline">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="py-8 text-center text-gray-500">No visits found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

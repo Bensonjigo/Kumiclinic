@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Medicines - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Medicines Inventory</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b bg-gray-50">
+                    <th class="text-left py-3 px-4">Medicine Name</th>
+                    <th class="text-left py-3 px-4">Category</th>
+                    <th class="text-left py-3 px-4">Stock</th>
+                    <th class="text-left py-3 px-4">Min Level</th>
+                    <th class="text-left py-3 px-4">Expiry Date</th>
+                    <th class="text-left py-3 px-4">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for medicine in medicines %}
+                <tr class="border-b hover:bg-gray-50 {% if medicine.is_low_stock %}bg-red-50{% endif %}">
+                    <td class="py-3 px-4 font-medium">{{ medicine.name }}</td>
+                    <td class="py-3 px-4">{{ medicine.get_category_display }}</td>
+                    <td class="py-3 px-4">{{ medicine.stock_quantity }} {{ medicine.unit }}</td>
+                    <td class="py-3 px-4">{{ medicine.minimum_stock_level }}</td>
+                    <td class="py-3 px-4">{{ medicine.expiry_date|date:"M d, Y" }}</td>
+                    <td class="py-3 px-4">
+                        {% if medicine.is_expired %}
+                        <span class="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">Expired</span>
+                        {% elif medicine.is_low_stock %}
+                        <span class="px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Low Stock</span>
+                        {% else %}
+                        <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">In Stock</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="py-8 text-center text-gray-500">No medicines found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

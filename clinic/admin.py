@@ -1,0 +1,136 @@
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import (
+    User, Patient, Visit, Triage, Consultation, Prescription,
+    Medicine, StockMovement, LabRequest, Notification, DailyReport
+)
+
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    list_display = ['username', 'email', 'first_name', 'last_name', 'role', 'is_active']
+    list_filter = ['role', 'is_active', 'is_staff']
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+    fieldsets = BaseUserAdmin.fieldsets + (
+        ('Additional Info', {'fields': ('role', 'phone', 'department')}),
+    )
+    add_fieldsets = BaseUserAdmin.add_fieldsets + (
+        ('Additional Info', {'fields': ('role', 'phone', 'department')}),
+    )
+
+
+@admin.register(Patient)
+class PatientAdmin(admin.ModelAdmin):
+    list_display = ['full_name', 'university_id', 'patient_type', 'department', 'phone', 'gender', 'created_at']
+    list_filter = ['patient_type', 'gender', 'department']
+    search_fields = ['full_name', 'university_id', 'phone', 'department']
+    date_hierarchy = 'created_at'
+    readonly_fields = ['created_at', 'updated_at']
+
+
+class TriageInline(admin.StackedInline):
+    model = Triage
+    extra = 0
+    readonly_fields = ['created_at', 'updated_at']
+
+
+class ConsultationInline(admin.StackedInline):
+    model = Consultation
+    extra = 0
+    readonly_fields = ['created_at', 'updated_at']
+
+
+class LabRequestInline(admin.TabularInline):
+    model = LabRequest
+    extra = 0
+    readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(Visit)
+class VisitAdmin(admin.ModelAdmin):
+    list_display = ['id', 'patient', 'visit_date', 'status', 'created_by']
+    list_filter = ['status', 'visit_date', 'patient__patient_type']
+    search_fields = ['patient__full_name', 'patient__university_id', 'reason_for_visit']
+    date_hierarchy = 'visit_date'
+    readonly_fields = ['created_at', 'updated_at']
+    inlines = [TriageInline, ConsultationInline, LabRequestInline]
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('patient', 'created_by')
+
+
+@admin.register(Triage)
+class TriageAdmin(admin.ModelAdmin):
+    list_display = ['visit', 'temperature', 'blood_pressure', 'weight', 'recorded_by', 'created_at']
+    search_fields = ['visit__patient__full_name', 'symptoms']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'created_at'
+
+
+@admin.register(Consultation)
+class ConsultationAdmin(admin.ModelAdmin):
+    list_display = ['visit', 'doctor', 'diagnosis', 'created_at']
+    search_fields = ['visit__patient__full_name', 'diagnosis', 'doctor__username']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'created_at'
+
+
+class PrescriptionInline(admin.TabularInline):
+    model = Prescription
+    extra = 0
+    readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(Prescription)
+class PrescriptionAdmin(admin.ModelAdmin):
+    list_display = ['medicine', 'consultation', 'dosage', 'quantity', 'is_dispensed', 'created_at']
+    list_filter = ['is_dispensed', 'medicine__category']
+    search_fields = ['medicine__name', 'consultation__visit__patient__full_name']
+    readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(Medicine)
+class MedicineAdmin(admin.ModelAdmin):
+    list_display = ['name', 'category', 'stock_quantity', 'unit', 'expiry_date', 'minimum_stock_level', 'is_low_stock']
+    list_filter = ['category', 'expiry_date']
+    search_fields = ['name']
+    readonly_fields = ['created_at', 'updated_at']
+    list_editable = ['stock_quantity']
+    
+    def is_low_stock(self, obj):
+        return obj.is_low_stock
+    is_low_stock.boolean = True
+
+
+@admin.register(StockMovement)
+class StockMovementAdmin(admin.ModelAdmin):
+    list_display = ['medicine', 'movement_type', 'quantity', 'performed_by', 'date']
+    list_filter = ['movement_type', 'date', 'medicine__category']
+    search_fields = ['medicine__name', 'performed_by__username']
+    date_hierarchy = 'date'
+    readonly_fields = ['created_at']
+
+
+@admin.register(LabRequest)
+class LabRequestAdmin(admin.ModelAdmin):
+    list_display = ['visit', 'test_name', 'status', 'requested_by', 'technician', 'date']
+    list_filter = ['status', 'test_name', 'date']
+    search_fields = ['visit__patient__full_name', 'test_name']
+    date_hierarchy = 'date'
+    readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['title', 'notification_type', 'user', 'is_read', 'created_at']
+    list_filter = ['notification_type', 'is_read']
+    search_fields = ['title', 'message', 'user__username']
+    date_hierarchy = 'created_at'
+
+
+@admin.register(DailyReport)
+class DailyReportAdmin(admin.ModelAdmin):
+    list_display = ['report_date', 'total_patients', 'students_count', 'staff_count', 'completed_visits']
+    list_filter = ['report_date']
+    date_hierarchy = 'report_date'
+    readonly_fields = ['created_at']

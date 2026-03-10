@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Kumi University Clinic{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between py-4">
+                <a href="{% url 'dashboard' %}" class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-hospital"></i>
+                    Kumi University Clinic
+                </a>
+                <div class="flex items-center gap-4">
+                    {% if user.is_authenticated %}
+                        <span class="text-sm">Welcome, {{ user.get_full_name|default:user.username }}</span>
+                        <span class="bg-blue-700 px-2 py-1 rounded text-xs">{{ user.get_role_display }}</span>
+                        <a href="{% url 'logout' %}" class="text-sm hover:text-gray-300">Logout</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    {% if user.is_authenticated %}
+    <nav class="bg-white shadow">
+        <div class="container mx-auto px-4">
+            <div class="flex gap-6 py-2 overflow-x-auto">
+                <a href="{% url 'dashboard' %}" class="text-gray-700 hover:text-blue-600 {% if request.resolver_match.url_name == 'dashboard' %}text-blue-600 font-medium{% endif %}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                {% if user.is_receptionist or user.is_superuser %}
+                <a href="{% url 'register_patient' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-user-plus"></i> Register Patient
+                </a>
+                {% endif %}
+                {% if user.is_receptionist or user.is_superuser %}
+                <a href="{% url 'new_visit' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-calendar-plus"></i> New Visit
+                </a>
+                {% endif %}
+                <a href="{% url 'visits' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-users"></i> Visits
+                </a>
+                {% if user.is_nurse or user.is_superuser %}
+                <a href="{% url 'pending_triages' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-heartbeat"></i> Triage Queue
+                </a>
+                {% endif %}
+                {% if user.is_doctor or user.is_superuser %}
+                <a href="{% url 'pending_consultations' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-stethoscope"></i> Doctor Queue
+                </a>
+                {% endif %}
+                {% if user.is_lab_technician or user.is_superuser %}
+                <a href="{% url 'pending_labs' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-flask"></i> Lab Queue
+                </a>
+                {% endif %}
+                {% if user.is_pharmacist or user.is_superuser %}
+                <a href="{% url 'pending_prescriptions' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-pills"></i> Pharmacy Queue
+                </a>
+                {% endif %}
+                {% if user.is_admin or user.is_superuser %}
+                <a href="{% url 'medicines' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-box"></i> Medicines
+                </a>
+                <a href="{% url 'reports' %}" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <main class="container mx-auto px-4 py-6">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

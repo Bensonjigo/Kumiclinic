@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Doctor Queue - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-2xl font-bold mb-6">Patients Waiting for Doctor</h2>
+    
+    {% if visits %}
+    <div class="grid gap-4">
+        {% for visit in visits %}
+        <div class="border rounded-lg p-4 hover:bg-gray-50">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-semibold text-lg">{{ visit.patient.full_name }}</h3>
+                    <p class="text-sm text-gray-500">
+                        {{ visit.patient.get_patient_type_display }} | {{ visit.patient.university_id }}
+                    </p>
+                    {% if visit.triage %}
+                    <div class="mt-2 p-2 bg-yellow-50 rounded text-sm">
+                        <p><strong>Vitals:</strong> Temp: {{ visit.triage.temperature }}°C | BP: {{ visit.triage.blood_pressure }} | WT: {{ visit.triage.weight }}kg</p>
+                        <p><strong>Symptoms:</strong> {{ visit.triage.symptoms|truncatewords:20 }}</p>
+                    </div>
+                    {% endif %}
+                    <p class="text-sm mt-2"><strong>Reason:</strong> {{ visit.reason_for_visit }}</p>
+                </div>
+                <a href="{% url 'consultation_form' visit.id %}" 
+                    class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600">
+                    Start Consultation
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-center py-8">No patients waiting for doctor</p>
+    {% endif %}
+</div>
+{% endblock %}

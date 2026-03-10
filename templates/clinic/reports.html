@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-2xl font-bold mb-6">Daily Reports</h2>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b bg-gray-50">
+                    <th class="text-left py-3 px-4">Date</th>
+                    <th class="text-left py-3 px-4">Total Patients</th>
+                    <th class="text-left py-3 px-4">Students</th>
+                    <th class="text-left py-3 px-4">Staff</th>
+                    <th class="text-left py-3 px-4">Completed</th>
+                    <th class="text-left py-3 px-4">Lab Tests</th>
+                    <th class="text-left py-3 px-4">Medicines</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-4">{{ report.report_date|date:"M d, Y" }}</td>
+                    <td class="py-3 px-4">{{ report.total_patients }}</td>
+                    <td class="py-3 px-4">{{ report.students_count }}</td>
+                    <td class="py-3 px-4">{{ report.staff_count }}</td>
+                    <td class="py-3 px-4">{{ report.completed_visits }}</td>
+                    <td class="py-3 px-4">{{ report.lab_tests_conducted }}</td>
+                    <td class="py-3 px-4">{{ report.medicines_dispensed }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="py-8 text-center text-gray-500">No reports available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Pharmacy Queue - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-2xl font-bold mb-6">Prescriptions Waiting for Dispensing</h2>
+    
+    {% if prescriptions %}
+    <div class="space-y-4">
+        {% for prescription in prescriptions %}
+        <div class="border rounded-lg p-4 hover:bg-gray-50">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-semibold text-lg">
+                        {{ prescription.consultation.visit.patient.full_name }}
+                    </h3>
+                    <p class="text-sm text-gray-500">
+                        Visit #{{ prescription.consultation.visit.id }}
+                    </p>
+                    <div class="mt-2 p-2 bg-blue-50 rounded">
+                        <p><strong>Medicine:</strong> {{ prescription.medicine.name }}</p>
+                        <p><strong>Dosage:</strong> {{ prescription.dosage }}</p>
+                        <p><strong>Quantity:</strong> {{ prescription.quantity }} {{ prescription.medicine.unit }}</p>
+                        <p class="text-sm text-gray-500">Available: {{ prescription.medicine.stock_quantity }} {{ prescription.medicine.unit }}</p>
+                    </div>
+                </div>
+                <a href="{% url 'dispense_medicine' prescription.id %}" 
+                    class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 {% if prescription.medicine.stock_quantity < prescription.quantity %}opacity-50 cursor-not-allowed{% endif %}"
+                    {% if prescription.medicine.stock_quantity < prescription.quantity %}onclick="return false;"{% endif %}>
+                    Dispense
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-center py-8">No prescriptions waiting</p>
+    {% endif %}
+</div>
+{% endblock %}

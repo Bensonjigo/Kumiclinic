@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Triage Queue - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-2xl font-bold mb-6">Patients Waiting for Triage</h2>
+    
+    {% if visits %}
+    <div class="grid gap-4">
+        {% for visit in visits %}
+        <div class="border rounded-lg p-4 hover:bg-gray-50">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-semibold text-lg">{{ visit.patient.full_name }}</h3>
+                    <p class="text-sm text-gray-500">
+                        {{ visit.patient.get_patient_type_display }} | {{ visit.patient.university_id }}
+                    </p>
+                    <p class="text-sm mt-2"><strong>Reason:</strong> {{ visit.reason_for_visit }}</p>
+                    <p class="text-xs text-gray-400 mt-1">Arrived: {{ visit.visit_date|timesince }} ago</p>
+                </div>
+                <a href="{% url 'triage_form' visit.id %}" 
+                    class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+                    Record Triage
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-center py-8">No patients waiting for triage</p>
+    {% endif %}
+</div>
+{% endblock %}

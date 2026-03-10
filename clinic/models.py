@@ -1,0 +1,331 @@
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
+
+
+class User(AbstractUser):
+    ROLE_CHOICES = [
+        ('RECEPTIONIST', 'Receptionist'),
+        ('NURSE', 'Nurse'),
+        ('DOCTOR', 'Doctor'),
+        ('LAB_TECHNICIAN', 'Lab Technician'),
+        ('PHARMACIST', 'Pharmacist'),
+        ('ADMIN', 'Admin'),
+    ]
+    
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='RECEPTIONIST')
+    phone = models.CharField(max_length=20, blank=True)
+    department = models.CharField(max_length=100, blank=True)
+    
+    class Meta:
+        verbose_name = 'User'
+        verbose_name_plural = 'Users'
+    
+    def __str__(self):
+        return f"{self.get_full_name() or self.username} ({self.get_role_display()})"
+    
+    @property
+    def is_receptionist(self):
+        return self.role == 'RECEPTIONIST' or self.is_superuser
+    
+    @property
+    def is_nurse(self):
+        return self.role == 'NURSE' or self.is_superuser
+    
+    @property
+    def is_doctor(self):
+        return self.role == 'DOCTOR' or self.is_superuser
+    
+    @property
+    def is_lab_technician(self):
+        return self.role == 'LAB_TECHNICIAN' or self.is_superuser
+    
+    @property
+    def is_pharmacist(self):
+        return self.role == 'PHARMACIST' or self.is_superuser
+    
+    @property
+    def is_admin(self):
+        return self.role == 'ADMIN' or self.is_superuser
+
+
+class Patient(models.Model):
+    PATIENT_TYPE_CHOICES = [
+        ('STUDENT', 'Student'),
+        ('STAFF', 'Staff'),
+    ]
+    
+    GENDER_CHOICES = [
+        ('MALE', 'Male'),
+        ('FEMALE', 'Female'),
+        ('OTHER', 'Other'),
+    ]
+    
+    full_name = models.CharField(max_length=200)
+    patient_type = models.CharField(max_length=10, choices=PATIENT_TYPE_CHOICES)
+    university_id = models.CharField(max_length=50, unique=True)
+    department = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
+    date_of_birth = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.full_name} ({self.university_id})"
+    
+    @property
+    def age(self):
+        today = timezone.now().date()
+        return today.year - self.date_of_birth.year - (
+            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        )
+
+
+class Visit(models.Model):
+    STATUS_CHOICES = [
+        ('REGISTERED', 'Registered'),
+        ('WAITING_FOR_TRIAGE', 'Waiting for Triage'),
+        ('WAITING_FOR_DOCTOR', 'Waiting for Doctor'),
+        ('IN_LAB', 'In Lab'),
+        ('WAITING_FOR_PHARMACY', 'Waiting for Pharmacy'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='visits')
+    visit_date = models.DateTimeField(default=timezone.now)
+    reason_for_visit = models.TextField()
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='REGISTERED')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_visits')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-visit_date']
+    
+    def __str__(self):
+        return f"Visit #{self.id} - {self.patient.full_name} ({self.get_status_display()})"
+    
+    def can_update_to(self, new_status):
+        transitions = {
+            'REGISTERED': ['WAITING_FOR_TRIAGE', 'CANCELLED'],
+            'WAITING_FOR_TRIAGE': ['WAITING_FOR_DOCTOR', 'CANCELLED'],
+            'WAITING_FOR_DOCTOR': ['IN_LAB', 'WAITING_FOR_PHARMACY', 'CANCELLED'],
+            'IN_LAB': ['WAITING_FOR_PHARMACY', 'WAITING_FOR_DOCTOR'],
+            'WAITING_FOR_PHARMACY': ['COMPLETED'],
+            'COMPLETED': [],
+            'CANCELLED': [],
+        }
+        return new_status in transitions.get(self.status, [])
+    
+    def update_status(self, new_status):
+        if self.can_update_to(new_status):
+            self.status = new_status
+            self.save(update_fields=['status', 'updated_at'])
+            return True
+        return False
+
+
+class Triage(models.Model):
+    visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='triage')
+    temperature = models.DecimalField(max_digits=4, decimal_places=1, help_text="Temperature in Celsius")
+    blood_pressure = models.CharField(max_length=20, help_text="e.g., 120/80")
+    weight = models.DecimalField(max_digits=5, decimal_places=2, help_text="Weight in kg")
+    heart_rate = models.IntegerField(help_text="Beats per minute", null=True, blank=True)
+    symptoms = models.TextField()
+    nurse_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='recorded_triages')
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Triage for Visit #{self.visit_id}"
+
+
+class Consultation(models.Model):
+    visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='consultation')
+    doctor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='consultations')
+    diagnosis = models.TextField()
+    doctor_notes = models.TextField(blank=True)
+    treatment_plan = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Consultation for Visit #{self.visit_id}"
+
+
+class Medicine(models.Model):
+    CATEGORY_CHOICES = [
+        ('TABLET', 'Tablet'),
+        ('CAPSULE', 'Capsule'),
+        ('SYRUP', 'Syrup'),
+        ('INJECTION', 'Injection'),
+        ('CREAM', 'Cream'),
+        ('OINTMENT', 'Ointment'),
+        ('DROP', 'Drop'),
+        ('OTHER', 'Other'),
+    ]
+    
+    name = models.CharField(max_length=200, unique=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    stock_quantity = models.PositiveIntegerField(default=0)
+    unit = models.CharField(max_length=20, help_text="e.g., tablets, ml, bottles")
+    expiry_date = models.DateField()
+    minimum_stock_level = models.PositiveIntegerField(default=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+    
+    @property
+    def is_low_stock(self):
+        return self.stock_quantity <= self.minimum_stock_level
+    
+    @property
+    def is_expired(self):
+        return self.expiry_date < timezone.now().date()
+
+
+class Prescription(models.Model):
+    consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE, related_name='prescriptions')
+    medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='prescriptions')
+    dosage = models.CharField(max_length=100, help_text="e.g., 2 tablets thrice daily")
+    quantity = models.PositiveIntegerField()
+    notes = models.TextField(blank=True)
+    is_dispensed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.medicine.name} - {self.quantity} {self.medicine.unit}"
+
+
+class StockMovement(models.Model):
+    MOVEMENT_TYPE_CHOICES = [
+        ('PURCHASE', 'Purchase'),
+        ('DISPENSE', 'Dispense'),
+        ('ADJUSTMENT', 'Adjustment'),
+        ('EXPIRED', 'Expired'),
+        ('RETURNED', 'Returned'),
+    ]
+    
+    medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='stock_movements')
+    movement_type = models.CharField(max_length=15, choices=MOVEMENT_TYPE_CHOICES)
+    quantity = models.IntegerField()
+    performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='stock_movements')
+    notes = models.TextField(blank=True)
+    date = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-date']
+    
+    def __str__(self):
+        return f"{self.get_movement_type_display()} - {self.medicine.name} ({self.quantity})"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.movement_type in ['PURCHASE', 'RETURNED']:
+            self.medicine.stock_quantity += self.quantity
+        elif self.movement_type in ['DISPENSE', 'EXPIRED', 'ADJUSTMENT']:
+            self.medicine.stock_quantity -= self.quantity
+        self.medicine.save(update_fields=['stock_quantity', 'updated_at'])
+
+
+class LabRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    
+    TEST_TYPE_CHOICES = [
+        ('CBC', 'Complete Blood Count'),
+        ('URINALYSIS', 'Urinalysis'),
+        ('STOOL_EXAM', 'Stool Examination'),
+        ('BLOOD_SUGAR', 'Blood Sugar'),
+        ('TYPHOID', 'Typhoid Test'),
+        ('MALARIA', 'Malaria Test'),
+        ('PREGNANCY', 'Pregnancy Test'),
+        ('HIV', 'HIV Test'),
+        ('HEPATITIS', 'Hepatitis Test'),
+        ('OTHER', 'Other'),
+    ]
+    
+    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, related_name='lab_requests')
+    test_name = models.CharField(max_length=50, choices=TEST_TYPE_CHOICES)
+    custom_test_name = models.CharField(max_length=200, blank=True, help_text="For 'OTHER' test types")
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='requested_lab_tests')
+    technician = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='completed_lab_tests')
+    result = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    date = models.DateTimeField(default=timezone.now)
+    completed_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.get_test_name_display()} - Visit #{self.visit_id}"
+
+
+class Notification(models.Model):
+    NOTIFICATION_TYPE_CHOICES = [
+        ('LOW_STOCK', 'Low Stock'),
+        ('EXPIRED_MEDICINE', 'Expired Medicine'),
+        ('NEW_VISIT', 'New Visit'),
+        ('LAB_RESULT', 'Lab Result Ready'),
+        ('SYSTEM', 'System'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE_CHOICES)
+    is_read = models.BooleanField(default=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.get_notification_type_display()}: {self.title}"
+
+
+class DailyReport(models.Model):
+    report_date = models.DateField(unique=True)
+    total_patients = models.PositiveIntegerField(default=0)
+    students_count = models.PositiveIntegerField(default=0)
+    staff_count = models.PositiveIntegerField(default=0)
+    completed_visits = models.PositiveIntegerField(default=0)
+    lab_tests_conducted = models.PositiveIntegerField(default=0)
+    medicines_dispensed = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-report_date']
+    
+    def __str__(self):
+        return f"Report for {self.report_date}"
