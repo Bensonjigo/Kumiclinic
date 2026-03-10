@@ -210,13 +210,20 @@ def consultation_form(request, visit_id):
         )
         
         medicine_id = request.POST.get('medicine')
-        if medicine_id:
-            prescription = Prescription.objects.create(
-                consultation=consultation,
-                medicine_id=medicine_id,
-                dosage=request.POST.get('dosage'),
-                quantity=request.POST.get('quantity')
-            )
+        dosage = request.POST.get('dosage')
+        quantity = request.POST.get('quantity')
+        
+        if medicine_id and quantity:
+            try:
+                quantity = int(quantity)
+                prescription = Prescription.objects.create(
+                    consultation=consultation,
+                    medicine_id=medicine_id,
+                    dosage=dosage or '',
+                    quantity=quantity
+                )
+            except (ValueError, TypeError):
+                pass
         
         lab_test = request.POST.get('lab_test')
         if lab_test:
