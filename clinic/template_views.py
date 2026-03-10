@@ -9,6 +9,7 @@ from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
     Medicine, LabRequest, DailyReport, User
 )
+from .audit import log_action
 
 
 def login_view(request):
@@ -18,12 +19,15 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
+            log_action(user, 'LOGIN', description=f'User logged in', request=request)
             return redirect('dashboard')
         messages.error(request, 'Invalid credentials')
     return render(request, 'clinic/login.html')
 
 
 def logout_view(request):
+    if request.user.is_authenticated:
+        log_action(request.user, 'LOGOUT', description=f'User logged out', request=request)
     logout(request)
     return redirect('login')
 
@@ -121,6 +125,8 @@ def register_patient(request):
             gender=gender,
             date_of_birth=date_of_birth
         )
+        log_action(request.user, 'REGISTER', 'Patient', patient.id, 
+                   f'Registered patient: {patient.full_name} ({patient.university_id})', request)
         messages.success(request, f'Patient {patient.full_name} registered successfully!')
         return redirect('dashboard')
     
@@ -302,6 +308,9 @@ def dispense_medicine(request, prescription_id):
     
     prescription.is_dispensed = True
     prescription.save()
+    
+    log_action(request.user, 'DISPENSE', 'Prescription', prescription.id,
+               f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}', request)
     
     messages.success(request, f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}')
     return redirect('pending_prescriptions')

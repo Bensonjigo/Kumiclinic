@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     User, Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, Notification, DailyReport
+    Medicine, StockMovement, LabRequest, Notification, DailyReport, AuditLog
 )
 
 
@@ -134,3 +134,21 @@ class DailyReportAdmin(admin.ModelAdmin):
     list_filter = ['report_date']
     date_hierarchy = 'report_date'
     readonly_fields = ['created_at']
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ['timestamp', 'user', 'action', 'model_name', 'description', 'ip_address']
+    list_filter = ['action', 'model_name', 'timestamp']
+    search_fields = ['user__username', 'description', 'model_name']
+    date_hierarchy = 'timestamp'
+    readonly_fields = ['timestamp']
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False

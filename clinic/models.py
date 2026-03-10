@@ -329,3 +329,32 @@ class DailyReport(models.Model):
     
     def __str__(self):
         return f"Report for {self.report_date}"
+
+
+class AuditLog(models.Model):
+    ACTION_CHOICES = [
+        ('CREATE', 'Created'),
+        ('UPDATE', 'Updated'),
+        ('DELETE', 'Deleted'),
+        ('LOGIN', 'Logged In'),
+        ('LOGOUT', 'Logged Out'),
+        ('VIEW', 'Viewed'),
+        ('DISPENSE', 'Dispensed Medicine'),
+        ('PRESCRIBE', 'Prescribed'),
+        ('REGISTER', 'Registered'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='audit_logs')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    model_name = models.CharField(max_length=100, blank=True)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    description = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name_plural = 'Audit Logs'
+    
+    def __str__(self):
+        return f"{self.user} - {self.action} - {self.timestamp}"
