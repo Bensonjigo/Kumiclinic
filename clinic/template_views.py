@@ -7,7 +7,7 @@ from django.db import models as db_models
 from django.db.models import Count
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, LabRequest, DailyReport, User
+    Medicine, StockMovement, LabRequest, DailyReport, User
 )
 from .audit import log_action
 
@@ -320,6 +320,35 @@ def dispense_medicine(request, prescription_id):
 def medicines_list(request):
     medicines = Medicine.objects.all().order_by('name')
     return render(request, 'clinic/medicines.html', {'medicines': medicines})
+
+
+@login_required
+def add_stock(request, medicine_id):
+    if request.method == 'POST':
+        medicine = get_object_or_404(Medicine, id=medicine_id)
+        quantity = request.POST.get('quantity')
+        expiry_date = request.POST.get('expiry_date')
+        
+        try:
+            quantity = int(quantity)
+            if quantity > 0:
+                StockMovement.objects.create(
+                    medicine=medicine,
+                    movement_type='PURCHASE',
+                    quantity=quantity,
+                    performed_by=request.user,
+                    notes=request.POST.get('notes', '')
+                )
+                if expiry_date:
+                    medicine.expiry_date = expiry_date
+                    medicine.save()
+                log_action(request.user, 'UPDATE', 'Medicine', medicine.id,
+                           f'Added {quantity} {medicine.unit} to stock', request)
+                messages.success(request, f'Added {quantity} {medicine.unit} to {medicine.name}')
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid quantity')
+    
+    return redirect('medicines')
 
 
 @login_required

@@ -22,5 +22,6 @@ urlpatterns = [
     path('pharmacy/queue/', template_views.pending_prescriptions, name='pending_prescriptions'),
     path('prescription/<int:prescription_id>/dispense/', template_views.dispense_medicine, name='dispense_medicine'),
     path('medicines/', template_views.medicines_list, name='medicines'),
+    path('medicine/<int:medicine_id>/add-stock/', template_views.add_stock, name='add_stock'),
     path('reports/', template_views.reports_list, name='reports'),
 ]
