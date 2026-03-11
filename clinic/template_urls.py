@@ -6,9 +6,24 @@ urlpatterns = [
     path('', RedirectView.as_view(url='/login/', permanent=False), name='home'),
     path('login/', template_views.login_view, name='login'),
     path('logout/', template_views.logout_view, name='logout'),
-    path('dashboard/', template_views.dashboard, name='dashboard'),
+    
+    # Role-based dashboards (main entry point is dashboard_redirect)
+    path('dashboard/', template_views.dashboard_redirect, name='dashboard'),
+    path('dashboard/role/', template_views.dashboard_redirect, name='dashboard_redirect'),
+    path('dashboard/reception/', template_views.dashboard_reception, name='dashboard_reception'),
+    path('dashboard/nurse/', template_views.dashboard_nurse, name='dashboard_nurse'),
+    path('dashboard/doctor/', template_views.dashboard_doctor, name='dashboard_doctor'),
+    path('dashboard/lab/', template_views.dashboard_lab, name='dashboard_lab'),
+    path('dashboard/pharmacy/', template_views.dashboard_pharmacy, name='dashboard_pharmacy'),
+    path('dashboard/admin/', template_views.dashboard_admin, name='dashboard_admin'),
+    
+    # Legacy dashboard (kept for backward compatibility)
+    path('dashboard/all/', template_views.dashboard, name='dashboard_all'),
+    
     path('patients/', template_views.patients_list, name='patients'),
     path('patient/<int:patient_id>/', template_views.patient_detail, name='patient_detail'),
+    path('patient/<int:patient_id>/edit/', template_views.edit_patient, name='edit_patient'),
+    path('patient/<int:patient_id>/delete/', template_views.delete_patient, name='delete_patient'),
     path('register/', template_views.register_patient, name='register_patient'),
     path('visits/', template_views.visits_list, name='visits'),
     path('visit/new/', template_views.new_visit, name='new_visit'),

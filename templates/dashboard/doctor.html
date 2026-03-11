@@ -1,0 +1,401 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block dashboard_title %}
+    <span class="material-symbols-outlined mr-2">stethoscope</span>Doctor Dashboard
+{% endblock %}
+
+{% block dashboard_subtitle %}Consultation queue and patient management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .patient-card {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .patient-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(58, 125, 157, 0.15);
+    }
+    .patient-card.selected {
+        border-color: var(--primary);
+        background-color: rgba(58, 125, 157, 0.05);
+    }
+    .tab-active {
+        border-bottom: 3px solid var(--primary);
+        color: var(--primary);
+    }
+    .vitals-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    @media (min-width: 768px) {
+        .vitals-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Search Bar -->
+<div class="mb-6">
+    <div class="relative max-w-md">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+        <input type="text" id="patientSearch" 
+            class="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            placeholder="Search patients by name or ID...">
+    </div>
+</div>
+
+<!-- Patient List View -->
+<div id="patientListView">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="patientList">
+        {% for visit in waiting_consultation %}
+        <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg"
+             onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-xl">person</span>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</h3>
+                    <p class="text-sm text-gray-500">{{ visit.patient.university_id }}</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+                <span class="badge badge-{% if visit.patient.patient_type == 'STUDENT' %}primary{% else %}success{% endif %}">
+                    {{ visit.patient.get_patient_type_display }}
+                </span>
+                <span class="text-gray-500">{{ visit.visit_date|time:"g:i A" }}</span>
+            </div>
+            {% if visit.triage %}
+            <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                    <div>
+                        <span class="material-symbols-outlined text-xs">thermostat</span>
+                        {{ visit.triage.temperature }}°C
+                    </div>
+                    <div>
+                        <span class="material-symbols-outlined text-xs">favorite</span>
+                        {{ visit.triage.heart_rate }} bpm
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-12">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                <span class="material-symbols-outlined text-gray-400 text-3xl">group</span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Patients Waiting</h3>
+            <p class="text-gray-500">Patients waiting for consultation will appear here</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Patient Detail View (Hidden by default) -->
+<div id="patientDetailView" class="hidden">
+    <button onclick="showPatientList()" class="flex items-center gap-2 text-primary hover:underline mb-4">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Back to Patient List
+    </button>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Patient Info Sidebar -->
+        <aside class="lg:col-span-3">
+            <div class="sticky top-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="flex flex-col items-center text-center mb-4">
+                        <div class="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+                            <span class="material-symbols-outlined text-primary text-5xl">person</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white" id="detailPatientName">-</h2>
+                        <p class="text-gray-500" id="detailPatientDOB">-</p>
+                        <p class="text-sm text-gray-500" id="detailPatientMRN">-</p>
+                    </div>
+                    
+                    <div class="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Phone</span>
+                            <span class="font-medium text-gray-900 dark:text-white" id="detailPatientPhone">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Address</span>
+                            <span class="font-medium text-gray-900 dark:text-white" id="detailPatientAddress">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Weight</span>
+                            <span class="font-medium text-gray-900 dark:text-white" id="detailPatientWeight">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <a href="#" class="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                            <span class="material-symbols-outlined">history</span>
+                            View Full History
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <section class="lg:col-span-6">
+            <!-- Vitals Cards -->
+            <div class="vitals-grid mb-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div class="flex items-center gap-2 text-gray-500 mb-1">
+                        <span class="material-symbols-outlined text-lg">speed</span>
+                        <span class="text-sm font-medium">Blood Pressure</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="detailBP">-</p>
+                    <p class="text-xs text-gray-500">mmHg</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div class="flex items-center gap-2 text-gray-500 mb-1">
+                        <span class="material-symbols-outlined text-lg">favorite</span>
+                        <span class="text-sm font-medium">Heart Rate</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="detailHR">-</p>
+                    <p class="text-xs text-gray-500">bpm</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div class="flex items-center gap-2 text-gray-500 mb-1">
+                        <span class="material-symbols-outlined text-lg">thermostat</span>
+                        <span class="text-sm font-medium">Temperature</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="detailTemp">-</p>
+                    <p class="text-xs text-gray-500">°C</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div class="flex items-center gap-2 text-gray-500 mb-1">
+                        <span class="material-symbols-outlined text-lg">air</span>
+                        <span class="text-sm font-medium">SpO2</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="detailSpO2">-</p>
+                    <p class="text-xs text-gray-500">%</p>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex gap-0" id="tabButtons">
+                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn active" data-tab="history" onclick="switchTab('history')">
+                            Medical History
+                        </button>
+                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn" data-tab="lab" onclick="switchTab('lab')">
+                            Lab Results
+                        </button>
+                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn" data-tab="medications" onclick="switchTab('medications')">
+                            Medications
+                        </button>
+                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn" data-tab="notes" onclick="switchTab('notes')">
+                            Visit Notes
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div id="tab-content-history" class="tab-content">
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-4xl mb-2">history</span>
+                            <p>Medical history will appear here</p>
+                        </div>
+                    </div>
+                    <div id="tab-content-lab" class="tab-content hidden">
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-4xl mb-2">science</span>
+                            <p>Lab results will appear here</p>
+                        </div>
+                    </div>
+                    <div id="tab-content-medications" class="tab-content hidden">
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-4xl mb-2">medication</span>
+                            <p>Current medications will appear here</p>
+                        </div>
+                    </div>
+                    <div id="tab-content-notes" class="tab-content hidden">
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-4xl mb-2">note</span>
+                            <p>Visit notes will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Actions Sidebar -->
+        <aside class="lg:col-span-3">
+            <div class="sticky top-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Actions & Workflow</h3>
+                    
+                    <input type="hidden" name="visit_id" id="visitIdInput" value="">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Quick Actions
+                        </label>
+                        <div class="space-y-2">
+                            <button type="button" onclick="orderLab()" id="btnOrderLab" class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 disabled:opacity-50" disabled>
+                                <span class="material-symbols-outlined text-lg">science</span>
+                                Order Labs
+                            </button>
+                            <button type="button" onclick="prescribeMedication()" id="btnPrescribe" class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 disabled:opacity-50" disabled>
+                                <span class="material-symbols-outlined text-lg">medication</span>
+                                Prescribe
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Selected Patient
+                        </label>
+                        <div id="selectedPatientInfo" class="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm text-gray-600 dark:text-gray-400">
+                            Select a patient to begin consultation
+                        </div>
+                    </div>
+                    
+                    <a id="startConsultBtn" href="#" onclick="startConsultation()" class="w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary/90 text-center block">
+                        Start Consultation
+                    </a>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>
+let currentVisitId = null;
+
+function showPatientDetail(visitId, name, dob, mrn, phone, address, weight, bp, hr, temp, spo2) {
+    currentVisitId = visitId;
+    
+    // Hide list, show detail
+    document.getElementById('patientListView').classList.add('hidden');
+    document.getElementById('patientDetailView').classList.remove('hidden');
+    
+    // Populate patient info
+    document.getElementById('detailPatientName').textContent = name;
+    document.getElementById('detailPatientDOB').textContent = dob ? 'DOB: ' + dob : '-';
+    document.getElementById('detailPatientMRN').textContent = mrn ? 'MRN: ' + mrn : '-';
+    document.getElementById('detailPatientPhone').textContent = phone || '-';
+    document.getElementById('detailPatientAddress').textContent = address || '-';
+    document.getElementById('detailPatientWeight').textContent = weight + ' kg';
+    
+    // Populate vitals
+    document.getElementById('detailBP').textContent = bp;
+    document.getElementById('detailHR').textContent = hr;
+    document.getElementById('detailTemp').textContent = temp;
+    document.getElementById('detailSpO2').textContent = spo2;
+    
+    // Set visit ID in form
+    document.getElementById('visitIdInput').value = visitId;
+    
+    // Enable buttons and update info
+    document.getElementById('btnOrderLab').disabled = false;
+    document.getElementById('btnPrescribe').disabled = false;
+    document.getElementById('selectedPatientInfo').textContent = name + ' - Ready for consultation';
+    
+    // Load patient data via AJAX
+    loadPatientData(visitId);
+}
+
+function showPatientList() {
+    document.getElementById('patientListView').classList.remove('hidden');
+    document.getElementById('patientDetailView').classList.add('hidden');
+    currentVisitId = null;
+    
+    // Disable buttons
+    document.getElementById('btnOrderLab').disabled = true;
+    document.getElementById('btnPrescribe').disabled = true;
+    document.getElementById('selectedPatientInfo').textContent = 'Select a patient to begin consultation';
+}
+
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'border-b-3', 'border-primary', 'text-primary');
+        btn.classList.add('text-gray-500', 'border-transparent');
+    });
+    
+    const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+    activeBtn.classList.add('active', 'border-b-3', 'border-primary', 'text-primary');
+    activeBtn.classList.remove('text-gray-500', 'border-transparent');
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById('tab-content-' + tabName).classList.remove('hidden');
+}
+
+function orderLab() {
+    if (!currentVisitId) {
+        alert('Please select a patient first');
+        return;
+    }
+    window.location.href = '/clinic/lab/request/new/?visit_id=' + currentVisitId;
+}
+
+function prescribeMedication() {
+    if (!currentVisitId) {
+        alert('Please select a patient first');
+        return;
+    }
+    window.location.href = '/clinic/prescription/new/?visit_id=' + currentVisitId;
+}
+
+function startConsultation() {
+    if (!currentVisitId) {
+        alert('Please select a patient first');
+        return;
+    }
+    window.location.href = '/clinic/consultation/' + currentVisitId + '/';
+}
+
+function loadPatientData(visitId) {
+    // Fetch patient data via AJAX
+    fetch('/api/patient-data/' + visitId + '/')
+        .then(response => response.json())
+        .then(data => {
+            // Update tabs with patient data
+            if (data.medical_history) {
+                document.getElementById('tab-content-history').innerHTML = data.medical_history;
+            }
+            if (data.lab_results) {
+                document.getElementById('tab-content-lab').innerHTML = data.lab_results;
+            }
+            if (data.medications) {
+                document.getElementById('tab-content-medications').innerHTML = data.medications;
+            }
+            if (data.visit_notes) {
+                document.getElementById('tab-content-notes').innerHTML = data.visit_notes;
+            }
+        })
+        .catch(error => console.error('Error loading patient data:', error));
+}
+
+// Search functionality
+document.getElementById('patientSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.patient-card');
+    
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Initialize - show patient list
+document.addEventListener('DOMContentLoaded', function() {
+    showPatientList();
+});
+</script>
+{% endblock %}

@@ -66,8 +66,17 @@ class Patient(models.Model):
     university_id = models.CharField(max_length=50, unique=True)
     department = models.CharField(max_length=100)
     phone = models.CharField(max_length=20)
+    email = models.EmailField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     date_of_birth = models.DateField()
+    
+    # Next of Kin
+    next_of_kin_name = models.CharField(max_length=200, blank=True, null=True)
+    next_of_kin_relationship = models.CharField(max_length=50, blank=True, null=True)
+    next_of_kin_contact = models.CharField(max_length=20, blank=True, null=True)
+    next_of_kin_address = models.TextField(blank=True, null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

@@ -3,55 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Kumi University Clinic</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Kumi University Clinic - Secure Login</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3A7D9D",
+                        "background-light": "#F4F7F9",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-800 to-blue-900 min-h-screen flex items-center justify-center">
-    <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md">
-        <div class="text-center mb-8">
-            <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-hospital text-3xl text-blue-600"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-800">Kumi University</h1>
-            <p class="text-gray-500">Clinic Management System</p>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-200">
+    <div class="relative flex min-h-screen w-full flex-col items-center justify-center">
+        <div class="absolute top-0 left-0 w-full px-4 sm:px-8 md:px-12 lg:px-20 py-5">
+            <header class="flex items-center justify-between whitespace-nowrap">
+                <div class="flex items-center gap-4 text-slate-900 dark:text-slate-50">
+                    <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Logo" class="h-10 w-auto">
+                    <h2 class="text-xl font-bold leading-tight tracking-[-0.015em]">Kumi University Clinic</h2>
+                </div>
+            </header>
         </div>
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div class="mb-4 p-4 rounded {% if message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-                    {{ message }}
+        <main class="container mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-4 py-20">
+            <div class="grid w-full grid-cols-1 overflow-hidden rounded-xl bg-white shadow-lg dark:bg-background-dark dark:border dark:border-slate-800 md:grid-cols-2">
+                <div class="relative hidden h-full md:block">
+                    <img class="h-full w-full object-cover" data-alt="University Logo" src="/media/KUMI-UNIVERSITY-LOGO.png"/>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 p-8 text-white">
+                        <h1 class="mb-2 text-3xl font-bold">Your Health, Connected</h1>
+                        <p class="text-lg text-slate-200">Secure access to your health information, anytime, anywhere.</p>
+                    </div>
                 </div>
-            {% endfor %}
-        {% endif %}
-        
-        <form method="post" class="space-y-4">
-            {% csrf_token %}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                <div class="relative">
-                    <i class="fas fa-user absolute left-3 top-3 text-gray-400"></i>
-                    <input type="text" name="username" required
-                        class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <div class="flex flex-col justify-center p-8 sm:p-12">
+                    <div class="mb-6">
+                        <p class="text-slate-900 dark:text-white text-3xl font-bold leading-tight tracking-[-0.033em]">Welcome Back</p>
+                        <p class="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal mt-2">Enter your credentials to access your dashboard.</p>
+                    </div>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-800 border border-red-200{% else %}bg-primary/10 text-primary border border-primary/20{% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" class="flex flex-col gap-4">
+                        {% csrf_token %}
+                        <div class="flex flex-col">
+                            <label class="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2" for="username">Username</label>
+                            <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-background-light dark:bg-slate-800 h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-4 text-base font-normal leading-normal" id="username" name="username" placeholder="Enter your username" type="text" value="" required/>
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2" for="password">Password</label>
+                            <div class="relative flex w-full flex-1 items-stretch">
+                                <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-background-light dark:bg-slate-800 h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-4 pr-12 text-base font-normal leading-normal" id="password" name="password" placeholder="Enter your password" type="password" value="" required/>
+                                <button type="button" class="absolute inset-y-0 right-0 flex items-center justify-center pr-4 text-slate-400 hover:text-primary dark:text-slate-500 dark:hover:text-primary" onclick="togglePassword()">
+                                    <span class="material-symbols-outlined" id="password-icon">visibility</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <input class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-2 focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-background-light dark:focus:ring-offset-background-dark" id="remember-me" type="checkbox"/>
+                                <label class="text-slate-600 dark:text-slate-300 text-sm font-normal leading-normal select-none" for="remember-me">Remember me</label>
+                            </div>
+                            <a class="text-sm font-medium text-primary hover:underline" href="#">Forgot Password?</a>
+                        </div>
+                        <button type="submit" class="mt-4 flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-bold text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background-light dark:focus:ring-offset-background-dark">Login</button>
+                    </form>
+                    <div class="mt-8 text-center">
+                        <p class="text-sm text-slate-500 dark:text-slate-400">
+                            Don't have an account?
+                            <a class="font-medium text-primary hover:underline" href="#">Sign Up</a>
+                        </p>
+                    </div>
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <div class="relative">
-                    <i class="fas fa-lock absolute left-3 top-3 text-gray-400"></i>
-                    <input type="password" name="password" required
-                        class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
+        </main>
+        <footer class="w-full max-w-6xl px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+            <div class="flex justify-center gap-6">
+                <a class="hover:text-primary hover:underline" href="#">Terms of Service</a>
+                <a class="hover:text-primary hover:underline" href="#">Privacy Policy</a>
             </div>
-            <button type="submit"
-                class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                Sign In
-            </button>
-        </form>
-        
-        <div class="mt-6 text-center text-sm text-gray-500">
-            <p>Use your credentials to access the system</p>
-        </div>
+        </footer>
     </div>
+    
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const passwordIcon = document.getElementById('password-icon');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            passwordIcon.textContent = type === 'password' ? 'visibility' : 'visibility_off';
+        }
+    </script>
 </body>
 </html>

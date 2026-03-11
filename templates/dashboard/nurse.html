@@ -1,0 +1,91 @@
+{% extends 'dashboard/base.html' %}
+
+{% block dashboard_title %}
+    <i class="fas fa-heartbeat mr-2"></i>Nurse Dashboard
+{% endblock %}
+
+{% block dashboard_subtitle %}Triage queue and patient vitals management.{% endblock %}
+
+{% block dashboard_content %}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="stat-card">
+        <div class="stat-value text-yellow-600">{{ waiting_triage.count }}</div>
+        <div class="stat-label">Waiting for Triage</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value text-green-600">{{ waiting_doctor }}</div>
+        <div class="stat-label">Ready for Doctor</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ triaged_today }}</div>
+        <div class="stat-label">Triaged Today</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value text-blue-600">{{ total_waiting }}</div>
+        <div class="stat-label">Total Waiting</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">Patients Waiting for Triage</h2>
+            <a href="{% url 'pending_triages' %}" class="text-blue-600 hover:underline text-sm">View Queue</a>
+        </div>
+        
+        {% if waiting_triage %}
+            <div class="space-y-3">
+                {% for visit in waiting_triage|slice:":10" %}
+                <div class="queue-item">
+                    <div class="queue-header">
+                        <div>
+                            <div class="queue-patient">
+                                <a href="{% url 'patient_detail' visit.patient.id %}" class="text-blue-600 hover:underline">
+                                    {{ visit.patient.full_name }}
+                                </a>
+                            </div>
+                            <div class="queue-meta">
+                                <span class="mr-3">{{ visit.patient.get_patient_type_display }}</span>
+                                <span>{{ visit.visit_date|time:"g:i A" }}</span>
+                            </div>
+                        </div>
+                        <a href="{% url 'triage_form' visit.id %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-clipboard-check mr-1"></i> Start Triage
+                        </a>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        <strong>Reason:</strong> {{ visit.reason_for_visit|truncatechars:100 }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+                <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                <p>No patients waiting for triage</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div>
+        <h2 class="text-xl font-semibold mb-4">Quick Info</h2>
+        <div class="bg-white rounded-lg shadow p-4 mb-4">
+            <h3 class="font-medium text-gray-700 mb-2">Triage Checklist</h3>
+            <ul class="text-sm text-gray-600 space-y-2">
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Temperature</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Blood Pressure</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Weight</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Heart Rate</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Symptoms</li>
+            </ul>
+        </div>
+        
+        <div class="bg-blue-50 rounded-lg p-4">
+            <h3 class="font-medium text-blue-800 mb-2">Tips</h3>
+            <p class="text-sm text-blue-700">
+                Record all vital signs accurately. Patients with abnormal vitals should be prioritized.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

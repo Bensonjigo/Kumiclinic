@@ -12,6 +12,329 @@ from .models import (
 from .audit import log_action
 
 
+# =============================================================================
+# ROLE-BASED DASHBOARD VIEWS
+# =============================================================================
+
+@login_required
+def dashboard_redirect(request):
+    """
+    Redirects logged-in users to their role-specific dashboard.
+    This is the main entry point after login.
+    """
+    role = request.user.role
+    if request.user.is_superuser:
+        role = 'ADMIN'
+    
+    role_urls = {
+        'RECEPTIONIST': 'dashboard_reception',
+        'NURSE': 'dashboard_reception',
+        'DOCTOR': 'dashboard_doctor',
+        'LAB_TECHNICIAN': 'dashboard_lab',
+        'PHARMACIST': 'dashboard_pharmacy',
+        'ADMIN': 'dashboard_admin',
+    }
+    
+    redirect_url = role_urls.get(role, 'dashboard_reception')
+    return redirect(redirect_url)
+
+
+@login_required
+def dashboard_reception(request):
+    """
+    Receptionist + Nurse Combined Dashboard:
+    - Patient registration form
+    - New visit creation
+    - Triage queue management
+    - Quick stats for today
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    # Today's statistics
+    total_patients_today = Visit.objects.filter(visit_date__gte=today_start).count()
+    new_patients_today = Patient.objects.filter(created_at__gte=today_start).count()
+    completed_today = Visit.objects.filter(visit_date__gte=today_start, status='COMPLETED').count()
+    
+    # Queue counts
+    waiting_triage_count = Visit.objects.filter(status='WAITING_FOR_TRIAGE').count()
+    waiting_doctor_count = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
+    
+    # Waiting for triage (queryset for display)
+    waiting_triage = Visit.objects.filter(
+        status='WAITING_FOR_TRIAGE'
+    ).select_related('patient').order_by('visit_date')
+    
+    # Waiting for doctor (queryset for display)
+    waiting_doctor_queue = Visit.objects.filter(
+        status='WAITING_FOR_DOCTOR'
+    ).select_related('patient').order_by('visit_date')
+    
+    # Today's triage count
+    triaged_today = Triage.objects.filter(
+        created_at__gte=today_start
+    ).count()
+    
+    # Recent visits today
+    visits_today = Visit.objects.filter(
+        visit_date__gte=today_start
+    ).select_related('patient').order_by('-visit_date')[:10]
+    
+    context = {
+        'total_patients_today': total_patients_today,
+        'new_patients_today': new_patients_today,
+        'completed_today': completed_today,
+        'waiting_triage': waiting_triage_count,
+        'waiting_doctor': waiting_doctor_count,
+        'waiting_triage_list': waiting_triage,
+        'waiting_doctor_queue': waiting_doctor_queue,
+        'triaged_today': triaged_today,
+        'waiting_triage_count': waiting_triage_count,
+        'visits_today': visits_today,
+    }
+    return render(request, 'dashboard/reception.html', context)
+
+
+@login_required
+def dashboard_nurse(request):
+    """
+    Nurse Dashboard:
+    - Patients waiting for triage
+    - Quick access to triage forms
+    - Today's triage count
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    # Patients waiting for triage
+    waiting_triage = Visit.objects.filter(
+        status='WAITING_FOR_TRIAGE'
+    ).select_related('patient').order_by('visit_date')
+    
+    # Today's triage count
+    triaged_today = Triage.objects.filter(
+        created_at__gte=today_start
+    ).count()
+    
+    # Queue statistics
+    total_waiting = Visit.objects.exclude(status__in=['COMPLETED', 'CANCELLED']).count()
+    waiting_doctor = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
+    
+    context = {
+        'waiting_triage': waiting_triage,
+        'triaged_today': triaged_today,
+        'total_waiting': total_waiting,
+        'waiting_doctor': waiting_doctor,
+    }
+    return render(request, 'dashboard/nurse.html', context)
+
+
+@login_required
+def dashboard_doctor(request):
+    """
+    Doctor Dashboard:
+    - Patients waiting for consultation
+    - Patient detail view with vitals
+    - Today's consultation count
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    # Patients waiting for doctor (with triage data prefetched)
+    waiting_consultation = Visit.objects.filter(
+        status='WAITING_FOR_DOCTOR'
+    ).select_related('patient', 'triage').prefetch_related('triage').order_by('visit_date')
+    
+    # Patients who completed lab, waiting for doctor
+    in_lab = Visit.objects.filter(status='IN_LAB').select_related('patient', 'triage').order_by('visit_date')
+    
+    # Today's consultation count
+    consultations_today = Consultation.objects.filter(
+        created_at__gte=today_start
+    ).count()
+    
+    # Recent completed visits for quick reference
+    recent_completed = Visit.objects.filter(
+        status='COMPLETED',
+        visit_date__gte=today_start
+    ).select_related('patient', 'consultation__doctor')[:10]
+    
+    context = {
+        'waiting_consultation': waiting_consultation,
+        'in_lab': in_lab,
+        'consultations_today': consultations_today,
+        'recent_completed': recent_completed,
+    }
+    return render(request, 'dashboard/doctor.html', context)
+
+
+@login_required
+def dashboard_lab(request):
+    """
+    Lab Technician Dashboard:
+    - Pending lab requests
+    - Completed tests today
+    - Quick access to record results
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    # Pending lab requests
+    pending_labs = LabRequest.objects.filter(
+        status='PENDING'
+    ).select_related('visit__patient', 'requested_by').order_by('date')
+    
+    # In progress labs
+    in_progress_labs = LabRequest.objects.filter(
+        status='IN_PROGRESS'
+    ).select_related('visit__patient', 'requested_by').order_by('date')
+    
+    # Today's completed tests
+    completed_today = LabRequest.objects.filter(
+        status='COMPLETED',
+        completed_date__gte=today_start
+    ).count()
+    
+    # Total pending count
+    total_pending = LabRequest.objects.filter(status='PENDING').count()
+    
+    context = {
+        'pending_labs': pending_labs,
+        'in_progress_labs': in_progress_labs,
+        'completed_today': completed_today,
+        'total_pending': total_pending,
+    }
+    return render(request, 'dashboard/lab.html', context)
+
+
+@login_required
+def dashboard_pharmacy(request):
+    """
+    Pharmacist Dashboard:
+    - Pending prescriptions to dispense
+    - Stock overview
+    - Low stock alerts
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    # Pending prescriptions
+    pending_prescriptions = Prescription.objects.filter(
+        is_dispensed=False
+    ).select_related(
+        'consultation__visit__patient',
+        'consultation__doctor',
+        'medicine'
+    ).order_by('created_at')
+    
+    # Today's dispensed count
+    dispensed_today = Prescription.objects.filter(
+        is_dispensed=True,
+        updated_at__gte=today_start
+    ).count()
+    
+    # Stock overview
+    total_medicines = Medicine.objects.count()
+    low_stock = Medicine.objects.filter(
+        stock_quantity__lte=db_models.F('minimum_stock_level')
+    )
+    low_stock_count = low_stock.count()
+    low_stock_medicines = low_stock[:5]
+    
+    # Expired medicines
+    expired_count = Medicine.objects.filter(
+        expiry_date__lt=today
+    ).count()
+    
+    context = {
+        'pending_prescriptions': pending_prescriptions,
+        'dispensed_today': dispensed_today,
+        'total_medicines': total_medicines,
+        'low_stock_count': low_stock_count,
+        'low_stock_medicines': low_stock_medicines,
+        'expired_count': expired_count,
+    }
+    return render(request, 'dashboard/pharmacy.html', context)
+
+
+@login_required
+def dashboard_admin(request):
+    """
+    Admin Dashboard:
+    - Clinic summary and reports
+    - Full workflow overview
+    - All statistics
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    # Today's statistics
+    total_patients_today = Visit.objects.filter(visit_date__gte=today_start).count()
+    patients_waiting = Visit.objects.exclude(status__in=['COMPLETED', 'CANCELLED']).count()
+    completed_today = Visit.objects.filter(visit_date__gte=today_start, status='COMPLETED').count()
+    
+    # Staff counts by role
+    staff_counts = {
+        'receptionists': User.objects.filter(role='RECEPTIONIST').count(),
+        'nurses': User.objects.filter(role='NURSE').count(),
+        'doctors': User.objects.filter(role='DOCTOR').count(),
+        'lab_technicians': User.objects.filter(role='LAB_TECHNICIAN').count(),
+        'pharmacists': User.objects.filter(role='PHARMACIST').count(),
+    }
+    
+    # Workflow queue counts
+    waiting_triage = Visit.objects.filter(status='WAITING_FOR_TRIAGE').count()
+    waiting_doctor = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
+    in_lab = Visit.objects.filter(status='IN_LAB').count()
+    waiting_pharmacy = Visit.objects.filter(status='WAITING_FOR_PHARMACY').count()
+    
+    # Lab and pharmacy stats
+    pending_labs = LabRequest.objects.filter(status='PENDING').count()
+    pending_prescriptions = Prescription.objects.filter(is_dispensed=False).count()
+    
+    # Stock alerts
+    low_stock_count = Medicine.objects.filter(
+        stock_quantity__lte=db_models.F('minimum_stock_level')
+    ).count()
+    expired_count = Medicine.objects.filter(expiry_date__lt=today).count()
+    
+    # Recent activity
+    recent_visits = Visit.objects.filter(
+        visit_date__gte=today_start
+    ).select_related('patient')[:10]
+    
+    # Low stock medicines
+    low_stock_medicines = Medicine.objects.filter(
+        stock_quantity__lte=db_models.F('minimum_stock_level')
+    )[:5]
+    
+    # Reports
+    recent_reports = DailyReport.objects.all()[:7]
+    
+    context = {
+        'total_patients_today': total_patients_today,
+        'patients_waiting': patients_waiting,
+        'completed_today': completed_today,
+        'staff_counts': staff_counts,
+        'waiting_triage': waiting_triage,
+        'waiting_doctor': waiting_doctor,
+        'in_lab': in_lab,
+        'waiting_pharmacy': waiting_pharmacy,
+        'pending_labs': pending_labs,
+        'pending_prescriptions': pending_prescriptions,
+        'low_stock_count': low_stock_count,
+        'expired_count': expired_count,
+        'recent_visits': recent_visits,
+        'low_stock_medicines': low_stock_medicines,
+        'recent_reports': recent_reports,
+    }
+    return render(request, 'dashboard/admin.html', context)
+
+
+# =============================================================================
+# ORIGINAL VIEWS (Kept for compatibility)
+# =============================================================================
+
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -87,7 +410,7 @@ def patient_detail(request, patient_id):
     
     total_visits = visits.count()
     completed_visits = visits.filter(status='COMPLETED').count()
-    total_prescriptions = sum(v.consultation.prescriptions.count() for v in visits if v.consultation)
+    total_prescriptions = sum(getattr(v, 'consultation', None).prescriptions.count() for v in visits if getattr(v, 'consultation', None))
     total_lab_tests = visits.filter(lab_requests__isnull=False).count()
     
     context = {
@@ -109,8 +432,16 @@ def register_patient(request):
         university_id = request.POST.get('university_id')
         department = request.POST.get('department')
         phone = request.POST.get('phone')
+        email = request.POST.get('email')
+        address = request.POST.get('address')
         gender = request.POST.get('gender')
         date_of_birth = request.POST.get('date_of_birth')
+        
+        # Next of Kin
+        next_of_kin_name = request.POST.get('next_of_kin_name')
+        next_of_kin_relationship = request.POST.get('next_of_kin_relationship')
+        next_of_kin_contact = request.POST.get('next_of_kin_contact')
+        next_of_kin_address = request.POST.get('next_of_kin_address')
         
         if Patient.objects.filter(university_id=university_id).exists():
             messages.error(request, 'A patient with this university ID already exists.')
@@ -122,15 +453,83 @@ def register_patient(request):
             university_id=university_id,
             department=department,
             phone=phone,
+            email=email,
+            address=address,
             gender=gender,
-            date_of_birth=date_of_birth
+            date_of_birth=date_of_birth,
+            next_of_kin_name=next_of_kin_name,
+            next_of_kin_relationship=next_of_kin_relationship,
+            next_of_kin_contact=next_of_kin_contact,
+            next_of_kin_address=next_of_kin_address
         )
+        
+        # Automatically create a visit for the patient
+        visit = Visit.objects.create(
+            patient=patient,
+            visit_date=timezone.now(),
+            reason_for_visit='New patient registration',
+            status='WAITING_FOR_TRIAGE'
+        )
+        
         log_action(request.user, 'REGISTER', 'Patient', patient.id, 
                    f'Registered patient: {patient.full_name} ({patient.university_id})', request)
-        messages.success(request, f'Patient {patient.full_name} registered successfully!')
-        return redirect('dashboard')
+        messages.success(request, f'Patient {patient.full_name} registered and added to queue!')
+        return redirect('dashboard_reception')
     
     return render(request, 'clinic/register_patient.html')
+
+
+@login_required
+def edit_patient(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    
+    if not (request.user.role in ['NURSE', 'RECEPTIONIST'] or request.user.is_superuser):
+        messages.error(request, 'You do not have permission to edit patients.')
+        return redirect('patient_detail', patient_id=patient.id)
+    
+    if request.method == 'POST':
+        patient.full_name = request.POST.get('full_name')
+        patient.patient_type = request.POST.get('patient_type')
+        patient.university_id = request.POST.get('university_id')
+        patient.department = request.POST.get('department')
+        patient.phone = request.POST.get('phone')
+        patient.email = request.POST.get('email')
+        patient.address = request.POST.get('address')
+        patient.gender = request.POST.get('gender')
+        patient.date_of_birth = request.POST.get('date_of_birth')
+        patient.next_of_kin_name = request.POST.get('next_of_kin_name')
+        patient.next_of_kin_relationship = request.POST.get('next_of_kin_relationship')
+        patient.next_of_kin_contact = request.POST.get('next_of_kin_contact')
+        patient.next_of_kin_address = request.POST.get('next_of_kin_address')
+        patient.save()
+        
+        log_action(request.user, 'UPDATE', 'Patient', patient.id, 
+                   f'Updated patient: {patient.full_name} ({patient.university_id})', request)
+        messages.success(request, f'Patient {patient.full_name} updated successfully!')
+        return redirect('patient_detail', patient_id=patient.id)
+    
+    return render(request, 'clinic/edit_patient.html', {'patient': patient})
+
+
+@login_required
+def delete_patient(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    
+    if not request.user.is_superuser:
+        messages.error(request, 'Only administrators can delete patients.')
+        return redirect('patient_detail', patient_id=patient.id)
+    
+    if request.method == 'POST':
+        patient_name = patient.full_name
+        university_id = patient.university_id
+        patient.delete()
+        
+        log_action(request.user, 'DELETE', 'Patient', patient_id, 
+                   f'Deleted patient: {patient_name} ({university_id})', request)
+        messages.success(request, f'Patient {patient_name} deleted successfully!')
+        return redirect('patients')
+    
+    return render(request, 'clinic/delete_patient.html', {'patient': patient})
 
 
 @login_required
@@ -148,7 +547,17 @@ def new_visit(request):
         patient_id = request.POST.get('patient')
         reason = request.POST.get('reason_for_visit')
         
-        patient = get_object_or_404(Patient, id=patient_id)
+        if not patient_id:
+            messages.error(request, 'Please select a patient')
+            patients = Patient.objects.all()
+            return render(request, 'clinic/new_visit.html', {'patients': patients})
+        
+        try:
+            patient = get_object_or_404(Patient, id=patient_id)
+        except ValueError:
+            messages.error(request, 'Invalid patient selected')
+            patients = Patient.objects.all()
+            return render(request, 'clinic/new_visit.html', {'patients': patients})
         visit = Visit.objects.create(
             patient=patient,
             reason_for_visit=reason,
