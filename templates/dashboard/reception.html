@@ -5,37 +5,9 @@
     <span class="material-symbols-outlined mr-2">medical_services</span>Nurse Dashboard
 {% endblock %}
 
-{% block dashboard_subtitle %}Manage patient registration, visits, and triage{% endblock %}
+{% block dashboard_subtitle %}Manage patient visits and consultations{% endblock %}
 
 {% block dashboard_content %}
-<!-- Big Action Buttons -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <!-- Register Patient - Big Button -->
-    <a href="{% url 'register_patient' %}" class="col-span-1 md:col-span-2 flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-primary to-primary/80 text-white rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all">
-        <span class="material-symbols-outlined text-3xl">person_add</span>
-        <div class="text-left">
-            <p class="text-xl font-bold">Register Patient</p>
-            <p class="text-sm text-white/80">Add new patient</p>
-        </div>
-    </a>
-    
-    <!-- New Visit -->
-    <a href="{% url 'new_visit' %}" class="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:shadow-lg hover:shadow-green-500/25 transition-all">
-        <span class="material-symbols-outlined text-2xl">add_circle</span>
-        <div class="text-left">
-            <p class="font-bold">New Visit</p>
-            <p class="text-xs text-green-100">Start visit</p>
-        </div>
-    </a>
-    
-    <!-- Today's Stats -->
-    <div class="flex items-center justify-center gap-3 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
-        <div class="text-center">
-            <p class="text-2xl font-bold text-primary">{{ total_patients_today }}</p>
-            <p class="text-xs text-gray-500">Patients Today</p>
-        </div>
-    </div>
-</div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Main Queue -->
@@ -44,8 +16,8 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-gray-700">
                 <div class="flex">
-                    <button class="flex-1 py-4 text-sm font-semibold text-primary border-b-3 border-primary bg-primary/5" onclick="switchQueue('triage')" id="tab-triage">
-                        Waiting Vital Signs ({{ waiting_triage }})
+                    <button class="flex-1 py-4 text-sm font-semibold text-primary border-b-3 border-primary bg-primary/5" onclick="switchQueue('recent')" id="tab-recent">
+                        Recent Patients ({{ recent_patients|length }})
                     </button>
                     <button class="flex-1 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-3 border-transparent" onclick="switchQueue('doctor')" id="tab-doctor">
                         Waiting Doctor ({{ waiting_doctor }})
@@ -65,37 +37,37 @@
                         </tr>
                     </thead>
                     <tbody id="queueTableBody">
-                        {% for visit in waiting_triage_list %}
-                        <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 queue-row" data-status="WAITING_FOR_TRIAGE">
+                        {% for patient in recent_patients %}
+                        <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 queue-row" data-status="RECENT">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
                                         <span class="material-symbols-outlined text-primary">person</span>
                                     </div>
                                     <div>
-                                        <p class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</p>
-                                        <p class="text-xs text-gray-500">{{ visit.patient.university_id }}</p>
+                                        <p class="font-semibold text-gray-900 dark:text-white">{{ patient.full_name }}</p>
+                                        <p class="text-xs text-gray-500">{{ patient.university_id }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ visit.visit_date|time:"g:i A" }}</td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ patient.created_at|date:"g:i A" }}</td>
                             <td class="px-4 py-3">
                                 <span class="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                                    {{ visit.patient.get_patient_type_display }}
+                                    {{ patient.get_patient_type_display }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <a href="{% url 'triage_form' visit.id %}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90">
-                                    <span class="material-symbols-outlined text-base">monitor_heart</span>
-                                    Record Vitals
+                                <a href="{% url 'patient_detail' patient.id %}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90">
+                                    <span class="material-symbols-outlined text-base">visibility</span>
+                                    View
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
                             <td colspan="4" class="px-4 py-12 text-center text-gray-500">
-                                <span class="material-symbols-outlined text-5xl mb-2 text-gray-300">check_circle</span>
-                                <p>No patients waiting for triage</p>
+                                <span class="material-symbols-outlined text-5xl mb-2 text-gray-300">person_off</span>
+                                <p>No recent patients</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -104,8 +76,8 @@
                         <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 queue-row hidden" data-status="WAITING_FOR_DOCTOR">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                                        <span class="material-symbols-outlined text-primary">person</span>
+                                    <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-green-600">person</span>
                                     </div>
                                     <div>
                                         <p class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</p>
@@ -115,14 +87,14 @@
                             </td>
                             <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ visit.visit_date|time:"g:i A" }}</td>
                             <td class="px-4 py-3">
-                                <span class="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                                <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
                                     {{ visit.patient.get_patient_type_display }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{% url 'consultation_form' visit.id %}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600">
                                     <span class="material-symbols-outlined text-base">stethoscope</span>
-                                    View
+                                    Consult
                                 </a>
                             </td>
                         </tr>
@@ -139,21 +111,17 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Today's Summary</h3>
             <div class="space-y-4">
-                <div class="flex justify-between items-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                    <span class="text-yellow-700 dark:text-yellow-400 font-medium">Waiting Vital Signs</span>
-                    <span class="text-xl font-bold text-yellow-700 dark:text-yellow-400">{{ waiting_triage }}</span>
+                <div class="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <span class="text-blue-700 dark:text-blue-400 font-medium">Total Patients</span>
+                    <span class="text-xl font-bold text-blue-700 dark:text-blue-400">{{ total_patients_today }}</span>
                 </div>
                 <div class="flex justify-between items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                     <span class="text-orange-700 dark:text-orange-400 font-medium">Waiting Doctor</span>
                     <span class="text-xl font-bold text-orange-700 dark:text-orange-400">{{ waiting_doctor }}</span>
                 </div>
                 <div class="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <span class="text-green-700 dark:text-green-400 font-medium">Checked In Today</span>
-                    <span class="text-xl font-bold text-green-700 dark:text-green-400">{{ triaged_today }}</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <span class="text-blue-700 dark:text-blue-400 font-medium">Total Visits</span>
-                    <span class="text-xl font-bold text-blue-700 dark:text-blue-400">{{ total_patients_today }}</span>
+                    <span class="text-green-700 dark:text-green-400 font-medium">Completed Today</span>
+                    <span class="text-xl font-bold text-green-700 dark:text-green-400">{{ completed_today }}</span>
                 </div>
             </div>
         </div>
@@ -184,8 +152,8 @@
 
 <script>
 function switchQueue(queueType) {
-    document.getElementById('tab-triage').classList.remove('border-b-3', 'border-primary', 'bg-primary/5', 'text-primary');
-    document.getElementById('tab-triage').classList.add('text-gray-500', 'border-transparent');
+    document.getElementById('tab-recent').classList.remove('border-b-3', 'border-primary', 'bg-primary/5', 'text-primary');
+    document.getElementById('tab-recent').classList.add('text-gray-500', 'border-transparent');
     document.getElementById('tab-doctor').classList.remove('border-b-3', 'border-primary', 'bg-primary/5', 'text-primary');
     document.getElementById('tab-doctor').classList.add('text-gray-500', 'border-transparent');
     
@@ -195,7 +163,9 @@ function switchQueue(queueType) {
     
     const rows = document.querySelectorAll('.queue-row');
     rows.forEach(row => {
-        if (queueType === 'all' || row.dataset.status === 'WAITING_FOR_' + queueType.toUpperCase()) {
+        if (queueType === 'recent' && row.dataset.status === 'RECENT') {
+            row.classList.remove('hidden');
+        } else if (queueType === 'doctor' && row.dataset.status === 'WAITING_FOR_DOCTOR') {
             row.classList.remove('hidden');
         } else {
             row.classList.add('hidden');

@@ -141,11 +141,11 @@ class Visit(models.Model):
 
 class Triage(models.Model):
     visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='triage')
-    temperature = models.DecimalField(max_digits=4, decimal_places=1, help_text="Temperature in Celsius")
-    blood_pressure = models.CharField(max_length=20, help_text="e.g., 120/80")
-    weight = models.DecimalField(max_digits=5, decimal_places=2, help_text="Weight in kg")
+    temperature = models.DecimalField(max_digits=4, decimal_places=1, help_text="Temperature in Celsius", null=True, blank=True)
+    blood_pressure = models.CharField(max_length=20, help_text="e.g., 120/80", null=True, blank=True)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, help_text="Weight in kg", null=True, blank=True)
     heart_rate = models.IntegerField(help_text="Beats per minute", null=True, blank=True)
-    symptoms = models.TextField()
+    symptoms = models.TextField(blank=True)
     nurse_notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

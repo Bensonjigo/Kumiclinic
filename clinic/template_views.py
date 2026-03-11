@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db import models as db_models
 from django.db.models import Count
+from django.core import serializers
+import json
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
     Medicine, StockMovement, LabRequest, DailyReport, User
@@ -43,9 +45,8 @@ def dashboard_redirect(request):
 def dashboard_reception(request):
     """
     Receptionist + Nurse Combined Dashboard:
-    - Patient registration form
-    - New visit creation
-    - Triage queue management
+    - Recent patients
+    - Waiting doctor queue
     - Quick stats for today
     """
     today = timezone.now().date()
@@ -57,23 +58,17 @@ def dashboard_reception(request):
     completed_today = Visit.objects.filter(visit_date__gte=today_start, status='COMPLETED').count()
     
     # Queue counts
-    waiting_triage_count = Visit.objects.filter(status='WAITING_FOR_TRIAGE').count()
     waiting_doctor_count = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
     
-    # Waiting for triage (queryset for display)
-    waiting_triage = Visit.objects.filter(
-        status='WAITING_FOR_TRIAGE'
-    ).select_related('patient').order_by('visit_date')
+    # Recent patients (today)
+    recent_patients = Patient.objects.filter(
+        created_at__gte=today_start
+    ).order_by('-created_at')
     
     # Waiting for doctor (queryset for display)
     waiting_doctor_queue = Visit.objects.filter(
         status='WAITING_FOR_DOCTOR'
     ).select_related('patient').order_by('visit_date')
-    
-    # Today's triage count
-    triaged_today = Triage.objects.filter(
-        created_at__gte=today_start
-    ).count()
     
     # Recent visits today
     visits_today = Visit.objects.filter(
@@ -84,12 +79,9 @@ def dashboard_reception(request):
         'total_patients_today': total_patients_today,
         'new_patients_today': new_patients_today,
         'completed_today': completed_today,
-        'waiting_triage': waiting_triage_count,
         'waiting_doctor': waiting_doctor_count,
-        'waiting_triage_list': waiting_triage,
+        'recent_patients': recent_patients,
         'waiting_doctor_queue': waiting_doctor_queue,
-        'triaged_today': triaged_today,
-        'waiting_triage_count': waiting_triage_count,
         'visits_today': visits_today,
     }
     return render(request, 'dashboard/reception.html', context)
@@ -443,6 +435,9 @@ def register_patient(request):
         next_of_kin_contact = request.POST.get('next_of_kin_contact')
         next_of_kin_address = request.POST.get('next_of_kin_address')
         
+        # Visit Details
+        reason_for_visit = request.POST.get('reason_for_visit')
+        
         if Patient.objects.filter(university_id=university_id).exists():
             messages.error(request, 'A patient with this university ID already exists.')
             return redirect('register_patient')
@@ -463,18 +458,44 @@ def register_patient(request):
             next_of_kin_address=next_of_kin_address
         )
         
-        # Automatically create a visit for the patient
+        # Create visit with reason
         visit = Visit.objects.create(
             patient=patient,
             visit_date=timezone.now(),
-            reason_for_visit='New patient registration',
-            status='WAITING_FOR_TRIAGE'
+            reason_for_visit=reason_for_visit or 'New patient registration',
+            status='WAITING_FOR_DOCTOR',
+            created_by=request.user
         )
+        
+        # Record vital signs only if any data is provided
+        temperature = request.POST.get('temperature')
+        blood_pressure = request.POST.get('blood_pressure')
+        weight = request.POST.get('weight')
+        
+        # Check if any vital sign field has actual data (not empty string)
+        has_vitals = (temperature and temperature.strip() and temperature != '') or \
+                     (blood_pressure and blood_pressure.strip() and blood_pressure != '') or \
+                     (weight and weight.strip() and weight != '')
+        
+        if has_vitals:
+            Triage.objects.create(
+                visit=visit,
+                temperature=temperature or None,
+                blood_pressure=blood_pressure or None,
+                weight=weight or None,
+                heart_rate=request.POST.get('heart_rate') or None,
+                symptoms=request.POST.get('symptoms') or '',
+                nurse_notes=request.POST.get('nurse_notes') or '',
+                recorded_by=request.user
+            )
         
         log_action(request.user, 'REGISTER', 'Patient', patient.id, 
                    f'Registered patient: {patient.full_name} ({patient.university_id})', request)
-        messages.success(request, f'Patient {patient.full_name} registered and added to queue!')
-        return redirect('dashboard_reception')
+        if has_vitals:
+            messages.success(request, f'Patient {patient.full_name} registered with visit and vital signs!')
+        else:
+            messages.success(request, f'Patient {patient.full_name} registered successfully!')
+        return redirect('dashboard')
     
     return render(request, 'clinic/register_patient.html')
 
@@ -550,25 +571,58 @@ def new_visit(request):
         if not patient_id:
             messages.error(request, 'Please select a patient')
             patients = Patient.objects.all()
-            return render(request, 'clinic/new_visit.html', {'patients': patients})
+            patients_list = list(patients.values('id', 'full_name', 'university_id', 'patient_type', 'phone'))
+            return render(request, 'clinic/new_visit.html', {'patients': patients, 'patients_json': json.dumps(patients_list)})
         
         try:
             patient = get_object_or_404(Patient, id=patient_id)
         except ValueError:
             messages.error(request, 'Invalid patient selected')
             patients = Patient.objects.all()
-            return render(request, 'clinic/new_visit.html', {'patients': patients})
+            patients_list = list(patients.values('id', 'full_name', 'university_id', 'patient_type', 'phone'))
+            return render(request, 'clinic/new_visit.html', {'patients': patients, 'patients_json': json.dumps(patients_list)})
+        
         visit = Visit.objects.create(
             patient=patient,
             reason_for_visit=reason,
             created_by=request.user,
-            status='WAITING_FOR_TRIAGE'
+            status='WAITING_FOR_DOCTOR'
         )
-        messages.success(request, f'Visit created for {patient.full_name}')
-        return redirect('visits')
+        
+        # Record vital signs only if any data is provided
+        temperature = request.POST.get('temperature')
+        blood_pressure = request.POST.get('blood_pressure')
+        weight = request.POST.get('weight')
+        
+        # Check if any vital sign field has actual data (not empty string)
+        has_vitals = (temperature and temperature.strip() and temperature != '') or \
+                     (blood_pressure and blood_pressure.strip() and blood_pressure != '') or \
+                     (weight and weight.strip() and weight != '')
+        
+        if has_vitals:
+            Triage.objects.create(
+                visit=visit,
+                temperature=temperature or None,
+                blood_pressure=blood_pressure or None,
+                weight=weight or None,
+                heart_rate=request.POST.get('heart_rate') or None,
+                symptoms=request.POST.get('symptoms') or '',
+                nurse_notes=request.POST.get('nurse_notes') or '',
+                recorded_by=request.user
+            )
+        
+        if has_vitals:
+            messages.success(request, f'Visit created and vital signs recorded for {patient.full_name}')
+        else:
+            messages.success(request, f'Visit created for {patient.full_name}')
+        return redirect('dashboard')
     
     patients = Patient.objects.all()
-    return render(request, 'clinic/new_visit.html', {'patients': patients})
+    patients_list = list(patients.values('id', 'full_name', 'university_id', 'patient_type', 'phone'))
+    return render(request, 'clinic/new_visit.html', {
+        'patients': patients,
+        'patients_json': json.dumps(patients_list)
+    })
 
 
 @login_required

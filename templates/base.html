@@ -82,7 +82,7 @@
 <body class="font-display bg-background-light dark:bg-background-dark text-[#0d141b] dark:text-gray-200">
     <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark px-6 py-3 shadow-sm">
         <div class="flex items-center gap-8">
-            <a href="{% url 'dashboard_reception' %}" class="flex items-center gap-4 text-[#0d141b] dark:text-white hover:opacity-80">
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-4 text-[#0d141b] dark:text-white hover:opacity-80">
                 <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Logo" class="h-10 w-auto">
                 <h2 class="text-xl font-bold tracking-[-0.015em]">Kumi University Clinic</h2>
             </a>
@@ -90,7 +90,7 @@
         <div class="flex flex-1 justify-end gap-4 items-center">
             {% if user.is_authenticated %}
                 <!-- Dashboard Link -->
-                <a href="{% url 'dashboard_reception' %}" class="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                <a href="{% url 'dashboard' %}" class="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                     <span class="material-symbols-outlined text-lg">dashboard</span>
                     <span class="text-sm font-medium">Dashboard</span>
                 </a>
@@ -136,25 +136,16 @@
             <div class="flex gap-4 py-2 overflow-x-auto">
                 
                 {% if user.role == 'RECEPTIONIST' or user.role == 'NURSE' or user.is_superuser %}
-                <!-- Register Patient - Big prominent button -->
+                <!-- Register Patient -->
                 <a href="{% url 'register_patient' %}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 {% if request.resolver_match.url_name == 'register_patient' %}ring-2 ring-offset-2 ring-primary{% endif %}">
                     <span class="material-symbols-outlined">person_add</span>
                     <span class="font-medium">Register Patient</span>
                 </a>
                 
-                <!-- New Visit -->
+                <!-- New Visit (for existing patients) -->
                 <a href="{% url 'new_visit' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'new_visit' %}text-primary bg-primary/10{% endif %}">
                     <span class="material-symbols-outlined">add_circle</span>
                     <span>New Visit</span>
-                </a>
-                
-                <!-- Vital Signs -->
-                <a href="{% url 'pending_triages' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pending_triages' or request.resolver_match.url_name == 'triage_form' %}text-primary bg-primary/10{% endif %}">
-                    <span class="material-symbols-outlined">monitor_heart</span>
-                    <span>Vital Signs</span>
-                    {% if waiting_triage_count > 0 %}
-                    <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ waiting_triage_count }}</span>
-                    {% endif %}
                 </a>
                 {% endif %}
                 
