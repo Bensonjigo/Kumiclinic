@@ -90,16 +90,10 @@
                                 <input class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-2 focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-background-light dark:focus:ring-offset-background-dark" id="remember-me" type="checkbox"/>
                                 <label class="text-slate-600 dark:text-slate-300 text-sm font-normal leading-normal select-none" for="remember-me">Remember me</label>
                             </div>
-                            <a class="text-sm font-medium text-primary hover:underline" href="#">Forgot Password?</a>
+                            <a class="text-sm font-medium text-primary hover:underline" href="{% url 'password_reset' %}">Forgot Password?</a>
                         </div>
                         <button type="submit" class="mt-4 flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-bold text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background-light dark:focus:ring-offset-background-dark">Login</button>
                     </form>
-                    <div class="mt-8 text-center">
-                        <p class="text-sm text-slate-500 dark:text-slate-400">
-                            Don't have an account?
-                            <a class="font-medium text-primary hover:underline" href="#">Sign Up</a>
-                        </p>
-                    </div>
                 </div>
             </div>
         </main>

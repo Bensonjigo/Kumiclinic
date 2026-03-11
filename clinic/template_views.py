@@ -340,6 +340,25 @@ def login_view(request):
     return render(request, 'clinic/login.html')
 
 
+@login_required
+def profile_view(request):
+    user = request.user
+    
+    if request.method == 'POST':
+        user.first_name = request.POST.get('first_name', '')
+        user.last_name = request.POST.get('last_name', '')
+        user.email = request.POST.get('email', '')
+        
+        if 'avatar' in request.FILES:
+            user.avatar = request.FILES['avatar']
+        
+        user.save()
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('profile')
+    
+    return render(request, 'clinic/profile.html', {'user': user})
+
+
 def logout_view(request):
     if request.user.is_authenticated:
         log_action(request.user, 'LOGOUT', description=f'User logged out', request=request)

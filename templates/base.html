@@ -95,9 +95,35 @@
                 <div class="flex items-center gap-4">
                     <span class="text-sm text-gray-600 dark:text-gray-300">Welcome, {{ user.get_full_name|default:user.username }}</span>
                     <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">{{ user.get_role_display }}</span>
-                    <a href="{% url 'logout' %}" class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <span class="material-symbols-outlined">logout</span>
-                    </a>
+                    
+                    <!-- Profile Dropdown -->
+                    <div class="relative group">
+                        <button class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary text-white hover:bg-primary/90">
+                            {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" alt="Profile" class="w-full h-full object-cover">
+                            {% else %}
+                                <span class="material-symbols-outlined">account_circle</span>
+                            {% endif %}
+                        </button>
+                        <div class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.get_full_name|default:user.username }}</p>
+                                <p class="text-xs text-gray-500">{{ user.email }}</p>
+                            </div>
+                            <a href="{% url 'profile' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
+                                <span class="material-symbols-outlined text-lg">settings</span>
+                                <span>Profile Settings</span>
+                            </a>
+                            <a href="{% url 'password_change' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <span class="material-symbols-outlined text-lg">lock</span>
+                                <span>Change Password</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
+                                <span class="material-symbols-outlined text-lg">logout</span>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             {% endif %}
         </div>
