@@ -157,16 +157,23 @@ def dashboard_doctor(request):
         if completed_labs < total_labs:
             in_lab.append(visit)
     
-    # 3. Lab results ready (IN_LAB but all tests complete) - need prescription
+    # 3. Lab results ready (IN_LAB or WAITING_FOR_DOCTOR but all tests complete) - need prescription
     lab_results_ready = []
-    for visit in lab_visits:
+    # Also include WAITING_FOR_DOCTOR visits that have completed labs but no consultation
+    lab_visits_ready = Visit.objects.filter(
+        status__in=['IN_LAB', 'WAITING_FOR_DOCTOR']
+    ).select_related('patient', 'triage').prefetch_related('lab_requests', 'consultation').order_by('visit_date')
+    
+    for visit in lab_visits_ready:
         lab_requests = list(visit.lab_requests.all())
+        if not lab_requests:
+            continue
         total_labs = len(lab_requests)
         completed_labs = sum(1 for lr in lab_requests if lr.status == 'COMPLETED')
         visit.lab_total = total_labs
         visit.lab_completed = completed_labs
-        # Only show if all tests are complete
-        if total_labs > 0 and completed_labs == total_labs:
+        # Only show if all tests are complete AND no consultation yet
+        if total_labs > 0 and completed_labs == total_labs and not getattr(visit, 'consultation', None):
             lab_results_ready.append(visit)
     
     # Today's consultation count
