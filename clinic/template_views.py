@@ -970,7 +970,37 @@ def reports_dashboard(request):
     report_type = request.GET.get('type', 'DAILY')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    report_for = request.GET.get('report_for', 'OVERALL')
+    
+    # Determine allowed report_for based on role
+    allowed_reports = []
+    if role == 'ADMIN':
+        allowed_reports = [
+            ('OVERALL', 'Overall Clinic'),
+            ('RECEPTION', 'Reception'),
+            ('NURSE', 'Nursing'),
+            ('DOCTOR', 'Doctor/Consultation'),
+            ('LAB', 'Laboratory'),
+            ('PHARMACY', 'Pharmacy'),
+        ]
+        report_for = request.GET.get('report_for', 'OVERALL')
+    elif role == 'RECEPTION':
+        allowed_reports = [('RECEPTION', 'Reception')]
+        report_for = 'RECEPTION'
+    elif role == 'NURSE':
+        allowed_reports = [('NURSE', 'Nursing')]
+        report_for = 'NURSE'
+    elif role == 'DOCTOR':
+        allowed_reports = [('DOCTOR', 'Doctor/Consultation')]
+        report_for = 'DOCTOR'
+    elif role == 'LAB_TECHNICIAN':
+        allowed_reports = [('LAB', 'Laboratory')]
+        report_for = 'LAB'
+    elif role == 'PHARMACIST':
+        allowed_reports = [('PHARMACY', 'Pharmacy')]
+        report_for = 'PHARMACY'
+    else:
+        allowed_reports = [('OVERALL', 'Overall Clinic')]
+        report_for = 'OVERALL'
     
     today = timezone.now().date()
     
@@ -1012,9 +1042,10 @@ def reports_dashboard(request):
         messages.success(request, 'Report saved successfully!')
         return redirect('report_detail', report_id=report.id)
     
-    # Get saved reports
+    # Get saved reports for this user's department
     saved_reports = Report.objects.filter(
-        generated_by=request.user
+        generated_by=request.user,
+        report_for=report_for
     ).order_by('-created_at')[:10]
     
     context = {
@@ -1025,6 +1056,7 @@ def reports_dashboard(request):
         'data': data,
         'saved_reports': saved_reports,
         'user_role': role,
+        'allowed_reports': allowed_reports,
     }
     return render(request, 'clinic/reports_dashboard.html', context)
 

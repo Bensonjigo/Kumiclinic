@@ -28,17 +28,21 @@
                         </select>
                     </div>
                     
+                    {% if allowed_reports|length > 1 %}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Report For</label>
                         <select name="report_for" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-background-light dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary">
-                            <option value="OVERALL" {% if report_for == 'OVERALL' %}selected{% endif %}>Overall Clinic</option>
-                            <option value="RECEPTION" {% if report_for == 'RECEPTION' %}selected{% endif %}>Reception</option>
-                            <option value="NURSE" {% if report_for == 'NURSE' %}selected{% endif %}>Nursing</option>
-                            <option value="DOCTOR" {% if report_for == 'DOCTOR' %}selected{% endif %}>Doctor/Consultation</option>
-                            <option value="LAB" {% if report_for == 'LAB' %}selected{% endif %}>Laboratory</option>
-                            <option value="PHARMACY" {% if report_for == 'PHARMACY' %}selected{% endif %}>Pharmacy</option>
+                            {% for value, label in allowed_reports %}
+                            <option value="{{ value }}" {% if report_for == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
                         </select>
                     </div>
+                    {% else %}
+                    <input type="hidden" name="report_for" value="{{ allowed_reports.0.0 }}">
+                    <div class="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                        <p class="text-sm font-medium text-primary">{{ allowed_reports.0.1 }}</p>
+                    </div>
+                    {% endif %}
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
