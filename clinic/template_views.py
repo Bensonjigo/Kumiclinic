@@ -125,28 +125,49 @@ def dashboard_nurse(request):
 def dashboard_doctor(request):
     """
     Doctor Dashboard:
-    - Patients waiting for consultation (includes lab results ready)
-    - Patient detail view with vitals
+    - Patients waiting for consultation (no lab)
+    - Patients waiting for lab results
+    - Patients with lab results ready (need prescription)
     - Today's consultation count
     """
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # All patients waiting for doctor - includes IN_LAB status (lab results pending/ready)
-    visits = Visit.objects.filter(
-        status__in=['WAITING_FOR_DOCTOR', 'IN_LAB']
+    # 1. Patients waiting for consultation (WAITING_FOR_DOCTOR status)
+    waiting_for_consultation = Visit.objects.filter(
+        status='WAITING_FOR_DOCTOR',
+        lab_requests__isnull=True
+    ).exclude(
+        consultation__diagnosis__isnull=False
+    ).distinct().select_related('patient', 'triage').order_by('visit_date')
+    
+    # 2. Patients currently in lab (IN_LAB status, not all tests complete)
+    in_lab = []
+    lab_visits = Visit.objects.filter(
+        status='IN_LAB'
     ).select_related('patient', 'triage').prefetch_related('lab_requests').order_by('visit_date')
     
-    # Add lab status info to each visit
-    waiting_consultation = []
-    for visit in visits:
+    for visit in lab_visits:
         lab_requests = list(visit.lab_requests.all())
         total_labs = len(lab_requests)
         completed_labs = sum(1 for lr in lab_requests if lr.status == 'COMPLETED')
-        
         visit.lab_total = total_labs
         visit.lab_completed = completed_labs
-        waiting_consultation.append(visit)
+        # Only show if not all tests are complete
+        if completed_labs < total_labs:
+            in_lab.append(visit)
+    
+    # 3. Lab results ready (IN_LAB but all tests complete) - need prescription
+    lab_results_ready = []
+    for visit in lab_visits:
+        lab_requests = list(visit.lab_requests.all())
+        total_labs = len(lab_requests)
+        completed_labs = sum(1 for lr in lab_requests if lr.status == 'COMPLETED')
+        visit.lab_total = total_labs
+        visit.lab_completed = completed_labs
+        # Only show if all tests are complete
+        if total_labs > 0 and completed_labs == total_labs:
+            lab_results_ready.append(visit)
     
     # Today's consultation count
     consultations_today = Consultation.objects.filter(
@@ -160,7 +181,9 @@ def dashboard_doctor(request):
     ).select_related('patient', 'consultation__doctor')[:10]
     
     context = {
-        'waiting_consultation': waiting_consultation,
+        'waiting_for_consultation': waiting_for_consultation,
+        'in_lab': in_lab,
+        'lab_results_ready': lab_results_ready,
         'consultations_today': consultations_today,
         'recent_completed': recent_completed,
     }

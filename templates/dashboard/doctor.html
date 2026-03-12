@@ -52,71 +52,119 @@
 
 <!-- Patient List View -->
 <div id="patientListView">
-    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">stethoscope</span>
-        Waiting for Consultation
-        <span class="ml-2 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">{{ waiting_consultation|length }}</span>
-    </h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="patientList">
-        {% for visit in waiting_consultation %}
-        <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-{% if visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed != visit.lab_total %}2 border-yellow-300 dark:border-yellow-600{% elif visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed == visit.lab_total %}2 border-green-400 dark:border-green-600{% else %}border border-gray-200 dark:border-gray-700{% endif %} p-4 hover:shadow-lg"
-             onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-12 h-12 rounded-full {% if visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed != visit.lab_total %}bg-yellow-100 dark:bg-yellow-900{% elif visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed == visit.lab_total %}bg-green-100 dark:bg-green-900{% else %}bg-primary/20{% endif %} flex items-center justify-center">
-                    <span class="material-symbols-outlined {% if visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed != visit.lab_total %}text-yellow-600{% elif visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed == visit.lab_total %}text-green-600{% else %}text-primary{% endif %} text-xl">
-                        {% if visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed != visit.lab_total %}science{% elif visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed == visit.lab_total %}check_circle{% else %}person{% endif %}
+    <!-- Section 1: Waiting for Consultation (no lab needed) -->
+    <div class="mb-8">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">stethoscope</span>
+            New Consultations
+            <span class="ml-2 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">{{ waiting_for_consultation|length }}</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {% for visit in waiting_for_consultation %}
+            <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg"
+                 onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-primary text-xl">person</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</h3>
+                        <p class="text-sm text-gray-500">{{ visit.patient.university_id }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="badge badge-{% if visit.patient.patient_type == 'STUDENT' %}primary{% else %}success{% endif %}">
+                        {{ visit.patient.get_patient_type_display }}
                     </span>
+                    <span class="text-gray-500">{{ visit.visit_date|time:"g:i A" }}</span>
                 </div>
-                <div>
-                    <h3 class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</h3>
-                    <p class="text-sm text-gray-500">{{ visit.patient.university_id }}</p>
+                {% if visit.triage %}
+                <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                        <div><span class="material-symbols-outlined text-xs">thermostat</span> {{ visit.triage.temperature }}°C</div>
+                        <div><span class="material-symbols-outlined text-xs">favorite</span> {{ visit.triage.heart_rate }} bpm</div>
+                    </div>
                 </div>
+                {% endif %}
             </div>
-            <div class="flex items-center justify-between text-sm">
-                {% if visit.status == 'IN_LAB' %}
-                    {% if visit.lab_completed == visit.lab_total and visit.lab_total > 0 %}
-                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full flex items-center gap-1">
-                        <span class="material-symbols-outlined text-xs">check_circle</span>
-                        Lab Results Ready
-                    </span>
-                    {% else %}
+            {% empty %}
+            <div class="col-span-full text-center py-8 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+                <p class="text-gray-500">No new consultations</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Section 2: Waiting for Lab Results -->
+    {% if in_lab %}
+    <div class="mb-8">
+        <h3 class="text-lg font-bold text-yellow-700 dark:text-yellow-400 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined">science</span>
+            Waiting for Lab Results
+            <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded-full">{{ in_lab|length }}</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {% for visit in in_lab %}
+            <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-2 border-yellow-300 dark:border-yellow-600 p-4 hover:shadow-lg"
+                 onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-yellow-600 text-xl">science</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</h3>
+                        <p class="text-sm text-gray-500">{{ visit.patient.university_id }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
                     <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full flex items-center gap-1">
                         <span class="material-symbols-outlined text-xs">hourglass_top</span>
-                        Waiting for Lab ({{ visit.lab_completed }}/{{ visit.lab_total }})
+                        Processing ({{ visit.lab_completed }}/{{ visit.lab_total }})
                     </span>
-                    {% endif %}
-                {% else %}
-                <span class="badge badge-{% if visit.patient.patient_type == 'STUDENT' %}primary{% else %}success{% endif %}">
-                    {{ visit.patient.get_patient_type_display }}
-                </span>
-                {% endif %}
-                <span class="text-gray-500">{{ visit.visit_date|time:"g:i A" }}</span>
-            </div>
-            {% if visit.triage %}
-            <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                    <div>
-                        <span class="material-symbols-outlined text-xs">thermostat</span>
-                        {{ visit.triage.temperature }}°C
-                    </div>
-                    <div>
-                        <span class="material-symbols-outlined text-xs">favorite</span>
-                        {{ visit.triage.heart_rate }} bpm
-                    </div>
+                    <span class="text-gray-500">{{ visit.visit_date|time:"g:i A" }}</span>
                 </div>
             </div>
-            {% endif %}
+            {% endfor %}
         </div>
-        {% empty %}
-        <div class="col-span-full text-center py-12">
-            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <span class="material-symbols-outlined text-gray-400 text-3xl">group</span>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Patients Waiting</h3>
-            <p class="text-gray-500">Patients waiting for consultation will appear here</p>
-        </div>
-        {% endfor %}
     </div>
+    {% endif %}
+
+    <!-- Section 3: Lab Results Ready - Need Prescription -->
+    {% if lab_results_ready %}
+    <div class="mb-8">
+        <h3 class="text-lg font-bold text-green-700 dark:text-green-400 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined">check_circle</span>
+            Lab Results Ready - Need Prescription
+            <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">{{ lab_results_ready|length }}</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {% for visit in lab_results_ready %}
+            <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-2 border-green-400 dark:border-green-600 p-4 hover:shadow-lg"
+                 onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-green-600 text-xl">medication</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</h3>
+                        <p class="text-sm text-gray-500">{{ visit.patient.university_id }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">check_circle</span>
+                        Results Ready
+                    </span>
+                    <span class="text-gray-500">{{ visit.visit_date|time:"g:i A" }}</span>
+                </div>
+                <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <p class="text-xs text-green-600 font-medium">Click to add prescription</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Patient Detail View (Hidden by default) -->
