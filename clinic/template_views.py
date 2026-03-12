@@ -987,8 +987,12 @@ def reports_dashboard(request):
         allowed_reports = [('RECEPTION', 'Reception')]
         report_for = 'RECEPTION'
     elif role == 'NURSE':
-        allowed_reports = [('NURSE', 'Nursing')]
-        report_for = 'NURSE'
+        # Nurse covers Reception + Nursing
+        allowed_reports = [
+            ('RECEPTION', 'Reception'),
+            ('NURSE', 'Nursing'),
+        ]
+        report_for = request.GET.get('report_for', 'RECEPTION')
     elif role == 'DOCTOR':
         allowed_reports = [('DOCTOR', 'Doctor/Consultation')]
         report_for = 'DOCTOR'
