@@ -111,10 +111,19 @@
                 </div>
             </div>
             
-            <div class="flex gap-4">
-                <button type="submit" onclick="return validateForm()" class="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600">
+            <div class="flex flex-wrap gap-4">
+                <!-- Order Lab Tests Button -->
+                <button type="button" onclick="orderLabTests()" id="orderLabBtn" class="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 flex items-center gap-2">
+                    <span class="material-symbols-outlined">science</span>
+                    Order Lab Tests
+                </button>
+                
+                <!-- Save Consultation Button -->
+                <button type="submit" onclick="return validateForm()" class="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2">
+                    <span class="material-symbols-outlined">save</span>
                     Save Consultation
                 </button>
+                
                 <a href="{% url 'pending_consultations' %}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300">
                     Cancel
                 </a>
@@ -270,6 +279,38 @@ function validateForm() {
     }
     
     return true;
+}
+
+function orderLabTests() {
+    // Collect lab tests
+    const labSelects = document.querySelectorAll('#labTestRows select');
+    let labTests = [];
+    for (const select of labSelects) {
+        if (select.value) {
+            labTests.push(select.value);
+        }
+    }
+    
+    if (labTests.length === 0) {
+        alert('Please select at least one lab test');
+        return;
+    }
+    
+    // Get other fields
+    const diagnosis = document.querySelector('textarea[name="diagnosis"]').value.trim();
+    const treatmentPlan = document.querySelector('textarea[name="treatment_plan"]').value.trim();
+    const doctorNotes = document.querySelector('textarea[name="doctor_notes"]').value.trim();
+    
+    // Create form and submit
+    const form = document.getElementById('consultationForm');
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'order_lab_tests';
+    input.value = 'true';
+    form.appendChild(input);
+    
+    // Submit the form
+    form.submit();
 }
 </script>
 {% endblock %}

@@ -711,6 +711,28 @@ def consultation_form(request, visit_id):
         return redirect('pending_consultations')
     
     if request.method == 'POST':
+        # Check if this is just ordering lab tests (separate button)
+        if request.POST.get('order_lab_tests'):
+            lab_tests = request.POST.getlist('lab_test')
+            if not lab_tests:
+                messages.error(request, 'Please select at least one lab test!')
+                return redirect('consultation_form', visit_id=visit.id)
+            
+            lab_count = 0
+            for lab_test in lab_tests:
+                if lab_test:
+                    LabRequest.objects.create(
+                        visit=visit,
+                        test_name=lab_test,
+                        requested_by=request.user
+                    )
+                    lab_count += 1
+            
+            visit.update_status('IN_LAB')
+            messages.success(request, f'{lab_count} lab test(s) ordered. Patient moved to lab queue.')
+            return redirect('pending_consultations')
+        
+        # Full consultation save
         diagnosis = request.POST.get('diagnosis')
         if not diagnosis:
             messages.error(request, 'Diagnosis is required!')
