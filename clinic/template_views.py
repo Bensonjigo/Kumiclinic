@@ -199,10 +199,9 @@ def dashboard_doctor(request):
 
 @login_required
 def consultation_history(request):
-    """View completed consultations and patient history"""
-    # Get all completed visits with consultations
+    """View all consultations and patient history"""
+    # Get all visits with consultations (regardless of status)
     completed_visits = Visit.objects.filter(
-        status='COMPLETED',
         consultation__isnull=False
     ).select_related(
         'patient', 'consultation__doctor'
