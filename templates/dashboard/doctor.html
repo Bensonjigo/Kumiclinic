@@ -341,7 +341,7 @@ function orderLab() {
         alert('Please select a patient first');
         return;
     }
-    window.location.href = '/clinic/lab/request/new/?visit_id=' + currentVisitId;
+    window.location.href = '/lab/request/new/?visit_id=' + currentVisitId;
 }
 
 function prescribeMedication() {
@@ -349,7 +349,7 @@ function prescribeMedication() {
         alert('Please select a patient first');
         return;
     }
-    window.location.href = '/clinic/prescription/new/?visit_id=' + currentVisitId;
+    window.location.href = '/prescription/new/?visit_id=' + currentVisitId;
 }
 
 function startConsultation() {
@@ -357,14 +357,33 @@ function startConsultation() {
         alert('Please select a patient first');
         return;
     }
-    window.location.href = '/clinic/consultation/' + currentVisitId + '/';
+    window.location.href = '/consultation/' + currentVisitId + '/';
 }
 
 function loadPatientData(visitId) {
+    // Show loading state
+    document.getElementById('tab-content-history').innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
+    document.getElementById('tab-content-lab').innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
+    document.getElementById('tab-content-medications').innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
+    document.getElementById('tab-content-notes').innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
+    
     // Fetch patient data via AJAX
-    fetch('/api/patient-data/' + visitId + '/')
-        .then(response => response.json())
+    fetch('/api/patient-data/' + visitId + '/', {
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                console.error('Error response:', response.status, response.statusText);
+                return response.text().then(text => { 
+                    console.error('Response text:', text); 
+                    document.getElementById('tab-content-history').innerHTML = '<p class="text-red-500 text-sm">Error loading data</p>';
+                });
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Patient data:', data);
             // Update tabs with patient data
             if (data.medical_history) {
                 document.getElementById('tab-content-history').innerHTML = data.medical_history;
@@ -379,7 +398,10 @@ function loadPatientData(visitId) {
                 document.getElementById('tab-content-notes').innerHTML = data.visit_notes;
             }
         })
-        .catch(error => console.error('Error loading patient data:', error));
+        .catch(error => {
+            console.error('Error loading patient data:', error);
+            document.getElementById('tab-content-history').innerHTML = '<p class="text-red-500 text-sm">Error: ' + error.message + '</p>';
+        });
 }
 
 // Search functionality

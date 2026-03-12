@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}New Prescription - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-2">Create Prescription</h2>
+        {% if visit %}
+        <p class="text-gray-500 mb-6">Patient: <strong>{{ visit.patient.full_name }}</strong></p>
+        {% endif %}
+        
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            {% if not visit %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select Visit</label>
+                <select name="visit_id" required class="w-full px-4 py-2 border rounded-lg">
+                    <option value="">Select Patient Visit</option>
+                    {% for v in visits %}
+                    <option value="{{ v.id }}">{{ v.patient.full_name }} - {{ v.reason_for_visit }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% else %}
+            <input type="hidden" name="visit_id" value="{{ visit.id }}">
+            {% endif %}
+            
+            <div id="medicines-container" class="space-y-4">
+                <div class="medicine-row p-4 bg-gray-50 rounded-lg border">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-sm text-gray-600">Medicine 1</span>
+                        <button type="button" class="text-red-500 text-sm hover:text-red-700 remove-medicine hidden">Remove</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
+                            <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <option value="">Select Medicine</option>
+                                {% for medicine in medicines %}
+                                <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Dosage</label>
+                            <input type="text" name="dosage[]" required placeholder="e.g., 2 tablets tds"
+                                class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
+                            <input type="number" name="quantity[]" required min="1" placeholder="30"
+                                class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" onclick="addMedicine()" class="text-blue-600 text-sm hover:text-blue-800 font-medium">
+                + Add Another Medicine
+            </button>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Clinical Notes</label>
+                <textarea name="notes" rows="2" placeholder="Any additional clinical instructions..."
+                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            
+            <div class="flex gap-4">
+                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                    Create Prescription
+                </button>
+                <a href="{% url 'dashboard_doctor' %}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let medicineCount = 1;
+
+function addMedicine() {
+    medicineCount++;
+    const container = document.getElementById('medicines-container');
+    const row = document.createElement('div');
+    row.className = 'medicine-row p-4 bg-gray-50 rounded-lg border';
+    row.innerHTML = `
+        <div class="flex justify-between items-center mb-2">
+            <span class="font-medium text-sm text-gray-600">Medicine ${medicineCount}</span>
+            <button type="button" onclick="removeMedicine(this)" class="text-red-500 text-sm hover:text-red-700">Remove</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
+                <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                    <option value="">Select Medicine</option>
+                    {% for medicine in medicines %}
+                    <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Dosage</label>
+                <input type="text" name="dosage[]" required placeholder="e.g., 2 tablets tds"
+                    class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
+                <input type="number" name="quantity[]" required min="1" placeholder="30"
+                    class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+        </div>
+    `;
+    container.appendChild(row);
+    updateRemoveButtons();
+}
+
+function removeMedicine(btn) {
+    btn.closest('.medicine-row').remove();
+    updateRemoveButtons();
+}
+
+function updateRemoveButtons() {
+    const rows = document.querySelectorAll('.medicine-row');
+    rows.forEach((row, index) => {
+        const removeBtn = row.querySelector('.remove-medicine');
+        if (removeBtn) {
+            if (rows.length > 1) {
+                removeBtn.classList.remove('hidden');
+            } else {
+                removeBtn.classList.add('hidden');
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -750,6 +750,81 @@ def pending_labs(request):
 
 
 @login_required
+def new_lab_request(request):
+    visit_id = request.GET.get('visit_id')
+    visit = None
+    if visit_id:
+        visit = get_object_or_404(Visit, id=visit_id)
+    
+    if request.method == 'POST':
+        visit_id = request.POST.get('visit_id')
+        test_name = request.POST.get('test_name')
+        notes = request.POST.get('notes', '')
+        
+        visit = get_object_or_404(Visit, id=visit_id)
+        LabRequest.objects.create(
+            visit=visit,
+            test_name=test_name,
+            notes=notes,
+            requested_by=request.user
+        )
+        
+        messages.success(request, 'Lab test ordered successfully!')
+        return redirect('dashboard_doctor')
+    
+    return render(request, 'clinic/new_lab_request.html', {'visit': visit})
+
+
+@login_required
+def new_prescription(request):
+    visit_id = request.GET.get('visit_id')
+    visit = None
+    if visit_id:
+        visit = get_object_or_404(Visit, id=visit_id)
+    
+    if request.method == 'POST':
+        visit_id = request.POST.get('visit_id')
+        notes = request.POST.get('notes', '')
+        
+        visit = get_object_or_404(Visit, id=visit_id)
+        
+        consultation, created = Consultation.objects.get_or_create(
+            visit=visit,
+            defaults={
+                'doctor': request.user,
+                'diagnosis': 'Pending',
+                'doctor_notes': notes
+            }
+        )
+        
+        medicine_ids = request.POST.getlist('medicine[]')
+        dosages = request.POST.getlist('dosage[]')
+        quantities = request.POST.getlist('quantity[]')
+        
+        prescription_count = 0
+        for i in range(len(medicine_ids)):
+            if medicine_ids[i]:
+                try:
+                    medicine = get_object_or_404(Medicine, id=medicine_ids[i])
+                    Prescription.objects.create(
+                        consultation=consultation,
+                        medicine=medicine,
+                        dosage=dosages[i] if i < len(dosages) else '',
+                        quantity=int(quantities[i]) if i < len(quantities) and quantities[i] else 1,
+                        notes=notes
+                    )
+                    prescription_count += 1
+                except (ValueError, TypeError):
+                    pass
+        
+        messages.success(request, f'{prescription_count} prescription(s) created successfully!')
+        return redirect('dashboard_doctor')
+    
+    medicines = Medicine.objects.all()
+    return render(request, 'clinic/new_prescription.html', {'visit': visit, 'medicines': medicines})
+
+
+@login_required
 def lab_result_form(request, lab_id):
     lab_request = get_object_or_404(LabRequest, id=lab_id)
     

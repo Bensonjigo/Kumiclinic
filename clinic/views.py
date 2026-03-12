@@ -509,3 +509,101 @@ class DailyReportViewSet(viewsets.ModelViewSet):
             report.save()
         
         return Response(DailyReportSerializer(report).data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def patient_data_view(request, visit_id):
+    visit = get_object_or_404(Visit, id=visit_id)
+    patient = visit.patient
+    
+    all_visits = Visit.objects.filter(patient=patient).select_related('consultation__doctor').prefetch_related(
+        'consultation__prescriptions__medicine', 'lab_requests'
+    ).order_by('-visit_date')
+    
+    medical_history_html = ''
+    for v in all_visits[:10]:
+        if v.consultation:
+            medical_history_html += f'''
+            <div class="border-b py-3">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-medium">{v.visit_date.strftime('%d %b %Y')}</span>
+                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{v.consultation.diagnosis}</span>
+                </div>
+                <p class="text-sm text-gray-600">{v.consultation.doctor_notes or 'No notes'}</p>
+            </div>
+            '''
+    if not medical_history_html:
+        medical_history_html = '<p class="text-gray-500 text-sm">No medical history found</p>'
+    
+    lab_results_html = ''
+    lab_requests = LabRequest.objects.filter(visit__patient=patient).select_related('visit').order_by('-date')[:10]
+    for lab in lab_requests:
+        status_class = 'bg-gray-100 text-gray-800'
+        if lab.status == 'COMPLETED':
+            status_class = 'bg-green-100 text-green-800'
+        elif lab.status == 'IN_PROGRESS':
+            status_class = 'bg-yellow-100 text-yellow-800'
+        elif lab.status == 'PENDING':
+            status_class = 'bg-blue-100 text-blue-800'
+        
+        result_display = lab.result if lab.result else 'No result recorded'
+        date_display = lab.completed_date.strftime('%d %b %Y') if lab.completed_date else (lab.date.strftime('%d %b %Y') if lab.date else '')
+        
+        lab_results_html += f'''
+        <div class="border-b py-3">
+            <div class="flex justify-between items-start mb-1">
+                <span class="font-medium">{lab.get_test_name_display()}</span>
+                <span class="text-xs {status_class} px-2 py-0.5 rounded">{lab.get_status_display()}</span>
+            </div>
+            <p class="text-sm text-gray-600">{result_display}</p>
+            <p class="text-xs text-gray-400">{date_display}</p>
+        </div>
+        '''
+    if not lab_results_html:
+        lab_results_html = '<p class="text-gray-500 text-sm">No lab results found</p>'
+    
+    medications_html = ''
+    prescriptions = Prescription.objects.filter(consultation__visit__patient=patient).select_related('medicine', 'consultation__visit', 'consultation__doctor').order_by('-consultation__visit__visit_date')[:10]
+    for rx in prescriptions:
+        dispensed_class = 'bg-purple-100 text-purple-800' if rx.is_dispensed else 'bg-yellow-100 text-yellow-800'
+        medications_html += f'''
+        <div class="border-b py-3">
+            <div class="flex justify-between items-start mb-1">
+                <span class="font-medium">{rx.medicine.name}</span>
+                <span class="text-xs {dispensed_class} px-2 py-0.5 rounded">{"Dispensed" if rx.is_dispensed else "Pending"}</span>
+            </div>
+            <p class="text-sm text-gray-600">{rx.dosage or 'No dosage'}</p>
+            <p class="text-xs text-gray-400">Qty: {rx.quantity}</p>
+        </div>
+        '''
+    if not medications_html:
+        medications_html = '<p class="text-gray-500 text-sm">No medications found</p>'
+    
+    visit_notes_html = ''
+    if visit.consultation:
+        visit_notes_html = f'''
+        <div class="space-y-4">
+            <div>
+                <label class="font-medium text-sm text-gray-500">Diagnosis</label>
+                <p class="text-gray-900">{visit.consultation.diagnosis}</p>
+            </div>
+            <div>
+                <label class="font-medium text-sm text-gray-500">Treatment Plan</label>
+                <p class="text-gray-900">{visit.consultation.treatment_plan or 'No treatment plan'}</p>
+            </div>
+            <div>
+                <label class="font-medium text-sm text-gray-500">Doctor Notes</label>
+                <p class="text-gray-900">{visit.consultation.doctor_notes or 'No notes'}</p>
+            </div>
+        </div>
+        '''
+    else:
+        visit_notes_html = '<p class="text-gray-500 text-sm">No consultation notes yet</p>'
+    
+    return Response({
+        'medical_history': medical_history_html,
+        'lab_results': lab_results_html,
+        'medications': medications_html,
+        'visit_notes': visit_notes_html,
+    })
