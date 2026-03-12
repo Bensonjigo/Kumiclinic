@@ -11,10 +11,11 @@
         <form method="post" class="space-y-4" id="consultationForm">
             {% csrf_token %}
             
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis *</label>
-                <textarea name="diagnosis" required rows="3"
+            <div id="diagnosisSection">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis <span id="diagnosisRequired" class="text-red-500">*</span></label>
+                <textarea name="diagnosis" id="diagnosisInput" rows="3"
                     class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                <p class="text-xs text-gray-500 mt-1" id="diagnosisHint">Required if not ordering lab tests</p>
             </div>
             
             <div>
@@ -127,6 +128,9 @@ function checkLabTests() {
     const labSelects = document.querySelectorAll('#labTestRows select');
     const prescriptionsSection = document.getElementById('prescriptionsSection');
     const labWarning = document.getElementById('labWarning');
+    const diagnosisInput = document.getElementById('diagnosisInput');
+    const diagnosisRequired = document.getElementById('diagnosisRequired');
+    const diagnosisHint = document.getElementById('diagnosisHint');
     
     let hasLabTest = false;
     for (const select of labSelects) {
@@ -139,9 +143,17 @@ function checkLabTests() {
     if (hasLabTest) {
         prescriptionsSection.classList.add('opacity-50', 'pointer-events-none');
         labWarning.classList.remove('hidden');
+        // Make diagnosis optional when lab tests are ordered
+        diagnosisInput.removeAttribute('required');
+        if (diagnosisRequired) diagnosisRequired.style.display = 'none';
+        if (diagnosisHint) diagnosisHint.textContent = 'Optional when ordering lab tests - can add after results';
     } else {
         prescriptionsSection.classList.remove('opacity-50', 'pointer-events-none');
         labWarning.classList.add('hidden');
+        // Make diagnosis required when no lab tests
+        diagnosisInput.setAttribute('required', 'true');
+        if (diagnosisRequired) diagnosisRequired.style.display = 'inline';
+        if (diagnosisHint) diagnosisHint.textContent = 'Required if not ordering lab tests';
     }
 }
 
