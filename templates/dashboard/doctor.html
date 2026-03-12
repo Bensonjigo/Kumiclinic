@@ -58,12 +58,12 @@
     </h3>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="patientList">
         {% for visit in waiting_consultation %}
-        <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-{% if visit.status == 'IN_LAB' %}2 border-yellow-300 dark:border-yellow-600{% else %}border-gray-200 dark:border-gray-700{% endif %} p-4 hover:shadow-lg"
+        <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-{% if visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed != visit.lab_total %}2 border-yellow-300 dark:border-yellow-600{% elif visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed == visit.lab_total %}2 border-green-400 dark:border-green-600{% else %}border border-gray-200 dark:border-gray-700{% endif %} p-4 hover:shadow-lg"
              onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
             <div class="flex items-center gap-3 mb-3">
-                <div class="w-12 h-12 rounded-full {% if visit.status == 'IN_LAB' %}bg-yellow-100 dark:bg-yellow-900{% else %}bg-primary/20{% endif %} flex items-center justify-center">
-                    <span class="material-symbols-outlined {% if visit.status == 'IN_LAB' %}text-yellow-600{% else %}text-primary{% endif %} text-xl">
-                        {% if visit.status == 'IN_LAB' %}science{% else %}person{% endif %}
+                <div class="w-12 h-12 rounded-full {% if visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed != visit.lab_total %}bg-yellow-100 dark:bg-yellow-900{% elif visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed == visit.lab_total %}bg-green-100 dark:bg-green-900{% else %}bg-primary/20{% endif %} flex items-center justify-center">
+                    <span class="material-symbols-outlined {% if visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed != visit.lab_total %}text-yellow-600{% elif visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed == visit.lab_total %}text-green-600{% else %}text-primary{% endif %} text-xl">
+                        {% if visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed != visit.lab_total %}science{% elif visit.status == 'IN_LAB' and visit.lab_total > 0 and visit.lab_completed == visit.lab_total %}check_circle{% else %}person{% endif %}
                     </span>
                 </div>
                 <div>
