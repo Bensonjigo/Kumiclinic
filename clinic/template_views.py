@@ -930,8 +930,8 @@ def new_prescription(request):
                     pass
         
         if prescription_count > 0:
-            # Update visit status to waiting for pharmacy
-            if visit.status == 'WAITING_FOR_DOCTOR':
+            # Update visit status to waiting for pharmacy (handles both WAITING_FOR_DOCTOR and IN_LAB)
+            if visit.status in ['WAITING_FOR_DOCTOR', 'IN_LAB']:
                 visit.update_status('WAITING_FOR_PHARMACY')
         
         messages.success(request, f'{prescription_count} prescription(s) created successfully!')
@@ -952,6 +952,14 @@ def lab_result_form(request, lab_id):
         lab_request.technician = request.user
         lab_request.completed_date = timezone.now()
         lab_request.save()
+        
+        # Check if all lab tests for this visit are now complete
+        visit = lab_request.visit
+        pending_labs = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        
+        if pending_labs == 0:
+            # All labs complete - return to doctor for prescription
+            visit.update_status('WAITING_FOR_DOCTOR')
         
         messages.success(request, 'Lab result recorded!')
         return redirect('pending_labs')
