@@ -10,6 +10,9 @@
     .stat-card {
         @apply bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-5 transition-all hover:shadow-lg;
     }
+    .chart-type-btn.active, .chart-type-btn2.active {
+        @apply bg-primary text-white;
+    }
     .print-only { display: none; }
     @media print {
         .no-print { display: none !important; }
@@ -159,15 +162,36 @@
                 </div>
                 
                 <!-- Charts Row -->
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                     {% if data.nurse or data.doctor or data.lab or data.pharmacy %}
+                    <!-- Activity Distribution -->
                     <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
-                        <h4 class="font-semibold text-[#0d141b] dark:text-white mb-4 text-center">Activity Distribution</h4>
-                        <canvas id="activityChart" height="200"></canvas>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-[#0d141b] dark:text-white text-center">Activity Distribution</h4>
+                            <div class="flex gap-1">
+                                <button type="button" onclick="changeChartType('activityChart', 'doughnut')" class="chart-type-btn px-2 py-1 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-600 active" data-type="doughnut">Donut</button>
+                                <button type="button" onclick="changeChartType('activityChart', 'pie')" class="chart-type-btn px-2 py-1 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-600" data-type="pie">Pie</button>
+                                <button type="button" onclick="changeChartType('activityChart', 'bar')" class="chart-type-btn px-2 py-1 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-600" data-type="bar">Bar</button>
+                                <button type="button" onclick="changeChartType('activityChart', 'polarArea')" class="chart-type-btn px-2 py-1 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-600" data-type="polarArea">Polar</button>
+                            </div>
+                        </div>
+                        <canvas id="activityChart" height="220"></canvas>
                     </div>
+                    <!-- Patient Type Distribution -->
+                    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-[#0d141b] dark:text-white text-center">Patient Distribution</h4>
+                            <div class="flex gap-1">
+                                <button type="button" onclick="changeChartType('patientChart', 'doughnut')" class="chart-type-btn2 px-2 py-1 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-600 active" data-type="doughnut">Donut</button>
+                                <button type="button" onclick="changeChartType('patientChart', 'pie')" class="chart-type-btn2 px-2 py-1 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-600" data-type="pie">Pie</button>
+                            </div>
+                        </div>
+                        <canvas id="patientChart" height="220"></canvas>
+                    </div>
+                    <!-- Completion Rate -->
                     <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
                         <h4 class="font-semibold text-[#0d141b] dark:text-white mb-4 text-center">Completion Rate</h4>
-                        <canvas id="completionChart" height="200"></canvas>
+                        <canvas id="completionChart" height="220"></canvas>
                     </div>
                     {% endif %}
                 </div>
@@ -298,65 +322,174 @@
 
 <!-- Chart Configuration -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Only create charts if we have data
-    {% if data %}
-    const activityCtx = document.getElementById('activityChart');
-    const completionCtx = document.getElementById('completionChart');
+let activityChartInstance = null;
+let patientChartInstance = null;
+
+function changeChartType(chartId, type) {
+    const btnClass = chartId === 'activityChart' ? 'chart-type-btn' : 'chart-type-btn2';
+    document.querySelectorAll('.' + btnClass).forEach(btn => btn.classList.remove('active', 'bg-primary', 'text-white'));
+    event.target.classList.add('active', 'bg-primary', 'text-white');
     
-    // Prepare data
+    if (chartId === 'activityChart' && activityChartInstance) {
+        activityChartInstance.destroy();
+        createActivityChart(type);
+    } else if (chartId === 'patientChart' && patientChartInstance) {
+        patientChartInstance.destroy();
+        createPatientChart(type);
+    }
+}
+
+function createActivityChart(chartType = 'doughnut') {
+    const ctx = document.getElementById('activityChart');
+    if (!ctx) return;
+    
     const labels = [];
     const activityData = [];
-    const colors = [];
+    const colors = [
+        'rgba(147, 51, 234, 0.85)',
+        'rgba(249, 115, 22, 0.85)',
+        'rgba(234, 179, 8, 0.85)',
+        'rgba(20, 184, 166, 0.85)',
+        'rgba(239, 68, 68, 0.85)',
+        'rgba(59, 130, 246, 0.85)'
+    ];
     
     {% if data.nurse %}
     labels.push('Nursing');
     activityData.push({{ data.nurse.total_triages|default:0 }});
-    colors.push('rgba(147, 51, 234, 0.8)');
     {% endif %}
     
     {% if data.doctor %}
     labels.push('Doctor');
     activityData.push({{ data.doctor.total_consultations|default:0 }});
-    colors.push('rgba(249, 115, 22, 0.8)');
     {% endif %}
     
     {% if data.lab %}
     labels.push('Lab');
     activityData.push({{ data.lab.total_tests|default:0 }});
-    colors.push('rgba(234, 179, 8, 0.8)');
     {% endif %}
     
     {% if data.pharmacy %}
     labels.push('Pharmacy');
     activityData.push({{ data.pharmacy.total_prescriptions|default:0 }});
-    colors.push('rgba(20, 184, 166, 0.8)');
     {% endif %}
     
-    // Activity Chart (Doughnut)
-    if (activityCtx && labels.length > 0) {
-        new Chart(activityCtx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: activityData,
-                    backgroundColor: colors,
-                    borderWidth: 0
-                }]
+    const isBar = chartType === 'bar';
+    const bgColors = isBar ? colors.slice(0, labels.length) : colors.slice(0, labels.length);
+    
+    activityChartInstance = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Activities',
+                data: activityData,
+                backgroundColor: bgColors,
+                borderColor: bgColors.map(c => c.replace('0.85', '1')),
+                borderWidth: 2,
+                borderRadius: chartType === 'bar' ? 6 : 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: chartType === 'bar' ? 'top' : 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
+                }
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+            scales: chartType === 'bar' ? {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            } : {}
+        }
+    });
+}
+
+function createPatientChart(chartType = 'doughnut') {
+    const ctx = document.getElementById('patientChart');
+    if (!ctx) return;
+    
+    const studentCount = {{ data.reception.students|default:0 }} + {{ data.nurse.total_triages|default:0 }};
+    const staffCount = {{ data.reception.staff|default:0 }};
+    
+    patientChartInstance = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: ['Students', 'Staff'],
+            datasets: [{
+                data: [studentCount, staffCount],
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.85)',
+                    'rgba(236, 72, 153, 0.85)'
+                ],
+                borderColor: [
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(236, 72, 153, 1)'
+                ],
+                borderWidth: 2,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
                     }
                 }
             }
-        });
-    }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    {% if data %}
+    createActivityChart('doughnut');
+    createPatientChart('doughnut');
     
-    // Completion Chart (Bar)
+    // Completion Chart
+    const completionCtx = document.getElementById('completionChart');
     if (completionCtx) {
         const completionLabels = [];
         const completionData = [];
