@@ -255,6 +255,20 @@ def dashboard_lab(request):
 
 
 @login_required
+def lab_history(request):
+    """Lab Technician History - all completed lab tests"""
+    lab_requests = LabRequest.objects.filter(
+        status='COMPLETED'
+    ).select_related(
+        'visit__patient', 'requested_by'
+    ).order_by('-completed_date')[:50]
+    
+    return render(request, 'clinic/lab_history.html', {
+        'lab_requests': lab_requests
+    })
+
+
+@login_required
 def dashboard_pharmacy(request):
     """
     Pharmacist Dashboard:

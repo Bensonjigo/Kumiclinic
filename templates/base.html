@@ -164,9 +164,13 @@
                 {% endif %}
                 
                 {% if user.is_lab_technician or user.is_superuser %}
-                <a href="{% url 'pending_labs' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pending_labs' %}text-primary bg-primary/10{% endif %}">
+                <a href="{% url 'pending_labs' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pending_labs' or request.resolver_match.url_name == 'dashboard_lab' %}text-primary bg-primary/10{% endif %}">
                     <span class="material-symbols-outlined">science</span>
                     <span>Lab</span>
+                </a>
+                <a href="{% url 'lab_history' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'lab_history' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>History</span>
                 </a>
                 {% endif %}
                 
