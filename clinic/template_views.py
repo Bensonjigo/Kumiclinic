@@ -725,7 +725,7 @@ def consultation_form(request, visit_id):
         )
         
         # Handle multiple lab tests FIRST
-        lab_tests = request.POST.getlist('lab_tests')
+        lab_tests = request.POST.getlist('lab_test')
         lab_count = 0
         for lab_test in lab_tests:
             if lab_test:

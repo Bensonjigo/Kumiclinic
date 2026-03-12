@@ -33,46 +33,46 @@
             <div class="border-t pt-4">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-semibold">Request Lab Tests</h3>
-                    <span class="text-sm text-gray-500">(Optional - Select all that apply)</span>
                 </div>
                 <div id="labWarning" class="hidden mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
                     <strong>Note:</strong> If you order lab tests, you must wait for lab results before prescribing medications. 
                     You will be able to add prescriptions after the lab results are ready.
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" name="lab_tests" value="CBC" class="rounded text-blue-600" onchange="togglePrescriptions()">
-                        <span class="text-sm">Complete Blood Count</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" name="lab_tests" value="URINALYSIS" class="rounded text-blue-600" onchange="togglePrescriptions()">
-                        <span class="text-sm">Urinalysis</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" name="lab_tests" value="STOOL_EXAM" class="rounded text-blue-600" onchange="togglePrescriptions()">
-                        <span class="text-sm">Stool Examination</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" name="lab_tests" value="BLOOD_SUGAR" class="rounded text-blue-600" onchange="togglePrescriptions()">
-                        <span class="text-sm">Blood Sugar</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" name="lab_tests" value="TYPHOID" class="rounded text-blue-600" onchange="togglePrescriptions()">
-                        <span class="text-sm">Typhoid Test</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" name="lab_tests" value="MALARIA" class="rounded text-blue-600" onchange="togglePrescriptions()">
-                        <span class="text-sm">Malaria Test</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" name="lab_tests" value="PREGNANCY" class="rounded text-blue-600" onchange="togglePrescriptions()">
-                        <span class="text-sm">Pregnancy Test</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" name="lab_tests" value="HIV" class="rounded text-blue-600" onchange="togglePrescriptions()">
-                        <span class="text-sm">HIV Test</span>
-                    </label>
+                
+                <!-- Lab Test Rows -->
+                <div id="labTestRows">
+                    <div class="lab-test-row grid grid-cols-12 gap-2 mb-2">
+                        <div class="col-span-10">
+                            <select name="lab_test" class="w-full px-3 py-2 border rounded-lg" onchange="checkLabTests()">
+                                <option value="">Select Lab Test</option>
+                                <option value="CBC">Complete Blood Count (CBC)</option>
+                                <option value="URINALYSIS">Urinalysis</option>
+                                <option value="STOOL_EXAM">Stool Examination</option>
+                                <option value="BLOOD_SUGAR">Blood Sugar</option>
+                                <option value="TYPHOID">Typhoid Test</option>
+                                <option value="MALARIA">Malaria Test</option>
+                                <option value="PREGNANCY">Pregnancy Test</option>
+                                <option value="HIV">HIV Test</option>
+                                <option value="HEPATITIS">Hepatitis Test</option>
+                                <option value="LIVER_FUNCTION">Liver Function Test</option>
+                                <option value="KIDNEY_FUNCTION">Kidney Function Test</option>
+                                <option value="LIPID_PROFILE">Lipid Profile</option>
+                                <option value="THYROID">Thyroid Function Test</option>
+                                <option value="OTHER">Other (Specify)</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <button type="button" onclick="removeLabTestRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
+                
+                <button type="button" onclick="addLabTestRow()" class="mt-2 text-sm text-blue-600 hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-lg">add</span>
+                    Add Another Lab Test
+                </button>
             </div>
             
             <!-- Prescriptions Section -->
@@ -123,18 +123,67 @@
 </div>
 
 <script>
-function togglePrescriptions() {
-    const labCheckboxes = document.querySelectorAll('input[name="lab_tests"]:checked');
+function checkLabTests() {
+    const labSelects = document.querySelectorAll('#labTestRows select');
     const prescriptionsSection = document.getElementById('prescriptionsSection');
     const labWarning = document.getElementById('labWarning');
     
-    if (labCheckboxes.length > 0) {
+    let hasLabTest = false;
+    for (const select of labSelects) {
+        if (select.value) {
+            hasLabTest = true;
+            break;
+        }
+    }
+    
+    if (hasLabTest) {
         prescriptionsSection.classList.add('opacity-50', 'pointer-events-none');
         labWarning.classList.remove('hidden');
     } else {
         prescriptionsSection.classList.remove('opacity-50', 'pointer-events-none');
         labWarning.classList.add('hidden');
     }
+}
+
+function addLabTestRow() {
+    const container = document.getElementById('labTestRows');
+    const newRow = document.createElement('div');
+    newRow.className = 'lab-test-row grid grid-cols-12 gap-2 mb-2';
+    newRow.innerHTML = `
+        <div class="col-span-10">
+            <select name="lab_test" class="w-full px-3 py-2 border rounded-lg" onchange="checkLabTests()">
+                <option value="">Select Lab Test</option>
+                <option value="CBC">Complete Blood Count (CBC)</option>
+                <option value="URINALYSIS">Urinalysis</option>
+                <option value="STOOL_EXAM">Stool Examination</option>
+                <option value="BLOOD_SUGAR">Blood Sugar</option>
+                <option value="TYPHOID">Typhoid Test</option>
+                <option value="MALARIA">Malaria Test</option>
+                <option value="PREGNANCY">Pregnancy Test</option>
+                <option value="HIV">HIV Test</option>
+                <option value="HEPATITIS">Hepatitis Test</option>
+                <option value="LIVER_FUNCTION">Liver Function Test</option>
+                <option value="KIDNEY_FUNCTION">Kidney Function Test</option>
+                <option value="LIPID_PROFILE">Lipid Profile</option>
+                <option value="THYROID">Thyroid Function Test</option>
+                <option value="OTHER">Other (Specify)</option>
+            </select>
+        </div>
+        <div class="col-span-2">
+            <button type="button" onclick="removeLabTestRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
+                <span class="material-symbols-outlined">delete</span>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeLabTestRow(button) {
+    const rows = document.querySelectorAll('.lab-test-row');
+    if (rows.length > 1) {
+        button.closest('.lab-test-row').remove();
+    }
+    checkLabTests();
 }
 
 function addMedicineRow() {
@@ -182,8 +231,16 @@ function validateForm() {
     }
     
     // Check if lab tests are ordered - prescriptions should be disabled
-    const labCheckboxes = document.querySelectorAll('input[name="lab_tests"]:checked');
-    if (labCheckboxes.length > 0) {
+    const labSelects = document.querySelectorAll('#labTestRows select');
+    let hasLabTest = false;
+    for (const select of labSelects) {
+        if (select.value) {
+            hasLabTest = true;
+            break;
+        }
+    }
+    
+    if (hasLabTest) {
         // Don't validate prescriptions since they're disabled when labs are selected
         return true;
     }
