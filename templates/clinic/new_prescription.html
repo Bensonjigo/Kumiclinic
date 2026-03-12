@@ -1,13 +1,42 @@
 {% extends 'base.html' %}
 
-{% block title %}New Prescription - Kumi University Clinic{% endblock %}
+{% block title %}Prescription - Kumi University Clinic{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-2xl font-bold mb-2">Create Prescription</h2>
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-2xl font-bold mb-2">Add Prescription</h2>
         {% if visit %}
-        <p class="text-gray-500 mb-6">Patient: <strong>{{ visit.patient.full_name }}</strong></p>
+        <p class="text-gray-500 mb-6">Patient: <strong>{{ visit.patient.full_name }}</strong> ({{ visit.patient.university_id }})</p>
+        
+        <!-- Lab Results if available -->
+        {% with visit.lab_requests.all as lab_requests %}
+        {% if lab_requests %}
+        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h3 class="font-semibold text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined">science</span>
+                Lab Results
+            </h3>
+            <div class="space-y-2">
+                {% for lab in lab_requests %}
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-700 dark:text-gray-300">{{ lab.get_test_name_display }}</span>
+                    <span class="px-2 py-0.5 rounded text-xs 
+                        {% if lab.status == 'COMPLETED' %}bg-green-100 text-green-800
+                        {% elif lab.status == 'IN_PROGRESS' %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ lab.get_status_display }}
+                    </span>
+                </div>
+                {% if lab.result %}
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1"><strong>Result:</strong> {{ lab.result }}</p>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+        
         {% endif %}
         
         <form method="post" class="space-y-4">
@@ -27,40 +56,62 @@
             <input type="hidden" name="visit_id" value="{{ visit.id }}">
             {% endif %}
             
-            <div id="medicines-container" class="space-y-4">
-                <div class="medicine-row p-4 bg-gray-50 rounded-lg border">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="font-medium text-sm text-gray-600">Medicine 1</span>
-                        <button type="button" class="text-red-500 text-sm hover:text-red-700 remove-medicine hidden">Remove</button>
+            <!-- Consultation Details -->
+            <div class="border-t pt-4">
+                <h3 class="font-semibold mb-3">Consultation Details</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
+                        <input type="text" name="diagnosis" value="Pending" placeholder="Enter diagnosis"
+                            class="w-full px-4 py-2 border rounded-lg">
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
-                            <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm">
-                                <option value="">Select Medicine</option>
-                                {% for medicine in medicines %}
-                                <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Dosage</label>
-                            <input type="text" name="dosage[]" required placeholder="e.g., 2 tablets tds"
-                                class="w-full px-3 py-2 border rounded-lg text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
-                            <input type="number" name="quantity[]" required min="1" placeholder="30"
-                                class="w-full px-3 py-2 border rounded-lg text-sm">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Treatment Plan</label>
+                        <input type="text" name="treatment_plan" placeholder="Enter treatment plan"
+                            class="w-full px-4 py-2 border rounded-lg">
                     </div>
                 </div>
             </div>
             
-            <button type="button" onclick="addMedicine()" class="text-blue-600 text-sm hover:text-blue-800 font-medium">
-                + Add Another Medicine
-            </button>
+            <!-- Medicines -->
+            <div class="border-t pt-4">
+                <h3 class="font-semibold mb-3">Prescribe Medicines</h3>
+                <div id="medicines-container" class="space-y-4">
+                    <div class="medicine-row p-4 bg-gray-50 rounded-lg border">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-medium text-sm text-gray-600">Medicine 1</span>
+                            <button type="button" class="text-red-500 text-sm hover:text-red-700 remove-medicine hidden">Remove</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
+                                <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                                    <option value="">Select Medicine</option>
+                                    {% for medicine in medicines %}
+                                    <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Dosage</label>
+                                <input type="text" name="dosage[]" required placeholder="e.g., 2 tablets tds"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
+                                <input type="number" name="quantity[]" required min="1" placeholder="30"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" onclick="addMedicine()" class="mt-3 text-blue-600 text-sm hover:text-blue-800 font-medium">
+                    + Add Another Medicine
+                </button>
+            </div>
             
+            <!-- Notes -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Clinical Notes</label>
                 <textarea name="notes" rows="2" placeholder="Any additional clinical instructions..."
@@ -68,8 +119,9 @@
             </div>
             
             <div class="flex gap-4">
-                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-                    Create Prescription
+                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                    <span class="material-symbols-outlined">save</span>
+                    Save Prescription
                 </button>
                 <a href="{% url 'dashboard_doctor' %}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300">
                     Cancel

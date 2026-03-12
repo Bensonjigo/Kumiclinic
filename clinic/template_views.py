@@ -901,13 +901,22 @@ def new_prescription(request):
     if request.method == 'POST':
         visit_id = request.POST.get('visit_id')
         notes = request.POST.get('notes', '')
+        diagnosis = request.POST.get('diagnosis', 'Pending')
+        treatment_plan = request.POST.get('treatment_plan', '')
         
         visit = get_object_or_404(Visit, id=visit_id)
         
-        consultation = visit.consultation
+        # Get or create consultation
+        consultation = getattr(visit, 'consultation', None)
         if not consultation:
-            messages.error(request, 'This visit does not have a consultation yet!')
-            return redirect('dashboard_doctor')
+            # Create consultation if it doesn't exist (e.g., patient came from lab)
+            consultation = Consultation.objects.create(
+                visit=visit,
+                doctor=request.user,
+                diagnosis=diagnosis,
+                treatment_plan=treatment_plan,
+                doctor_notes=notes
+            )
         
         medicine_ids = request.POST.getlist('medicine[]')
         dosages = request.POST.getlist('dosage[]')
