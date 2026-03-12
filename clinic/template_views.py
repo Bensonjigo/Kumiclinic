@@ -711,7 +711,8 @@ def pending_consultations(request):
 def consultation_form(request, visit_id):
     visit = get_object_or_404(Visit.objects.select_related('patient'), id=visit_id)
     
-    if hasattr(visit, 'consultation'):
+    # If already has a consultation with a valid diagnosis (not 'Pending' or empty), don't allow editing
+    if hasattr(visit, 'consultation') and visit.consultation.diagnosis and visit.consultation.diagnosis.strip() and visit.consultation.diagnosis.lower() != 'pending':
         messages.error(request, 'This visit already has a consultation!')
         return redirect('pending_consultations')
     
