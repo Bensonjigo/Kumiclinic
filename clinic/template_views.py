@@ -698,7 +698,12 @@ def triage_form(request, visit_id):
 
 @login_required
 def pending_consultations(request):
-    visits = Visit.objects.filter(status='WAITING_FOR_DOCTOR').select_related('patient')
+    # Get visits waiting for doctor that don't have consultations yet
+    visits = Visit.objects.filter(
+        status='WAITING_FOR_DOCTOR'
+    ).exclude(
+        consultation__isnull=False
+    ).select_related('patient', 'triage').prefetch_related('lab_requests').order_by('visit_date')
     return render(request, 'clinic/consultation_queue.html', {'visits': visits})
 
 
