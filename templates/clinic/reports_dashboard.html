@@ -13,6 +13,18 @@
     .chart-type-btn.active, .chart-type-btn2.active {
         @apply bg-primary text-white;
     }
+    .chart-container {
+        position: relative;
+        height: 220px;
+        width: 100%;
+    }
+    .chart-container canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100% !important;
+        height: 100% !important;
+    }
     .print-only { display: none; }
     @media print {
         .no-print { display: none !important; }
@@ -175,7 +187,9 @@
                                 <button type="button" onclick="changeChartType('activityChart', 'polarArea')" class="chart-type-btn px-2 py-1 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-600" data-type="polarArea">Polar</button>
                             </div>
                         </div>
-                        <canvas id="activityChart" height="220"></canvas>
+                        <div class="chart-container">
+                            <canvas id="activityChart"></canvas>
+                        </div>
                     </div>
                     <!-- Patient Type Distribution -->
                     <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
@@ -186,12 +200,16 @@
                                 <button type="button" onclick="changeChartType('patientChart', 'pie')" class="chart-type-btn2 px-2 py-1 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-600" data-type="pie">Pie</button>
                             </div>
                         </div>
-                        <canvas id="patientChart" height="220"></canvas>
+                        <div class="chart-container">
+                            <canvas id="patientChart"></canvas>
+                        </div>
                     </div>
                     <!-- Completion Rate -->
                     <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
                         <h4 class="font-semibold text-[#0d141b] dark:text-white mb-4 text-center">Completion Rate</h4>
-                        <canvas id="completionChart" height="220"></canvas>
+                        <div class="chart-container">
+                            <canvas id="completionChart"></canvas>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
