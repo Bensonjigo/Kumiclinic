@@ -3,16 +3,16 @@
 {% block title %}Consultation - Kumi University Clinic{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-4xl mx-auto">
     <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-2xl font-bold mb-2">Consultation</h2>
         <p class="text-gray-500 mb-6">Patient: <strong>{{ visit.patient.full_name }}</strong></p>
         
-        <form method="post" class="space-y-4">
+        <form method="post" class="space-y-4" id="consultationForm">
             {% csrf_token %}
             
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis *</label>
                 <textarea name="diagnosis" required rows="3"
                     class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
             </div>
@@ -29,45 +29,84 @@
                     class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
             </div>
             
+            <!-- Lab Tests Section -->
             <div class="border-t pt-4">
-                <h3 class="font-semibold mb-3">Prescribe Medicine</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Medicine</label>
-                        <select name="medicine" class="w-full px-4 py-2 border rounded-lg">
-                            <option value="">Select Medicine</option>
-                            {% for medicine in medicines %}
-                            <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
-                        <input type="text" name="dosage" placeholder="e.g., 2 tablets thrice daily"
-                            class="w-full px-4 py-2 border rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                        <input type="number" name="quantity" min="1" placeholder="30"
-                            class="w-full px-4 py-2 border rounded-lg">
-                    </div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold">Request Lab Tests</h3>
+                    <span class="text-sm text-gray-500">(Optional - Select all that apply)</span>
+                </div>
+                <div id="labWarning" class="hidden mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                    <strong>Note:</strong> If you order lab tests, you must wait for lab results before prescribing medications. 
+                    You will be able to add prescriptions after the lab results are ready.
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="lab_tests" value="CBC" class="rounded text-blue-600" onchange="togglePrescriptions()">
+                        <span class="text-sm">Complete Blood Count</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="lab_tests" value="URINALYSIS" class="rounded text-blue-600" onchange="togglePrescriptions()">
+                        <span class="text-sm">Urinalysis</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="lab_tests" value="STOOL_EXAM" class="rounded text-blue-600" onchange="togglePrescriptions()">
+                        <span class="text-sm">Stool Examination</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="lab_tests" value="BLOOD_SUGAR" class="rounded text-blue-600" onchange="togglePrescriptions()">
+                        <span class="text-sm">Blood Sugar</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="lab_tests" value="TYPHOID" class="rounded text-blue-600" onchange="togglePrescriptions()">
+                        <span class="text-sm">Typhoid Test</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="lab_tests" value="MALARIA" class="rounded text-blue-600" onchange="togglePrescriptions()">
+                        <span class="text-sm">Malaria Test</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="lab_tests" value="PREGNANCY" class="rounded text-blue-600" onchange="togglePrescriptions()">
+                        <span class="text-sm">Pregnancy Test</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="lab_tests" value="HIV" class="rounded text-blue-600" onchange="togglePrescriptions()">
+                        <span class="text-sm">HIV Test</span>
+                    </label>
                 </div>
             </div>
             
-            <div class="border-t pt-4">
-                <h3 class="font-semibold mb-3">Request Lab Test</h3>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Lab Test</label>
-                    <select name="lab_test" class="w-full px-4 py-2 border rounded-lg">
-                        <option value="">No Lab Test</option>
-                        <option value="CBC">Complete Blood Count</option>
-                        <option value="URINALYSIS">Urinalysis</option>
-                        <option value="STOOL_EXAM">Stool Examination</option>
-                        <option value="BLOOD_SUGAR">Blood Sugar</option>
-                        <option value="TYPHOID">Typhoid Test</option>
-                        <option value="MALARIA">Malaria Test</option>
-                        <option value="PREGNANCY">Pregnancy Test</option>
-                    </select>
+            <!-- Prescriptions Section -->
+            <div class="border-t pt-4" id="prescriptionsSection">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold">Prescribe Medicines</h3>
+                    <button type="button" onclick="addMedicineRow()" class="text-sm text-blue-600 hover:underline">
+                        + Add Another Medicine
+                    </button>
+                </div>
+                <div id="medicineRows">
+                    <div class="medicine-row grid grid-cols-12 gap-2 mb-2">
+                        <div class="col-span-5">
+                            <select name="medicine" class="w-full px-3 py-2 border rounded-lg">
+                                <option value="">Select Medicine</option>
+                                {% for medicine in medicines %}
+                                <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-span-4">
+                            <input type="text" name="dosage" placeholder="e.g., 2 tablets thrice daily"
+                                class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                        <div class="col-span-2">
+                            <input type="number" name="quantity" min="1" placeholder="Qty"
+                                class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                        <div class="col-span-1">
+                            <button type="button" onclick="removeMedicineRow(this)" class="text-red-500 hover:text-red-700 p-2">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -84,6 +123,57 @@
 </div>
 
 <script>
+function togglePrescriptions() {
+    const labCheckboxes = document.querySelectorAll('input[name="lab_tests"]:checked');
+    const prescriptionsSection = document.getElementById('prescriptionsSection');
+    const labWarning = document.getElementById('labWarning');
+    
+    if (labCheckboxes.length > 0) {
+        prescriptionsSection.classList.add('opacity-50', 'pointer-events-none');
+        labWarning.classList.remove('hidden');
+    } else {
+        prescriptionsSection.classList.remove('opacity-50', 'pointer-events-none');
+        labWarning.classList.add('hidden');
+    }
+}
+
+function addMedicineRow() {
+    const container = document.getElementById('medicineRows');
+    const newRow = document.createElement('div');
+    newRow.className = 'medicine-row grid grid-cols-12 gap-2 mb-2';
+    newRow.innerHTML = `
+        <div class="col-span-5">
+            <select name="medicine" class="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select Medicine</option>
+                {% for medicine in medicines %}
+                <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-span-4">
+            <input type="text" name="dosage" placeholder="e.g., 2 tablets thrice daily"
+                class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div class="col-span-2">
+            <input type="number" name="quantity" min="1" placeholder="Qty"
+                class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div class="col-span-1">
+            <button type="button" onclick="removeMedicineRow(this)" class="text-red-500 hover:text-red-700 p-2">
+                <span class="material-symbols-outlined">delete</span>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeMedicineRow(button) {
+    const rows = document.querySelectorAll('.medicine-row');
+    if (rows.length > 1) {
+        button.closest('.medicine-row').remove();
+    }
+}
+
 function validateForm() {
     const diagnosis = document.querySelector('textarea[name="diagnosis"]').value.trim();
     if (!diagnosis) {
@@ -91,12 +181,23 @@ function validateForm() {
         return false;
     }
     
-    const medicine = document.querySelector('select[name="medicine"]').value;
-    const quantity = document.querySelector('input[name="quantity"]').value;
+    // Check if lab tests are ordered - prescriptions should be disabled
+    const labCheckboxes = document.querySelectorAll('input[name="lab_tests"]:checked');
+    if (labCheckboxes.length > 0) {
+        // Don't validate prescriptions since they're disabled when labs are selected
+        return true;
+    }
     
-    if (medicine && !quantity) {
-        alert('Please enter quantity when prescribing medicine');
-        return false;
+    // Validate at least one medicine with quantity if medicine is selected
+    const medicineRows = document.querySelectorAll('.medicine-row');
+    for (const row of medicineRows) {
+        const medicine = row.querySelector('select[name="medicine"]').value;
+        const quantity = row.querySelector('input[name="quantity"]').value;
+        
+        if (medicine && !quantity) {
+            alert('Please enter quantity when prescribing medicine');
+            return false;
+        }
     }
     
     return true;

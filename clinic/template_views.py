@@ -125,20 +125,28 @@ def dashboard_nurse(request):
 def dashboard_doctor(request):
     """
     Doctor Dashboard:
-    - Patients waiting for consultation
+    - Patients waiting for consultation (includes lab results ready)
     - Patient detail view with vitals
     - Today's consultation count
     """
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Patients waiting for doctor (with triage data prefetched)
-    waiting_consultation = Visit.objects.filter(
-        status='WAITING_FOR_DOCTOR'
-    ).select_related('patient', 'triage').prefetch_related('triage').order_by('visit_date')
+    # All patients waiting for doctor - includes IN_LAB status (lab results pending/ready)
+    visits = Visit.objects.filter(
+        status__in=['WAITING_FOR_DOCTOR', 'IN_LAB']
+    ).select_related('patient', 'triage').prefetch_related('lab_requests').order_by('visit_date')
     
-    # Patients who completed lab, waiting for doctor
-    in_lab = Visit.objects.filter(status='IN_LAB').select_related('patient', 'triage').order_by('visit_date')
+    # Add lab status info to each visit
+    waiting_consultation = []
+    for visit in visits:
+        lab_requests = list(visit.lab_requests.all())
+        total_labs = len(lab_requests)
+        completed_labs = sum(1 for lr in lab_requests if lr.status == 'COMPLETED')
+        
+        visit.lab_total = total_labs
+        visit.lab_completed = completed_labs
+        waiting_consultation.append(visit)
     
     # Today's consultation count
     consultations_today = Consultation.objects.filter(
@@ -153,7 +161,6 @@ def dashboard_doctor(request):
     
     context = {
         'waiting_consultation': waiting_consultation,
-        'in_lab': in_lab,
         'consultations_today': consultations_today,
         'recent_completed': recent_completed,
     }
@@ -706,37 +713,61 @@ def consultation_form(request, visit_id):
             treatment_plan=request.POST.get('treatment_plan', '')
         )
         
-        medicine_id = request.POST.get('medicine')
-        dosage = request.POST.get('dosage')
-        quantity_str = request.POST.get('quantity')
+        # Handle multiple lab tests FIRST
+        lab_tests = request.POST.getlist('lab_tests')
+        lab_count = 0
+        for lab_test in lab_tests:
+            if lab_test:
+                LabRequest.objects.create(
+                    visit=visit,
+                    test_name=lab_test,
+                    requested_by=request.user
+                )
+                lab_count += 1
         
-        if medicine_id and quantity_str:
-            try:
-                quantity = int(quantity_str)
-                if quantity > 0:
-                    prescription = Prescription.objects.create(
-                        consultation=consultation,
-                        medicine_id=medicine_id,
-                        dosage=dosage or '',
-                        quantity=quantity
-                    )
-            except (ValueError, TypeError):
-                pass
+        # If lab tests ordered, doctor MUST wait for results before prescribing
+        # No prescriptions allowed in initial consultation if labs are ordered
+        if lab_count > 0:
+            visit.update_status('IN_LAB')
+            msg = f'Consultation saved. {lab_count} lab test(s) ordered. You must wait for lab results before prescribing.'
+            messages.success(request, msg)
+            return redirect('pending_consultations')
         
-        lab_test = request.POST.get('lab_test')
-        if lab_test:
-            LabRequest.objects.create(
-                visit=visit,
-                test_name=lab_test,
-                requested_by=request.user
-            )
+        # If NO lab tests, then allow prescriptions
+        medicine_ids = request.POST.getlist('medicine')
+        dosages = request.POST.getlist('dosage')
+        quantities = request.POST.getlist('quantity')
         
-        next_status = 'WAITING_FOR_PHARMACY'
-        if lab_test:
-            next_status = 'IN_LAB'
+        prescription_count = 0
+        for i in range(len(medicine_ids)):
+            medicine_id = medicine_ids[i]
+            quantity_str = quantities[i] if i < len(quantities) else None
+            
+            if medicine_id and quantity_str:
+                try:
+                    quantity = int(quantity_str)
+                    if quantity > 0:
+                        Prescription.objects.create(
+                            consultation=consultation,
+                            medicine_id=medicine_id,
+                            dosage=dosages[i] if i < len(dosages) else '',
+                            quantity=quantity
+                        )
+                        prescription_count += 1
+                except (ValueError, TypeError):
+                    pass
+        
+        # Determine next status based on prescriptions
+        if prescription_count > 0:
+            next_status = 'WAITING_FOR_PHARMACY'
+        else:
+            next_status = 'COMPLETED'
         visit.update_status(next_status)
         
-        messages.success(request, 'Consultation recorded successfully!')
+        msg = 'Consultation recorded successfully!'
+        if prescription_count > 0:
+            msg += f' {prescription_count} prescription(s) added.'
+        messages.success(request, msg)
         return redirect('pending_consultations')
     
     medicines = Medicine.objects.all()
@@ -769,6 +800,10 @@ def new_lab_request(request):
             requested_by=request.user
         )
         
+        # Update visit status to IN_LAB if not already
+        if visit.status == 'WAITING_FOR_DOCTOR':
+            visit.update_status('IN_LAB')
+        
         messages.success(request, 'Lab test ordered successfully!')
         return redirect('dashboard_doctor')
     
@@ -788,14 +823,10 @@ def new_prescription(request):
         
         visit = get_object_or_404(Visit, id=visit_id)
         
-        consultation, created = Consultation.objects.get_or_create(
-            visit=visit,
-            defaults={
-                'doctor': request.user,
-                'diagnosis': 'Pending',
-                'doctor_notes': notes
-            }
-        )
+        consultation = visit.consultation
+        if not consultation:
+            messages.error(request, 'This visit does not have a consultation yet!')
+            return redirect('dashboard_doctor')
         
         medicine_ids = request.POST.getlist('medicine[]')
         dosages = request.POST.getlist('dosage[]')
@@ -816,6 +847,11 @@ def new_prescription(request):
                     prescription_count += 1
                 except (ValueError, TypeError):
                     pass
+        
+        if prescription_count > 0:
+            # Update visit status to waiting for pharmacy
+            if visit.status == 'WAITING_FOR_DOCTOR':
+                visit.update_status('WAITING_FOR_PHARMACY')
         
         messages.success(request, f'{prescription_count} prescription(s) created successfully!')
         return redirect('dashboard_doctor')
