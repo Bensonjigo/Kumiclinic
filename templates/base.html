@@ -176,6 +176,12 @@
                     <span>Medicines</span>
                 </a>
                 {% endif %}
+                
+                <!-- Reports - available to all -->
+                <a href="{% url 'reports_dashboard' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'reports_dashboard' or request.resolver_match.url_name == 'saved_reports' or request.resolver_match.url_name == 'report_detail' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">assessment</span>
+                    <span>Reports</span>
+                </a>
             </div>
         </div>
     </nav>

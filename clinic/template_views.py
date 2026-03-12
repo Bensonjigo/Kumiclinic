@@ -9,7 +9,7 @@ from django.core import serializers
 import json
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, DailyReport, User
+    Medicine, StockMovement, LabRequest, DailyReport, Report, User
 )
 from .audit import log_action
 
@@ -959,3 +959,145 @@ def add_stock(request, medicine_id):
 def reports_list(request):
     reports = DailyReport.objects.all().order_by('-report_date')[:30]
     return render(request, 'clinic/reports.html', {'reports': reports})
+
+
+@login_required
+def reports_dashboard(request):
+    role = request.user.role
+    if request.user.is_superuser:
+        role = 'ADMIN'
+    
+    report_type = request.GET.get('type', 'DAILY')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    report_for = request.GET.get('report_for', 'OVERALL')
+    
+    today = timezone.now().date()
+    
+    if not start_date:
+        if report_type == 'DAILY':
+            start_date = today
+        elif report_type == 'WEEKLY':
+            start_date = today - timezone.timedelta(days=7)
+        else:
+            start_date = today.replace(day=1)
+    
+    if not end_date:
+        end_date = today
+    
+    if isinstance(start_date, str):
+        from datetime import datetime
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    if isinstance(end_date, str):
+        from datetime import datetime
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    start_datetime = timezone.make_aware(timezone.datetime.combine(start_date, timezone.datetime.min.time()))
+    end_datetime = timezone.make_aware(timezone.datetime.combine(end_date, timezone.datetime.max.time()))
+    
+    # Generate report data based on report_for
+    data = generate_report_data(report_for, start_datetime, end_datetime)
+    
+    # Save report if requested
+    if request.method == 'POST' and 'save_report' in request.POST:
+        report = Report.objects.create(
+            title=request.POST.get('title', f'{report_type} Report'),
+            report_type=report_type,
+            report_for=report_for,
+            start_date=start_date,
+            end_date=end_date,
+            data=data,
+            generated_by=request.user
+        )
+        messages.success(request, 'Report saved successfully!')
+        return redirect('report_detail', report_id=report.id)
+    
+    # Get saved reports
+    saved_reports = Report.objects.filter(
+        generated_by=request.user
+    ).order_by('-created_at')[:10]
+    
+    context = {
+        'report_type': report_type,
+        'report_for': report_for,
+        'start_date': start_date,
+        'end_date': end_date,
+        'data': data,
+        'saved_reports': saved_reports,
+        'user_role': role,
+    }
+    return render(request, 'clinic/reports_dashboard.html', context)
+
+
+@login_required
+def report_detail(request, report_id):
+    report = get_object_or_404(Report, id=report_id)
+    return render(request, 'clinic/report_detail.html', {'report': report})
+
+
+@login_required
+def saved_reports(request):
+    reports = Report.objects.filter(generated_by=request.user).order_by('-created_at')
+    return render(request, 'clinic/saved_reports.html', {'reports': reports})
+
+
+def generate_report_data(report_for, start_date, end_date):
+    data = {}
+    
+    if report_for in ['OVERALL', 'RECEPTION']:
+        # Reception stats
+        data['reception'] = {
+            'total_registered': Patient.objects.filter(created_at__gte=start_date, created_at__lte=end_date).count(),
+            'total_visits': Visit.objects.filter(visit_date__gte=start_date, visit_date__lte=end_date).count(),
+            'students': Visit.objects.filter(visit_date__gte=start_date, visit_date__lte=end_date, patient__patient_type='STUDENT').count(),
+            'staff': Visit.objects.filter(visit_date__gte=start_date, visit_date__lte=end_date, patient__patient_type='STAFF').count(),
+        }
+    
+    if report_for in ['OVERALL', 'NURSE']:
+        # Nursing stats
+        data['nurse'] = {
+            'total_triages': Triage.objects.filter(created_at__gte=start_date, created_at__lte=end_date).count(),
+        }
+    
+    if report_for in ['OVERALL', 'DOCTOR']:
+        # Doctor stats
+        consultations = Consultation.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
+        data['doctor'] = {
+            'total_consultations': consultations.count(),
+            'completed_visits': Visit.objects.filter(
+                visit_date__gte=start_date, 
+                visit_date__lte=end_date,
+                status='COMPLETED'
+            ).count(),
+            'total_prescriptions': Prescription.objects.filter(
+                created_at__gte=start_date,
+                created_at__lte=end_date
+            ).count(),
+        }
+    
+    if report_for in ['OVERALL', 'LAB']:
+        # Lab stats
+        labs = LabRequest.objects.filter(date__gte=start_date, date__lte=end_date)
+        data['lab'] = {
+            'total_tests': labs.count(),
+            'completed_tests': labs.filter(status='COMPLETED').count(),
+            'pending_tests': labs.filter(status='PENDING').count(),
+            'in_progress_tests': labs.filter(status='IN_PROGRESS').count(),
+        }
+    
+    if report_for in ['OVERALL', 'PHARMACY']:
+        # Pharmacy stats
+        prescriptions = Prescription.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
+        data['pharmacy'] = {
+            'total_prescriptions': prescriptions.count(),
+            'dispensed': prescriptions.filter(is_dispensed=True).count(),
+            'pending': prescriptions.filter(is_dispensed=False).count(),
+        }
+    
+    # Summary
+    data['summary'] = {
+        'start_date': start_date.strftime('%Y-%m-%d'),
+        'end_date': end_date.strftime('%Y-%m-%d'),
+    }
+    
+    return data

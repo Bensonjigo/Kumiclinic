@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-3xl sm:text-4xl font-black text-[#0d141b] dark:text-white tracking-tight">
+            <span class="material-symbols-outlined align-middle mr-2">assessment</span>
+            Reports Dashboard
+        </h1>
+        <p class="text-base text-gray-600 dark:text-gray-400 mt-1">Generate and view reports for different departments</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Report Configuration -->
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-bold text-[#0d141b] dark:text-white mb-6">Generate Report</h2>
+                
+                <form method="get" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Report Type</label>
+                        <select name="type" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-background-light dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            <option value="DAILY" {% if report_type == 'DAILY' %}selected{% endif %}>Daily Report</option>
+                            <option value="WEEKLY" {% if report_type == 'WEEKLY' %}selected{% endif %}>Weekly Report</option>
+                            <option value="MONTHLY" {% if report_type == 'MONTHLY' %}selected{% endif %}>Monthly Report</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Report For</label>
+                        <select name="report_for" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-background-light dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            <option value="OVERALL" {% if report_for == 'OVERALL' %}selected{% endif %}>Overall Clinic</option>
+                            <option value="RECEPTION" {% if report_for == 'RECEPTION' %}selected{% endif %}>Reception</option>
+                            <option value="NURSE" {% if report_for == 'NURSE' %}selected{% endif %}>Nursing</option>
+                            <option value="DOCTOR" {% if report_for == 'DOCTOR' %}selected{% endif %}>Doctor/Consultation</option>
+                            <option value="LAB" {% if report_for == 'LAB' %}selected{% endif %}>Laboratory</option>
+                            <option value="PHARMACY" {% if report_for == 'PHARMACY' %}selected{% endif %}>Pharmacy</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
+                        <input type="date" name="start_date" value="{{ start_date }}"
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-background-light dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date</label>
+                        <input type="date" name="end_date" value="{{ end_date }}"
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-background-light dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                    </div>
+                    
+                    <button type="submit" class="w-full px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium">
+                        Generate Report
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Saved Reports -->
+            {% if saved_reports %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
+                <h2 class="text-lg font-bold text-[#0d141b] dark:text-white mb-4">Recently Saved</h2>
+                <div class="space-y-3">
+                    {% for report in saved_reports %}
+                    <a href="{% url 'report_detail' report.id %}" class="block p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <p class="font-medium text-sm text-[#0d141b] dark:text-white">{{ report.get_report_type_display }} - {{ report.get_report_for_display }}</p>
+                        <p class="text-xs text-gray-500">{{ report.start_date }} - {{ report.end_date }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'saved_reports' %}" class="block text-center text-sm text-primary hover:underline mt-4">View All Saved Reports</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Report Results -->
+        <div class="lg:col-span-2">
+            {% if data %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-[#0d141b] dark:text-white">
+                        Report: {{ report_for|title }} - {{ report_type|title }}
+                    </h2>
+                    <form method="post" class="flex gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="type" value="{{ report_type }}">
+                        <input type="hidden" name="report_for" value="{{ report_for }}">
+                        <input type="hidden" name="start_date" value="{{ start_date }}">
+                        <input type="hidden" name="end_date" value="{{ end_date }}">
+                        <input type="text" name="title" placeholder="Report title" 
+                            class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-background-light dark:bg-slate-800 text-sm">
+                        <button type="submit" name="save_report" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
+                            Save Report
+                        </button>
+                    </form>
+                </div>
+                
+                <p class="text-sm text-gray-500 mb-6">Period: {{ data.summary.start_date }} to {{ data.summary.end_date }}</p>
+                
+                <!-- Reception Stats -->
+                {% if data.reception %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-[#0d141b] dark:text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">badge</span>
+                        Reception
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-blue-600">{{ data.reception.total_registered }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Patients Registered</p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-blue-600">{{ data.reception.total_visits }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Total Visits</p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-blue-600">{{ data.reception.students }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Students</p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-blue-600">{{ data.reception.staff }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Staff</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Nurse Stats -->
+                {% if data.nurse %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-[#0d141b] dark:text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-purple-600">medical_services</span>
+                        Nursing
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-purple-600">{{ data.nurse.total_triages }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Total Triages</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Doctor Stats -->
+                {% if data.doctor %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-[#0d141b] dark:text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-orange-600">stethoscope</span>
+                        Doctor/Consultation
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-orange-600">{{ data.doctor.total_consultations }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Consultations</p>
+                        </div>
+                        <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-orange-600">{{ data.doctor.completed_visits }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Completed Visits</p>
+                        </div>
+                        <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-orange-600">{{ data.doctor.total_prescriptions }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Prescriptions</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Lab Stats -->
+                {% if data.lab %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-[#0d141b] dark:text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-yellow-600">science</span>
+                        Laboratory
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-yellow-600">{{ data.lab.total_tests }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Total Tests</p>
+                        </div>
+                        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-green-600">{{ data.lab.completed_tests }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+                        </div>
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-yellow-600">{{ data.lab.in_progress_tests }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-gray-600">{{ data.lab.pending_tests }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Pharmacy Stats -->
+                {% if data.pharmacy %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-[#0d141b] dark:text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-teal-600">local_pharmacy</span>
+                        Pharmacy
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-teal-600">{{ data.pharmacy.total_prescriptions }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Total Prescriptions</p>
+                        </div>
+                        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-green-600">{{ data.pharmacy.dispensed }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Dispensed</p>
+                        </div>
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                            <p class="text-2xl font-bold text-yellow-600">{{ data.pharmacy.pending }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+                <span class="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">assessment</span>
+                <p class="text-gray-500 dark:text-gray-400">Select report type and date range to generate a report</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

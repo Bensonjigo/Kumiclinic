@@ -70,4 +70,7 @@ urlpatterns = [
     path('medicines/', template_views.medicines_list, name='medicines'),
     path('medicine/<int:medicine_id>/add-stock/', template_views.add_stock, name='add_stock'),
     path('reports/', template_views.reports_list, name='reports'),
+    path('reports/dashboard/', template_views.reports_dashboard, name='reports_dashboard'),
+    path('reports/saved/', template_views.saved_reports, name='saved_reports'),
+    path('reports/<int:report_id>/', template_views.report_detail, name='report_detail'),
 ]

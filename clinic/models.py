@@ -341,6 +341,41 @@ class DailyReport(models.Model):
         return f"Report for {self.report_date}"
 
 
+class Report(models.Model):
+    REPORT_TYPE_CHOICES = [
+        ('DAILY', 'Daily'),
+        ('WEEKLY', 'Weekly'),
+        ('MONTHLY', 'Monthly'),
+    ]
+    
+    REPORT_FOR_CHOICES = [
+        ('OVERALL', 'Overall Clinic'),
+        ('RECEPTION', 'Reception'),
+        ('NURSE', 'Nursing'),
+        ('DOCTOR', 'Doctor/Consultation'),
+        ('LAB', 'Laboratory'),
+        ('PHARMACY', 'Pharmacy'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    report_type = models.CharField(max_length=10, choices=REPORT_TYPE_CHOICES)
+    report_for = models.CharField(max_length=20, choices=REPORT_FOR_CHOICES)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    
+    # Report Data (stored as JSON)
+    data = models.JSONField(default=dict)
+    
+    generated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='generated_reports')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.get_report_type_display()} - {self.get_report_for_display()} ({self.start_date} to {self.end_date})"
+
+
 class AuditLog(models.Model):
     ACTION_CHOICES = [
         ('CREATE', 'Created'),
