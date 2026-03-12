@@ -976,23 +976,16 @@ def reports_dashboard(request):
     if role == 'ADMIN':
         allowed_reports = [
             ('OVERALL', 'Overall Clinic'),
-            ('RECEPTION', 'Reception'),
             ('NURSE', 'Nursing'),
             ('DOCTOR', 'Doctor/Consultation'),
             ('LAB', 'Laboratory'),
             ('PHARMACY', 'Pharmacy'),
         ]
         report_for = request.GET.get('report_for', 'OVERALL')
-    elif role == 'RECEPTION':
-        allowed_reports = [('RECEPTION', 'Reception')]
-        report_for = 'RECEPTION'
     elif role == 'NURSE':
-        # Nurse covers Reception + Nursing
-        allowed_reports = [
-            ('RECEPTION', 'Reception'),
-            ('NURSE', 'Nursing'),
-        ]
-        report_for = request.GET.get('report_for', 'RECEPTION')
+        # Nurse handles both reception (patient registration) and nursing
+        allowed_reports = [('NURSE', 'Nursing & Reception')]
+        report_for = 'NURSE'
     elif role == 'DOCTOR':
         allowed_reports = [('DOCTOR', 'Doctor/Consultation')]
         report_for = 'DOCTOR'
@@ -1090,9 +1083,11 @@ def generate_report_data(report_for, start_date, end_date):
         }
     
     if report_for in ['OVERALL', 'NURSE']:
-        # Nursing stats
+        # Nursing stats (includes reception - patient registration)
         data['nurse'] = {
             'total_triages': Triage.objects.filter(created_at__gte=start_date, created_at__lte=end_date).count(),
+            'total_registered': Patient.objects.filter(created_at__gte=start_date, created_at__lte=end_date).count(),
+            'total_visits': Visit.objects.filter(visit_date__gte=start_date, visit_date__lte=end_date).count(),
         }
     
     if report_for in ['OVERALL', 'DOCTOR']:

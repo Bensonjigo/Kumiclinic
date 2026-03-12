@@ -350,7 +350,6 @@ class Report(models.Model):
     
     REPORT_FOR_CHOICES = [
         ('OVERALL', 'Overall Clinic'),
-        ('RECEPTION', 'Reception'),
         ('NURSE', 'Nursing'),
         ('DOCTOR', 'Doctor/Consultation'),
         ('LAB', 'Laboratory'),
