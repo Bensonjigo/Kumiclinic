@@ -191,6 +191,25 @@ def dashboard_doctor(request):
 
 
 @login_required
+def consultation_history(request):
+    """View completed consultations and patient history"""
+    # Get all completed visits with consultations
+    completed_visits = Visit.objects.filter(
+        status='COMPLETED',
+        consultation__isnull=False
+    ).select_related(
+        'patient', 'consultation__doctor'
+    ).prefetch_related(
+        'consultation__prescriptions__medicine',
+        'lab_requests'
+    ).order_by('-visit_date')[:50]
+    
+    return render(request, 'clinic/consultation_history.html', {
+        'completed_visits': completed_visits
+    })
+
+
+@login_required
 def dashboard_lab(request):
     """
     Lab Technician Dashboard:
@@ -963,6 +982,15 @@ def dispense_medicine(request, prescription_id):
     
     prescription.is_dispensed = True
     prescription.save()
+    
+    # Check if all prescriptions for this visit are now dispensed
+    visit = prescription.consultation.visit
+    all_prescriptions = Prescription.objects.filter(consultation__visit=visit)
+    pending_count = all_prescriptions.filter(is_dispensed=False).count()
+    
+    if pending_count == 0:
+        # All prescriptions dispensed - mark visit as completed
+        visit.update_status('COMPLETED')
     
     log_action(request.user, 'DISPENSE', 'Prescription', prescription.id,
                f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}', request)
