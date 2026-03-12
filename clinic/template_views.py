@@ -453,7 +453,18 @@ def register_patient(request):
         email = request.POST.get('email')
         address = request.POST.get('address')
         gender = request.POST.get('gender')
-        date_of_birth = request.POST.get('date_of_birth')
+        age = request.POST.get('age')
+        
+        # Calculate date of birth from age
+        if age:
+            try:
+                age = int(age)
+                today = timezone.now().date()
+                date_of_birth = today.replace(year=today.year - age)
+            except (ValueError, TypeError):
+                date_of_birth = None
+        else:
+            date_of_birth = None
         
         # Next of Kin
         next_of_kin_name = request.POST.get('next_of_kin_name')
