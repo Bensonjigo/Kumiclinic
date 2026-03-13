@@ -201,6 +201,11 @@
                     <span class="material-symbols-outlined">inventory_2</span>
                     <span>Medicines</span>
                 </a>
+                <a href="{% url 'manage_lab_tests' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'manage_lab_tests' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">science</span>
+                    <span>Lab Tests</span>
+                </a>
+                </a>
                 {% endif %}
                 
                 <!-- Reports - available to all -->

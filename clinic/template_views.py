@@ -9,7 +9,7 @@ from django.core import serializers
 import json
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, DailyReport, Report, User
+    Medicine, StockMovement, LabRequest, LabTestType, DailyReport, Report, User
 )
 from .audit import log_action
 
@@ -951,6 +951,52 @@ def new_lab_request(request):
         'visit': visit,
         'lab_test_types': lab_test_types
     })
+
+
+@login_required
+def manage_lab_tests(request):
+    """Manage lab test types - for admin only"""
+    if not request.user.is_superuser and request.user.role != 'ADMIN':
+        messages.error(request, 'You do not have permission to manage lab tests.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        # Add new test type
+        if 'add_test' in request.POST:
+            name = request.POST.get('name')
+            code = request.POST.get('code')
+            description = request.POST.get('description', '')
+            
+            if name and code:
+                LabTestType.objects.create(
+                    name=name,
+                    code=code.upper(),
+                    description=description
+                )
+                messages.success(request, f'Lab test "{name}" added successfully!')
+            else:
+                messages.error(request, 'Name and Code are required.')
+        
+        # Toggle active status
+        elif 'toggle_test' in request.POST:
+            test_id = request.POST.get('test_id')
+            test = get_object_or_404(LabTestType, id=test_id)
+            test.is_active = not test.is_active
+            test.save()
+            messages.success(request, f'Lab test "{test.name}" {"activated" if test.is_active else "deactivated"}!')
+        
+        # Delete test
+        elif 'delete_test' in request.POST:
+            test_id = request.POST.get('test_id')
+            test = get_object_or_404(LabTestType, id=test_id)
+            test_name = test.name
+            test.delete()
+            messages.success(request, f'Lab test "{test_name}" deleted!')
+        
+        return redirect('manage_lab_tests')
+    
+    lab_tests = LabTestType.objects.all().order_by('name')
+    return render(request, 'clinic/manage_lab_tests.html', {'lab_tests': lab_tests})
 
 
 @login_required
