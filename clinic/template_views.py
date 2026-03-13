@@ -433,17 +433,38 @@ def dashboard_inventory(request):
     - Stock alerts
     - Quick actions for managing inventory
     """
+    from django.db.models import Sum
+    
     # Medicine statistics
     total_medicines = Medicine.objects.count()
     low_stock_count = Medicine.objects.filter(
-        stock_quantity__lte=db_models.F('minimum_stock_level')
+        stock_quantity__lte=db_models.F('minimum_stock_level'),
+        stock_quantity__gt=0
     ).count()
     out_of_stock = Medicine.objects.filter(stock_quantity=0).count()
     in_stock = total_medicines - low_stock_count - out_of_stock
     
+    # Stock value
+    total_stock_value = Medicine.objects.aggregate(
+        total=Sum(db_models.F('stock_quantity') * db_models.F('selling_price'))
+    )['total'] or 0
+    
+    # Category breakdown
+    category_stats = Medicine.objects.values('category').annotate(
+        count=Count('id'),
+        total_stock=Sum('stock_quantity')
+    ).order_by('-count')
+    
+    # Supplier breakdown
+    supplier_stats = Medicine.objects.exclude(supplier='').values('supplier').annotate(
+        count=Count('id'),
+        total_stock=Sum('stock_quantity')
+    ).order_by('-count')[:5]
+    
     # Low stock medicines
     low_stock_medicines = Medicine.objects.filter(
-        stock_quantity__lte=db_models.F('minimum_stock_level')
+        stock_quantity__lte=db_models.F('minimum_stock_level'),
+        stock_quantity__gt=0
     ).order_by('stock_quantity')[:10]
     
     # Out of stock medicines
@@ -455,6 +476,14 @@ def dashboard_inventory(request):
     recent_movements = StockMovement.objects.select_related(
         'medicine', 'performed_by'
     ).order_by('-created_at')[:10]
+    
+    # Stock movement today
+    movements_today = StockMovement.objects.filter(
+        created_at__date=timezone.now().date()
+    ).aggregate(
+        total_in=Sum('quantity', filter=db_models.Q(movement_type='PURCHASE')),
+        total_out=Sum('quantity', filter=db_models.Q(movement_type='DISPENSE'))
+    )
     
     # Pharmacy stats
     pending_prescriptions = Prescription.objects.filter(is_dispensed=False).count()
@@ -468,9 +497,13 @@ def dashboard_inventory(request):
         'low_stock_count': low_stock_count,
         'out_of_stock': out_of_stock,
         'in_stock': in_stock,
+        'total_stock_value': total_stock_value,
+        'category_stats': category_stats,
+        'supplier_stats': supplier_stats,
         'low_stock_medicines': low_stock_medicines,
         'out_of_stock_medicines': out_of_stock_medicines,
         'recent_movements': recent_movements,
+        'movements_today': movements_today,
         'pending_prescriptions': pending_prescriptions,
         'dispensed_today': dispensed_today,
     }
@@ -1164,13 +1197,15 @@ def medicines_list(request):
     medicines = Medicine.objects.all().order_by('name')
     
     # Calculate summary counts
-    in_stock_count = sum(1 for m in medicines if not m.is_low_stock)
-    low_stock_count = sum(1 for m in medicines if m.is_low_stock)
+    in_stock_count = sum(1 for m in medicines if m.stock_quantity > 0 and not m.is_low_stock)
+    low_stock_count = sum(1 for m in medicines if m.is_low_stock and m.stock_quantity > 0)
+    out_of_stock_count = sum(1 for m in medicines if m.stock_quantity == 0)
     
     return render(request, 'clinic/medicines.html', {
         'medicines': medicines,
         'in_stock_count': in_stock_count,
-        'low_stock_count': low_stock_count
+        'low_stock_count': low_stock_count,
+        'out_of_stock_count': out_of_stock_count
     })
 
 
@@ -1179,7 +1214,6 @@ def add_stock(request, medicine_id):
     if request.method == 'POST':
         medicine = get_object_or_404(Medicine, id=medicine_id)
         quantity = request.POST.get('quantity')
-        expiry_date = request.POST.get('expiry_date')
         
         try:
             quantity = int(quantity)
@@ -1191,9 +1225,6 @@ def add_stock(request, medicine_id):
                     performed_by=request.user,
                     notes=request.POST.get('notes', '')
                 )
-                if expiry_date:
-                    medicine.expiry_date = expiry_date
-                    medicine.save()
                 log_action(request.user, 'UPDATE', 'Medicine', medicine.id,
                            f'Added {quantity} {medicine.unit} to stock', request)
                 messages.success(request, f'Added {quantity} {medicine.unit} to {medicine.name}')

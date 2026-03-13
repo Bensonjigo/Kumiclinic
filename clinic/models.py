@@ -189,6 +189,16 @@ class Medicine(models.Model):
         ('CREAM', 'Cream'),
         ('OINTMENT', 'Ointment'),
         ('DROP', 'Drop'),
+        ('SOLUTION', 'Solution'),
+        ('OTHER', 'Other'),
+    ]
+    
+    SUPPLIER_CHOICES = [
+        ('JMS', 'JMS Pharmaceuticals'),
+        ('PHARMACCESS', 'PharmAccess'),
+        ('SPS', 'SPS Pharmaceuticals'),
+        ('ABU', 'Abu Pharmaceutical'),
+        ('LOCAL', 'Local Supplier'),
         ('OTHER', 'Other'),
     ]
     
@@ -196,8 +206,12 @@ class Medicine(models.Model):
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     stock_quantity = models.PositiveIntegerField(default=0)
     unit = models.CharField(max_length=20, help_text="e.g., tablets, ml, bottles")
-    expiry_date = models.DateField()
     minimum_stock_level = models.PositiveIntegerField(default=10)
+    supplier = models.CharField(max_length=50, choices=SUPPLIER_CHOICES, blank=True)
+    supplier_contact = models.CharField(max_length=200, blank=True, help_text="Supplier contact info")
+    cost_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Cost per unit")
+    selling_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Selling price per unit")
+    location = models.CharField(max_length=100, blank=True, help_text="Storage location e.g., Shelf A-1")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -212,8 +226,16 @@ class Medicine(models.Model):
         return self.stock_quantity <= self.minimum_stock_level
     
     @property
-    def is_expired(self):
-        return self.expiry_date < timezone.now().date()
+    def stock_value(self):
+        return self.stock_quantity * self.selling_price
+    
+    @property
+    def status(self):
+        if self.stock_quantity == 0:
+            return 'OUT_OF_STOCK'
+        elif self.is_low_stock:
+            return 'LOW_STOCK'
+        return 'IN_STOCK'
 
 
 class Prescription(models.Model):

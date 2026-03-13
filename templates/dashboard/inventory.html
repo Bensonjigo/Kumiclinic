@@ -4,169 +4,254 @@
     <span class="material-symbols-outlined mr-2">inventory_2</span>Inventory Dashboard
 {% endblock %}
 
-{% block dashboard_subtitle %}Medicine stock management and pharmacy overview.{% endblock %}
+{% block dashboard_subtitle %}Pharmacy & Medicine Stock Management{% endblock %}
 
 {% block dashboard_content %}
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+<!-- Top Stats Row -->
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
     <div class="stat-card">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                <span class="material-symbols-outlined text-blue-600">medication</span>
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-blue-600 text-sm">medication</span>
             </div>
             <div>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_medicines }}</p>
-                <p class="text-sm text-gray-500">Total Medicines</p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_medicines }}</p>
+                <p class="text-xs text-gray-500">Total Items</p>
             </div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                <span class="material-symbols-outlined text-green-600">check_circle</span>
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
             </div>
             <div>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ in_stock }}</p>
-                <p class="text-sm text-gray-500">In Stock</p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ in_stock }}</p>
+                <p class="text-xs text-gray-500">In Stock</p>
             </div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-                <span class="material-symbols-outlined text-yellow-600">warning</span>
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-yellow-600 text-sm">warning</span>
             </div>
             <div>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ low_stock_count }}</p>
-                <p class="text-sm text-gray-500">Low Stock</p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ low_stock_count }}</p>
+                <p class="text-xs text-gray-500">Low Stock</p>
             </div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                <span class="material-symbols-outlined text-red-600">error</span>
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-red-600 text-sm">error</span>
             </div>
             <div>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ out_of_stock }}</p>
-                <p class="text-sm text-gray-500">Out of Stock</p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ out_of_stock }}</p>
+                <p class="text-xs text-gray-500">Out of Stock</p>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-purple-600 text-sm">attach_money</span>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">${{ total_stock_value|floatformat:0 }}</p>
+                <p class="text-xs text-gray-500">Stock Value</p>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-teal-600 text-sm">local_shipping</span>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ movements_today.total_in|default:0 }}</p>
+                <p class="text-xs text-gray-500">Received Today</p>
             </div>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-    <!-- Low Stock Alerts -->
-    <div>
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-[#0d141b] dark:text-white">Low Stock Alerts</h2>
-            <a href="{% url 'medicines' %}?filter=low" class="text-blue-600 hover:underline text-sm">View All</a>
-        </div>
-        
-        {% if low_stock_medicines %}
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="divide-y divide-gray-100 dark:divide-gray-700">
-                {% for medicine in low_stock_medicines %}
-                <div class="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-                            <span class="material-symbols-outlined text-yellow-600">medication</span>
-                        </div>
-                        <div>
-                            <p class="font-medium text-gray-900 dark:text-white">{{ medicine.name }}</p>
-                            <p class="text-xs text-gray-500">{{ medicine.category }}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold text-yellow-600">{{ medicine.stock_quantity }}</p>
-                        <p class="text-xs text-gray-500">Min: {{ medicine.minimum_stock_level }}</p>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% else %}
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
-            <span class="material-symbols-outlined text-green-600 text-4xl">check_circle</span>
-            <p class="mt-2 text-gray-500">No low stock items</p>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Out of Stock -->
-    <div>
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-[#0d141b] dark:text-white">Out of Stock</h2>
-        </div>
-        
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+    <!-- Alerts Column -->
+    <div class="lg:col-span-2 space-y-4">
+        <!-- Critical Alerts -->
         {% if out_of_stock_medicines %}
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-900 overflow-hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800">
+            <div class="p-4 border-b border-red-100 dark:border-red-900 bg-red-50 dark:bg-red-900/20">
+                <h3 class="font-semibold text-red-800 dark:text-red-300 flex items-center gap-2">
+                    <span class="material-symbols-outlined">error</span>
+                    Critical: Out of Stock ({{ out_of_stock_medicines.count }})
+                </h3>
+            </div>
             <div class="divide-y divide-gray-100 dark:divide-gray-700">
                 {% for medicine in out_of_stock_medicines %}
-                <div class="p-4 flex items-center justify-between bg-red-50 dark:bg-red-900/20">
+                <div class="p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                            <span class="material-symbols-outlined text-red-600">medication</span>
+                        <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                            <span class="material-symbols-outlined text-red-600 text-sm">medication</span>
                         </div>
                         <div>
                             <p class="font-medium text-gray-900 dark:text-white">{{ medicine.name }}</p>
-                            <p class="text-xs text-gray-500">{{ medicine.category }}</p>
+                            <p class="text-xs text-gray-500">{{ medicine.get_category_display }}</p>
                         </div>
                     </div>
-                    <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Out of Stock</span>
+                    <button onclick="openStockModal({{ medicine.id }}, '{{ medicine.name|escapejs }}', {{ medicine.stock_quantity|default:0 }})" 
+                        class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Restock
+                    </button>
                 </div>
                 {% endfor %}
             </div>
         </div>
-        {% else %}
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
-            <span class="material-symbols-outlined text-green-600 text-4xl">check_circle</span>
-            <p class="mt-2 text-gray-500">All medicines in stock</p>
+        {% endif %}
+
+        <!-- Low Stock Alerts -->
+        {% if low_stock_medicines %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-yellow-200 dark:border-yellow-800">
+            <div class="p-4 border-b border-yellow-100 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-900/20">
+                <h3 class="font-semibold text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
+                    <span class="material-symbols-outlined">warning</span>
+                    Low Stock Alert ({{ low_stock_medicines.count }})
+                </h3>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for medicine in low_stock_medicines %}
+                <div class="p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                            <span class="material-symbols-outlined text-yellow-600 text-sm">medication</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ medicine.name }}</p>
+                            <p class="text-xs text-gray-500">{{ medicine.stock_quantity }} / {{ medicine.minimum_stock_level }} {{ medicine.unit }}</p>
+                        </div>
+                    </div>
+                    <button onclick="openStockModal({{ medicine.id }}, '{{ medicine.name|escapejs }}', {{ medicine.stock_quantity|default:0 }})" 
+                        class="px-3 py-1.5 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                        Add Stock
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not out_of_stock_medicines and not low_stock_medicines %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-green-200 dark:border-green-800 p-6 text-center">
+            <span class="material-symbols-outlined text-green-600 text-5xl">check_circle</span>
+            <p class="mt-2 font-medium text-green-800 dark:text-green-300">All stock levels are healthy!</p>
         </div>
         {% endif %}
     </div>
 
-    <!-- Quick Stats -->
-    <div>
-        <h2 class="text-xl font-semibold mb-4 text-[#0d141b] dark:text-white">Pharmacy Summary</h2>
-        
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
-            <div class="flex justify-between items-center">
-                <span class="text-gray-600 dark:text-gray-400">
-                    <span class="material-symbols-outlined align-middle mr-1">receipt_long</span>
-                    Pending Prescriptions
-                </span>
-                <span class="text-xl font-bold text-yellow-600">{{ pending_prescriptions }}</span>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-gray-600 dark:text-gray-400">
-                    <span class="material-symbols-outlined align-middle mr-1">check_circle</span>
-                    Dispensed Today
-                </span>
-                <span class="text-xl font-bold text-green-600">{{ dispensed_today }}</span>
+    <!-- Quick Stats & Actions -->
+    <div class="space-y-4">
+        <!-- Today's Activity -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-600">today</span>
+                Today's Activity
+            </h3>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Received</span>
+                    <span class="font-bold text-green-600">+{{ movements_today.total_in|default:0 }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Dispensed</span>
+                    <span class="font-bold text-red-600">-{{ movements_today.total_out|default:0 }}</span>
+                </div>
+                <hr class="border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Pending Rx</span>
+                    <span class="font-bold text-yellow-600">{{ pending_prescriptions }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Dispensed Today</span>
+                    <span class="font-bold text-green-600">{{ dispensed_today }}</span>
+                </div>
             </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-1 gap-3">
-            <a href="{% url 'medicines' %}" class="flex items-center justify-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
-                <span class="material-symbols-outlined text-blue-600">inventory</span>
-                <span class="text-blue-800 dark:text-blue-300 font-medium">View Inventory</span>
-            </a>
-            <a href="{% url 'pending_prescriptions' %}" class="flex items-center justify-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition">
-                <span class="material-symbols-outlined text-green-600">medication</span>
-                <span class="text-green-800 dark:text-green-300 font-medium">Dispense Queue</span>
-            </a>
-            <a href="{% url 'manage_lab_tests' %}" class="flex items-center justify-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition">
-                <span class="material-symbols-outlined text-purple-600">science</span>
-                <span class="text-purple-800 dark:text-purple-300 font-medium">Manage Lab Tests</span>
-            </a>
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+            <div class="space-y-2">
+                <a href="{% url 'medicines' %}" class="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30">
+                    <span class="material-symbols-outlined text-blue-600">inventory</span>
+                    <span class="text-blue-800 dark:text-blue-300">Full Inventory</span>
+                </a>
+                <a href="{% url 'pending_prescriptions' %}" class="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30">
+                    <span class="material-symbols-outlined text-green-600">medication</span>
+                    <span class="text-green-800 dark:text-green-300">Dispense Queue</span>
+                </a>
+                <a href="{% url 'manage_lab_tests' %}" class="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30">
+                    <span class="material-symbols-outlined text-purple-600">science</span>
+                    <span class="text-purple-800 dark:text-purple-300">Lab Tests</span>
+                </a>
+            </div>
         </div>
+    </div>
+
+    <!-- Category & Supplier Stats -->
+    <div class="space-y-4">
+        <!-- Category Breakdown -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-teal-600">category</span>
+                By Category
+            </h3>
+            <div class="space-y-3">
+                {% for cat in category_stats %}
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full 
+                            {% if cat.category == 'TABLET' %}bg-blue-500
+                            {% elif cat.category == 'CAPSULE' %}bg-purple-500
+                            {% elif cat.category == 'SYRUP' %}bg-pink-500
+                            {% elif cat.category == 'INJECTION' %}bg-red-500
+                            {% else %}bg-gray-500{% endif %}"></div>
+                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ cat.get_category_display }}</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ cat.count }} items</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Top Suppliers -->
+        {% if supplier_stats %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-orange-600">local_shipping</span>
+                Top Suppliers
+            </h3>
+            <div class="space-y-3">
+                {% for sup in supplier_stats %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ sup.get_supplier_display }}</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ sup.count }} items</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
 <!-- Recent Stock Movements -->
 <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-xl font-semibold text-[#0d141b] dark:text-white">Recent Stock Movements</h2>
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-gray-600">swap_vert</span>
+            Recent Stock Movements
+        </h3>
     </div>
     
     {% if recent_movements %}
@@ -175,9 +260,10 @@
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Medicine</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Category</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Type</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Quantity</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">User</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Qty</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Performed By</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Date</th>
                 </tr>
             </thead>
@@ -192,6 +278,9 @@
                             <span class="font-medium text-gray-900 dark:text-white">{{ movement.medicine.name }}</span>
                         </div>
                     </td>
+                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                        {{ movement.medicine.get_category_display }}
+                    </td>
                     <td class="px-4 py-3">
                         {% if movement.movement_type == 'PURCHASE' %}
                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Purchase</span>
@@ -203,18 +292,18 @@
                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{{ movement.movement_type }}</span>
                         {% endif %}
                     </td>
-                    <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {% if movement.movement_type == 'DISPENSE' %}
-                        <span class="text-red-600">-{{ movement.quantity }}</span>
+                    <td class="px-4 py-3 font-medium {% if movement.movement_type == 'DISPENSE' %}text-red-600{% else %}text-green-600{% endif %}">
+                        {% if movement.movement_type == 'DISPENSE' %}-{% else %}+{% endif %}{{ movement.quantity }}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                        {% if movement.performed_by %}
+                            {{ movement.performed_by.get_full_name|default:movement.performed_by.username }}
                         {% else %}
-                        <span class="text-green-600">+{{ movement.quantity }}</span>
+                            <span class="text-gray-400">-</span>
                         {% endif %}
                     </td>
-                    <td class="px-4 py-3 text-gray-600 dark:text-gray-400">
-                        {{ movement.user.get_full_name|default:movement.user.username }}
-                    </td>
-                    <td class="px-4 py-3 text-gray-500 text-sm">
-                        {{ movement.created_at|date:"M d, Y g:i A" }}
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        {{ movement.created_at|date:"M d, g:i A" }}
                     </td>
                 </tr>
                 {% endfor %}

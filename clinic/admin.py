@@ -98,11 +98,26 @@ class PrescriptionAdmin(admin.ModelAdmin):
 
 @admin.register(Medicine)
 class MedicineAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'stock_quantity', 'unit', 'expiry_date', 'minimum_stock_level', 'is_low_stock']
-    list_filter = ['category', 'expiry_date']
+    list_display = ['name', 'category', 'stock_quantity', 'unit', 'supplier', 'minimum_stock_level', 'is_low_stock']
+    list_filter = ['category', 'supplier']
     search_fields = ['name']
     readonly_fields = ['created_at', 'updated_at']
     list_editable = ['stock_quantity']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'category', 'unit')
+        }),
+        ('Stock Information', {
+            'fields': ('stock_quantity', 'minimum_stock_level', 'location')
+        }),
+        ('Pricing', {
+            'fields': ('cost_per_unit', 'selling_price')
+        }),
+        ('Supplier Information', {
+            'fields': ('supplier', 'supplier_contact')
+        }),
+    )
     
     def is_low_stock(self, obj):
         return obj.is_low_stock
