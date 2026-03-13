@@ -138,7 +138,21 @@
         <div class="container mx-auto px-4">
             <div class="flex gap-4 py-2 overflow-x-auto">
                 
-                {% if user.role == 'RECEPTIONIST' or user.role == 'NURSE' or user.is_superuser %}
+                {% if user.role == 'STORE_MANAGER' or user.role == 'ADMIN' %}
+                <!-- Store Manager / Admin - Inventory Only -->
+                <a href="{% url 'dashboard_inventory' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'dashboard_inventory' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                    <span>Inventory</span>
+                </a>
+                <a href="{% url 'medicines' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'medicines' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">medication</span>
+                    <span>Medicines</span>
+                </a>
+                <a href="{% url 'manage_lab_tests' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'manage_lab_tests' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">science</span>
+                    <span>Lab Tests</span>
+                </a>
+                {% elif user.role == 'RECEPTIONIST' or user.role == 'NURSE' %}
                 <!-- Register Patient -->
                 <a href="{% url 'register_patient' %}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 {% if request.resolver_match.url_name == 'register_patient' %}ring-2 ring-offset-2 ring-primary{% endif %}">
                     <span class="material-symbols-outlined">person_add</span>
@@ -163,7 +177,7 @@
                 </a>
                 {% endif %}
                 
-                {% if user.is_lab_technician or user.is_superuser %}
+                {% if user.is_lab_technician and not user.role == 'STORE_MANAGER' and not user.role == 'ADMIN' %}
                 <a href="{% url 'pending_labs' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pending_labs' or request.resolver_match.url_name == 'dashboard_lab' %}text-primary bg-primary/10{% endif %}">
                     <span class="material-symbols-outlined">science</span>
                     <span>Lab</span>
@@ -174,7 +188,7 @@
                 </a>
                 {% endif %}
                 
-                {% if user.is_pharmacist or user.is_superuser %}
+                {% if user.is_pharmacist and not user.role == 'STORE_MANAGER' and not user.role == 'ADMIN' %}
                 <a href="{% url 'pending_prescriptions' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pending_prescriptions' %}text-primary bg-primary/10{% endif %}">
                     <span class="material-symbols-outlined">medication</span>
                     <span>Pharmacy</span>
@@ -193,34 +207,6 @@
                 <a href="{% url 'nurse_history' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'nurse_history' %}text-primary bg-primary/10{% endif %}">
                     <span class="material-symbols-outlined">history</span>
                     <span>History</span>
-                </a>
-                {% endif %}
-                
-                {% if user.is_store_manager %}
-                <a href="{% url 'dashboard_inventory' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'dashboard_inventory' %}text-primary bg-primary/10{% endif %}">
-                    <span class="material-symbols-outlined">inventory_2</span>
-                    <span>Inventory</span>
-                </a>
-                <a href="{% url 'medicines' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'medicines' %}text-primary bg-primary/10{% endif %}">
-                    <span class="material-symbols-outlined">medication</span>
-                    <span>Medicines</span>
-                </a>
-                <a href="{% url 'manage_lab_tests' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'manage_lab_tests' %}text-primary bg-primary/10{% endif %}">
-                    <span class="material-symbols-outlined">science</span>
-                    <span>Lab Tests</span>
-                </a>
-                {% elif user.is_admin or user.is_superuser %}
-                <a href="{% url 'dashboard_admin' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'dashboard_admin' %}text-primary bg-primary/10{% endif %}">
-                    <span class="material-symbols-outlined">settings</span>
-                    <span>Admin</span>
-                </a>
-                <a href="{% url 'medicines' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'medicines' %}text-primary bg-primary/10{% endif %}">
-                    <span class="material-symbols-outlined">inventory_2</span>
-                    <span>Medicines</span>
-                </a>
-                <a href="{% url 'manage_lab_tests' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'manage_lab_tests' %}text-primary bg-primary/10{% endif %}">
-                    <span class="material-symbols-outlined">science</span>
-                    <span>Lab Tests</span>
                 </a>
                 {% endif %}
                 
