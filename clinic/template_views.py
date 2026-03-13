@@ -383,18 +383,12 @@ def dashboard_pharmacy(request):
     low_stock_count = low_stock.count()
     low_stock_medicines = low_stock[:5]
     
-    # Expired medicines
-    expired_count = Medicine.objects.filter(
-        expiry_date__lt=today
-    ).count()
-    
     context = {
         'pending_prescriptions': pending_prescriptions,
         'dispensed_today': dispensed_today,
         'total_medicines': total_medicines,
         'low_stock_count': low_stock_count,
         'low_stock_medicines': low_stock_medicines,
-        'expired_count': expired_count,
     }
     return render(request, 'dashboard/pharmacy.html', context)
 
