@@ -1,8 +1,9 @@
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.db import models as db_models
 from django.db.models import Count, Q
 from django.contrib.auth import get_user_model
+from django.contrib import messages
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
@@ -15,6 +16,22 @@ from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
     Medicine, StockMovement, LabRequest, Notification, DailyReport
 )
+
+
+def csrf_failure(request, reason="", template_name="403_csrf.html"):
+    """Custom CSRF failure handler - redirects to login with friendly message"""
+    from django.http import HttpResponseRedirect
+    from django.urls import reverse
+    
+    # If user is authenticated, show a friendly message and redirect back
+    if request.user.is_authenticated:
+        messages.error(request, "Your session may have expired. Please try again.")
+        return HttpResponseRedirect(reverse('dashboard'))
+    
+    # If not authenticated, redirect to login
+    messages.error(request, "Please log in to continue.")
+    return HttpResponseRedirect(reverse('login') + '?next=' + request.path)
+
 
 User = get_user_model()
 from .serializers import (

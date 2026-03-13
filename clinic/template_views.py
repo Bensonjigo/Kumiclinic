@@ -1210,6 +1210,100 @@ def medicines_list(request):
 
 
 @login_required
+def add_medicine(request):
+    """Create a new medicine"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        category = request.POST.get('category')
+        stock_quantity = request.POST.get('stock_quantity', 0)
+        unit = request.POST.get('unit')
+        minimum_stock_level = request.POST.get('minimum_stock_level', 10)
+        supplier = request.POST.get('supplier', '')
+        supplier_contact = request.POST.get('supplier_contact', '')
+        cost_per_unit = request.POST.get('cost_per_unit', 0)
+        selling_price = request.POST.get('selling_price', 0)
+        location = request.POST.get('location', '')
+        
+        if name and category and unit:
+            medicine = Medicine.objects.create(
+                name=name,
+                category=category,
+                stock_quantity=int(stock_quantity) if stock_quantity else 0,
+                unit=unit,
+                minimum_stock_level=int(minimum_stock_level) if minimum_stock_level else 10,
+                supplier=supplier,
+                supplier_contact=supplier_contact,
+                cost_per_unit=cost_per_unit or 0,
+                selling_price=selling_price or 0,
+                location=location
+            )
+            
+            # Record initial stock if quantity > 0
+            if medicine.stock_quantity > 0:
+                StockMovement.objects.create(
+                    medicine=medicine,
+                    movement_type='PURCHASE',
+                    quantity=medicine.stock_quantity,
+                    performed_by=request.user,
+                    notes='Initial stock'
+                )
+            
+            log_action(request.user, 'CREATE', 'Medicine', medicine.id,
+                       f'Created medicine: {medicine.name}', request)
+            messages.success(request, f'Medicine "{name}" created successfully!')
+            return redirect('medicines')
+        else:
+            messages.error(request, 'Name, category, and unit are required.')
+    
+    return render(request, 'clinic/add_medicine.html')
+
+
+@login_required
+def edit_medicine(request, medicine_id):
+    """Edit an existing medicine"""
+    medicine = get_object_or_404(Medicine, id=medicine_id)
+    
+    if request.method == 'POST':
+        medicine.name = request.POST.get('name')
+        medicine.category = request.POST.get('category')
+        medicine.unit = request.POST.get('unit')
+        medicine.minimum_stock_level = int(request.POST.get('minimum_stock_level', 10)) or 10
+        medicine.supplier = request.POST.get('supplier', '')
+        medicine.supplier_contact = request.POST.get('supplier_contact', '')
+        medicine.cost_per_unit = request.POST.get('cost_per_unit', 0) or 0
+        medicine.selling_price = request.POST.get('selling_price', 0) or 0
+        medicine.location = request.POST.get('location', '')
+        medicine.save()
+        
+        log_action(request.user, 'UPDATE', 'Medicine', medicine.id,
+                   f'Updated medicine: {medicine.name}', request)
+        messages.success(request, f'Medicine "{medicine.name}" updated successfully!')
+        return redirect('medicines')
+    
+    return render(request, 'clinic/edit_medicine.html', {'medicine': medicine})
+
+
+@login_required
+def delete_medicine(request, medicine_id):
+    """Delete a medicine"""
+    if request.method == 'POST':
+        medicine = get_object_or_404(Medicine, id=medicine_id)
+        medicine_name = medicine.name
+        
+        # Check if medicine has any prescriptions
+        if medicine.prescriptions.exists():
+            messages.error(request, f'Cannot delete "{medicine_name}" - it has associated prescriptions.')
+            return redirect('medicines')
+        
+        medicine.delete()
+        log_action(request.user, 'DELETE', 'Medicine', medicine_id,
+                   f'Deleted medicine: {medicine_name}', request)
+        messages.success(request, f'Medicine "{medicine_name}" deleted successfully!')
+    
+    return redirect('medicines')
+
+
+@login_required
 def add_stock(request, medicine_id):
     if request.method == 'POST':
         medicine = get_object_or_404(Medicine, id=medicine_id)

@@ -16,6 +16,10 @@
                 <p class="text-gray-600 dark:text-gray-400 mt-1">Manage medicine stock and track inventory</p>
             </div>
             <div class="flex gap-3">
+                <a href="{% url 'add_medicine' %}" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-2">
+                    <span class="material-symbols-outlined">add</span>
+                    Add Medicine
+                </a>
                 <a href="{% url 'dashboard_pharmacy' %}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-2">
                     <span class="material-symbols-outlined">dashboard</span>
                     Dashboard
@@ -168,11 +172,23 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <button onclick="openStockModal({{ medicine.id }}, '{{ medicine.name|escapejs }}', {{ medicine.stock_quantity|default:0 }})" 
-                                class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1 inline-flex">
-                                <span class="material-symbols-outlined text-sm">add</span>
-                                Add Stock
-                            </button>
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'edit_medicine' medicine.id %}" 
+                                    class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">edit</span>
+                                    Edit
+                                </a>
+                                <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete {{ medicine.name|escapejs }}?')) { window.location.href = '{% url 'delete_medicine' medicine.id %}'; }"
+                                    class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                    Delete
+                                </a>
+                                <button onclick="openStockModal({{ medicine.id }}, '{{ medicine.name|escapejs }}', {{ medicine.stock_quantity|default:0 }})" 
+                                    class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">add</span>
+                                    Add Stock
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

@@ -13,6 +13,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Custom CSRF failure handler - redirects to login instead of showing technical error
+CSRF_FAILURE_VIEW = 'clinic.views.csrf_failure'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
