@@ -1039,7 +1039,18 @@ def dispense_medicine(request, prescription_id):
 @login_required
 def medicines_list(request):
     medicines = Medicine.objects.all().order_by('name')
-    return render(request, 'clinic/medicines.html', {'medicines': medicines})
+    
+    # Calculate summary counts
+    in_stock_count = sum(1 for m in medicines if not m.is_expired and not m.is_low_stock)
+    low_stock_count = sum(1 for m in medicines if m.is_low_stock and not m.is_expired)
+    expired_count = sum(1 for m in medicines if m.is_expired)
+    
+    return render(request, 'clinic/medicines.html', {
+        'medicines': medicines,
+        'in_stock_count': in_stock_count,
+        'low_stock_count': low_stock_count,
+        'expired_count': expired_count
+    })
 
 
 @login_required
