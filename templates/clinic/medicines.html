@@ -25,7 +25,7 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -59,17 +59,6 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                    <span class="material-symbols-outlined text-red-600">event_busy</span>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ expired_count }}</p>
-                    <p class="text-sm text-gray-500">Expired</p>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Filter Tabs -->
@@ -83,9 +72,6 @@
             </button>
             <button onclick="filterMedicines('low_stock')" class="filter-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent hover:text-gray-500" data-filter="low_stock">
                 Low Stock
-            </button>
-            <button onclick="filterMedicines('expired')" class="filter-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent hover:text-gray-500" data-filter="expired">
-                Expired
             </button>
         </div>
         
@@ -114,7 +100,7 @@
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700" id="medicines-table-body">
                     {% for medicine in medicines %}
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 medicine-row" 
-                        data-status="{% if medicine.is_expired %}expired{% elif medicine.is_low_stock %}low_stock{% else %}in_stock{% endif %}"
+                        data-status="{% if medicine.is_low_stock %}low_stock{% else %}in_stock{% endif %}"
                         data-name="{{ medicine.name|lower }}">
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-3">
@@ -134,9 +120,7 @@
                             <div class="flex items-center gap-2">
                                 <div class="w-20 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                                     <div class="h-2 rounded-full 
-                                        {% if medicine.is_expired %}bg-red-500
-                                        {% elif medicine.is_low_stock %}bg-yellow-500
-                                        {% else %}bg-green-500{% endif %}" 
+                                        {% if medicine.is_low_stock %}bg-yellow-500{% else %}bg-green-500{% endif %}" 
                                         style="width: {% if medicine.minimum_stock_level > 0 %}{{ medicine.stock_quantity|default:0|divisibleby:medicine.minimum_stock_level|yesno:'100,'|default:0|add:0 }}{% else %}0{% endif %}%"></div>
                                 </div>
                                 <span class="text-sm font-medium {% if medicine.is_low_stock %}text-yellow-600{% else %}text-gray-700 dark:text-gray-300{% endif %}">
@@ -148,9 +132,7 @@
                             {{ medicine.minimum_stock_level }}
                         </td>
                         <td class="px-4 py-3">
-                            {% if medicine.is_expired %}
-                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Expired</span>
-                            {% elif medicine.is_low_stock %}
+                            {% if medicine.is_low_stock %}
                             <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Low Stock</span>
                             {% else %}
                             <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">In Stock</span>
@@ -199,12 +181,6 @@
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity to Add</label>
                 <input type="number" name="quantity" required min="1" 
-                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            </div>
-            
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Expiry Date (optional)</label>
-                <input type="date" name="expiry_date" 
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
             </div>
             
