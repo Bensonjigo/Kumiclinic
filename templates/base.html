@@ -179,6 +179,21 @@
                     <span class="material-symbols-outlined">medication</span>
                     <span>Pharmacy</span>
                 </a>
+                <a href="{% url 'pharmacy_history' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pharmacy_history' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>History</span>
+                </a>
+                {% endif %}
+                
+                {% if user.role == 'NURSE' or user.is_superuser %}
+                <a href="{% url 'pending_triages' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pending_triages' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">medical_services</span>
+                    <span>Triage</span>
+                </a>
+                <a href="{% url 'nurse_history' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'nurse_history' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>History</span>
+                </a>
                 {% endif %}
                 
                 {% if user.is_admin or user.is_superuser %}

@@ -269,6 +269,32 @@ def lab_history(request):
 
 
 @login_required
+def pharmacy_history(request):
+    """Pharmacist History - all dispensed prescriptions"""
+    prescriptions = Prescription.objects.filter(
+        is_dispensed=True
+    ).select_related(
+        'consultation__visit__patient', 'consultation__doctor', 'medicine'
+    ).order_by('-dispensed_date')[:50]
+    
+    return render(request, 'clinic/pharmacy_history.html', {
+        'prescriptions': prescriptions
+    })
+
+
+@login_required
+def nurse_history(request):
+    """Nurse History - all triages done"""
+    triages = Triage.objects.select_related(
+        'visit__patient', 'recorded_by'
+    ).order_by('-created_at')[:50]
+    
+    return render(request, 'clinic/nurse_history.html', {
+        'triages': triages
+    })
+
+
+@login_required
 def dashboard_pharmacy(request):
     """
     Pharmacist Dashboard:
