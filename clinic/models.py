@@ -10,6 +10,7 @@ class User(AbstractUser):
         ('DOCTOR', 'Doctor'),
         ('LAB_TECHNICIAN', 'Lab Technician'),
         ('PHARMACIST', 'Pharmacist'),
+        ('STORE_MANAGER', 'Store Manager'),
         ('ADMIN', 'Admin'),
     ]
     
@@ -17,6 +18,10 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     department = models.CharField(max_length=100, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    
+    @property
+    def is_store_manager(self):
+        return self.role == 'STORE_MANAGER' or self.is_superuser
     
     class Meta:
         verbose_name = 'User'
@@ -260,6 +265,26 @@ class StockMovement(models.Model):
         self.medicine.save(update_fields=['stock_quantity', 'updated_at'])
 
 
+class LabTestType(models.Model):
+    """Dynamic lab test types that can be added by admin"""
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+    
+    @classmethod
+    def get_choices(cls):
+        """Get test types as choices for form"""
+        return [(t.code, t.name) for t in cls.objects.filter(is_active=True)]
+
+
 class LabRequest(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
@@ -268,22 +293,10 @@ class LabRequest(models.Model):
         ('CANCELLED', 'Cancelled'),
     ]
     
-    TEST_TYPE_CHOICES = [
-        ('CBC', 'Complete Blood Count'),
-        ('URINALYSIS', 'Urinalysis'),
-        ('STOOL_EXAM', 'Stool Examination'),
-        ('BLOOD_SUGAR', 'Blood Sugar'),
-        ('TYPHOID', 'Typhoid Test'),
-        ('MALARIA', 'Malaria Test'),
-        ('PREGNANCY', 'Pregnancy Test'),
-        ('HIV', 'HIV Test'),
-        ('HEPATITIS', 'Hepatitis Test'),
-        ('OTHER', 'Other'),
-    ]
-    
     visit = models.ForeignKey(Visit, on_delete=models.CASCADE, related_name='lab_requests')
-    test_name = models.CharField(max_length=50, choices=TEST_TYPE_CHOICES)
-    custom_test_name = models.CharField(max_length=200, blank=True, help_text="For 'OTHER' test types")
+    test_type = models.ForeignKey(LabTestType, on_delete=models.CASCADE, related_name='lab_requests', null=True, blank=True)
+    test_name = models.CharField(max_length=50, choices=[], blank=True)  # Legacy field - kept for backward compatibility
+    custom_test_name = models.CharField(max_length=200, blank=True, help_text="For custom test types")
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
     requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='requested_lab_tests')
     technician = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='completed_lab_tests')
@@ -298,7 +311,14 @@ class LabRequest(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
+        if self.test_type:
+            return f"{self.test_type.name} - Visit #{self.visit_id}"
         return f"{self.get_test_name_display()} - Visit #{self.visit_id}"
+    
+    def get_test_name_display(self):
+        if self.test_type:
+            return self.test_type.name
+        return self.custom_test_name or self.test_name
 
 
 class Notification(models.Model):

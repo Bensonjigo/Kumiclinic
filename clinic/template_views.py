@@ -9,14 +9,42 @@ from django.core import serializers
 import json
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, DailyReport, Report, User
+    Medicine, StockMovement, LabRequest, LabTestType, DailyReport, Report, User
 )
 from .audit import log_action
 
 
 # =============================================================================
-# ROLE-BASED DASHBOARD VIEWS
+# AUTH VIEWS
 # =============================================================================
+
+def login_view(request):
+    """Handle login form submission - works with HTML form POST"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Invalid username or password.')
+            return redirect('login')
+    
+    return render(request, 'clinic/login.html')
+
+
+def logout_view(request):
+    """Handle logout"""
+    if request.user.is_authenticated:
+        log_action(request.user, 'LOGOUT', description=f'User logged out', request=request)
+    logout(request)
+    return redirect('login')
+
 
 @login_required
 def dashboard_redirect(request):
@@ -34,6 +62,7 @@ def dashboard_redirect(request):
         'DOCTOR': 'dashboard_doctor',
         'LAB_TECHNICIAN': 'dashboard_lab',
         'PHARMACIST': 'dashboard_pharmacy',
+        'STORE_MANAGER': 'dashboard_inventory',
         'ADMIN': 'dashboard_admin',
     }
     
@@ -269,6 +298,32 @@ def lab_history(request):
 
 
 @login_required
+def pharmacy_history(request):
+    """Pharmacist History - all dispensed prescriptions"""
+    prescriptions = Prescription.objects.filter(
+        is_dispensed=True
+    ).select_related(
+        'consultation__visit__patient', 'consultation__doctor', 'medicine'
+    ).order_by('-created_at')[:50]
+    
+    return render(request, 'clinic/pharmacy_history.html', {
+        'prescriptions': prescriptions
+    })
+
+
+@login_required
+def nurse_history(request):
+    """Nurse History - all triages done"""
+    triages = Triage.objects.select_related(
+        'visit__patient', 'recorded_by'
+    ).order_by('-created_at')[:50]
+    
+    return render(request, 'clinic/nurse_history.html', {
+        'triages': triages
+    })
+
+
+@login_required
 def dashboard_pharmacy(request):
     """
     Pharmacist Dashboard:
@@ -321,92 +376,105 @@ def dashboard_pharmacy(request):
 @login_required
 def dashboard_admin(request):
     """
-    Admin Dashboard:
-    - Clinic summary and reports
-    - Full workflow overview
-    - All statistics
+    Admin Dashboard - Focus on Inventory:
+    - Medicine inventory overview
+    - Stock alerts
+    - Quick actions for managing inventory
     """
-    today = timezone.now().date()
-    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
-    
-    # Today's statistics
-    total_patients_today = Visit.objects.filter(visit_date__gte=today_start).count()
-    patients_waiting = Visit.objects.exclude(status__in=['COMPLETED', 'CANCELLED']).count()
-    completed_today = Visit.objects.filter(visit_date__gte=today_start, status='COMPLETED').count()
-    
-    # Staff counts by role
-    staff_counts = {
-        'receptionists': User.objects.filter(role='RECEPTIONIST').count(),
-        'nurses': User.objects.filter(role='NURSE').count(),
-        'doctors': User.objects.filter(role='DOCTOR').count(),
-        'lab_technicians': User.objects.filter(role='LAB_TECHNICIAN').count(),
-        'pharmacists': User.objects.filter(role='PHARMACIST').count(),
-    }
-    
-    # Workflow queue counts
-    waiting_triage = Visit.objects.filter(status='WAITING_FOR_TRIAGE').count()
-    waiting_doctor = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
-    in_lab = Visit.objects.filter(status='IN_LAB').count()
-    waiting_pharmacy = Visit.objects.filter(status='WAITING_FOR_PHARMACY').count()
-    
-    # Lab and pharmacy stats
-    pending_labs = LabRequest.objects.filter(status='PENDING').count()
-    pending_prescriptions = Prescription.objects.filter(is_dispensed=False).count()
-    
-    # Stock alerts
+    # Medicine statistics
+    total_medicines = Medicine.objects.count()
     low_stock_count = Medicine.objects.filter(
         stock_quantity__lte=db_models.F('minimum_stock_level')
     ).count()
-    expired_count = Medicine.objects.filter(expiry_date__lt=today).count()
-    
-    # Recent activity
-    recent_visits = Visit.objects.filter(
-        visit_date__gte=today_start
-    ).select_related('patient')[:10]
+    out_of_stock = Medicine.objects.filter(stock_quantity=0).count()
+    in_stock = total_medicines - low_stock_count - out_of_stock
     
     # Low stock medicines
     low_stock_medicines = Medicine.objects.filter(
         stock_quantity__lte=db_models.F('minimum_stock_level')
-    )[:5]
+    ).order_by('stock_quantity')[:10]
     
-    # Reports
-    recent_reports = DailyReport.objects.all()[:7]
+    # Out of stock medicines
+    out_of_stock_medicines = Medicine.objects.filter(
+        stock_quantity=0
+    ).order_by('name')[:5]
+    
+    # Recent stock movements
+    recent_movements = StockMovement.objects.select_related(
+        'medicine', 'performed_by'
+    ).order_by('-created_at')[:10]
+    
+    # Pharmacy stats
+    pending_prescriptions = Prescription.objects.filter(is_dispensed=False).count()
+    dispensed_today = Prescription.objects.filter(
+        is_dispensed=True,
+        updated_at__gte=timezone.now().date()
+    ).count()
     
     context = {
-        'total_patients_today': total_patients_today,
-        'patients_waiting': patients_waiting,
-        'completed_today': completed_today,
-        'staff_counts': staff_counts,
-        'waiting_triage': waiting_triage,
-        'waiting_doctor': waiting_doctor,
-        'in_lab': in_lab,
-        'waiting_pharmacy': waiting_pharmacy,
-        'pending_labs': pending_labs,
-        'pending_prescriptions': pending_prescriptions,
+        'total_medicines': total_medicines,
         'low_stock_count': low_stock_count,
-        'expired_count': expired_count,
-        'recent_visits': recent_visits,
+        'out_of_stock': out_of_stock,
+        'in_stock': in_stock,
         'low_stock_medicines': low_stock_medicines,
-        'recent_reports': recent_reports,
+        'out_of_stock_medicines': out_of_stock_medicines,
+        'recent_movements': recent_movements,
+        'pending_prescriptions': pending_prescriptions,
+        'dispensed_today': dispensed_today,
     }
     return render(request, 'dashboard/admin.html', context)
 
 
-# =============================================================================
-# ORIGINAL VIEWS (Kept for compatibility)
-# =============================================================================
-
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user:
-            login(request, user)
-            log_action(user, 'LOGIN', description=f'User logged in', request=request)
-            return redirect('dashboard')
-        messages.error(request, 'Invalid credentials')
-    return render(request, 'clinic/login.html')
+@login_required
+def dashboard_inventory(request):
+    """
+    Inventory Dashboard (Store Manager):
+    - Medicine inventory overview
+    - Stock alerts
+    - Quick actions for managing inventory
+    """
+    # Medicine statistics
+    total_medicines = Medicine.objects.count()
+    low_stock_count = Medicine.objects.filter(
+        stock_quantity__lte=db_models.F('minimum_stock_level')
+    ).count()
+    out_of_stock = Medicine.objects.filter(stock_quantity=0).count()
+    in_stock = total_medicines - low_stock_count - out_of_stock
+    
+    # Low stock medicines
+    low_stock_medicines = Medicine.objects.filter(
+        stock_quantity__lte=db_models.F('minimum_stock_level')
+    ).order_by('stock_quantity')[:10]
+    
+    # Out of stock medicines
+    out_of_stock_medicines = Medicine.objects.filter(
+        stock_quantity=0
+    ).order_by('name')[:5]
+    
+    # Recent stock movements
+    recent_movements = StockMovement.objects.select_related(
+        'medicine', 'performed_by'
+    ).order_by('-created_at')[:10]
+    
+    # Pharmacy stats
+    pending_prescriptions = Prescription.objects.filter(is_dispensed=False).count()
+    dispensed_today = Prescription.objects.filter(
+        is_dispensed=True,
+        updated_at__gte=timezone.now().date()
+    ).count()
+    
+    context = {
+        'total_medicines': total_medicines,
+        'low_stock_count': low_stock_count,
+        'out_of_stock': out_of_stock,
+        'in_stock': in_stock,
+        'low_stock_medicines': low_stock_medicines,
+        'out_of_stock_medicines': out_of_stock_medicines,
+        'recent_movements': recent_movements,
+        'pending_prescriptions': pending_prescriptions,
+        'dispensed_today': dispensed_today,
+    }
+    return render(request, 'dashboard/inventory.html', context)
 
 
 @login_required
@@ -426,13 +494,6 @@ def profile_view(request):
         return redirect('profile')
     
     return render(request, 'clinic/profile.html', {'user': user})
-
-
-def logout_view(request):
-    if request.user.is_authenticated:
-        log_action(request.user, 'LOGOUT', description=f'User logged out', request=request)
-    logout(request)
-    return redirect('login')
 
 
 @login_required
@@ -888,18 +949,31 @@ def new_lab_request(request):
     if visit_id:
         visit = get_object_or_404(Visit, id=visit_id)
     
+    # Get lab test types from database
+    lab_test_types = LabTestType.objects.filter(is_active=True).order_by('name')
+    
     if request.method == 'POST':
         visit_id = request.POST.get('visit_id')
-        test_name = request.POST.get('test_name')
+        test_type_id = request.POST.get('test_type')
+        custom_test_name = request.POST.get('custom_test_name', '')
         notes = request.POST.get('notes', '')
         
         visit = get_object_or_404(Visit, id=visit_id)
-        LabRequest.objects.create(
+        
+        # Create lab request with the selected test type
+        lab_request = LabRequest.objects.create(
             visit=visit,
-            test_name=test_name,
             notes=notes,
             requested_by=request.user
         )
+        
+        if test_type_id:
+            lab_request.test_type_id = test_type_id
+        elif custom_test_name:
+            lab_request.custom_test_name = custom_test_name
+            lab_request.test_name = 'OTHER'
+        
+        lab_request.save()
         
         # Update visit status to IN_LAB if not already
         if visit.status == 'WAITING_FOR_DOCTOR':
@@ -908,7 +982,56 @@ def new_lab_request(request):
         messages.success(request, 'Lab test ordered successfully!')
         return redirect('dashboard_doctor')
     
-    return render(request, 'clinic/new_lab_request.html', {'visit': visit})
+    return render(request, 'clinic/new_lab_request.html', {
+        'visit': visit,
+        'lab_test_types': lab_test_types
+    })
+
+
+@login_required
+def manage_lab_tests(request):
+    """Manage lab test types - for admin only"""
+    if not request.user.is_superuser and request.user.role != 'ADMIN':
+        messages.error(request, 'You do not have permission to manage lab tests.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        # Add new test type
+        if 'add_test' in request.POST:
+            name = request.POST.get('name')
+            code = request.POST.get('code')
+            description = request.POST.get('description', '')
+            
+            if name and code:
+                LabTestType.objects.create(
+                    name=name,
+                    code=code.upper(),
+                    description=description
+                )
+                messages.success(request, f'Lab test "{name}" added successfully!')
+            else:
+                messages.error(request, 'Name and Code are required.')
+        
+        # Toggle active status
+        elif 'toggle_test' in request.POST:
+            test_id = request.POST.get('test_id')
+            test = get_object_or_404(LabTestType, id=test_id)
+            test.is_active = not test.is_active
+            test.save()
+            messages.success(request, f'Lab test "{test.name}" {"activated" if test.is_active else "deactivated"}!')
+        
+        # Delete test
+        elif 'delete_test' in request.POST:
+            test_id = request.POST.get('test_id')
+            test = get_object_or_404(LabTestType, id=test_id)
+            test_name = test.name
+            test.delete()
+            messages.success(request, f'Lab test "{test_name}" deleted!')
+        
+        return redirect('manage_lab_tests')
+    
+    lab_tests = LabTestType.objects.all().order_by('name')
+    return render(request, 'clinic/manage_lab_tests.html', {'lab_tests': lab_tests})
 
 
 @login_required

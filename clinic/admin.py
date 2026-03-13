@@ -2,8 +2,15 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     User, Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, Notification, DailyReport, AuditLog
+    Medicine, StockMovement, LabRequest, LabTestType, Notification, DailyReport, AuditLog
 )
+
+
+@admin.register(LabTestType)
+class LabTestTypeAdmin(admin.ModelAdmin):
+    list_display = ['name', 'code', 'is_active', 'created_at']
+    list_filter = ['is_active']
+    search_fields = ['name', 'code']
 
 
 @admin.register(User)
