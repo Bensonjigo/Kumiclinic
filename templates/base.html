@@ -152,6 +152,10 @@
                     <span class="material-symbols-outlined">science</span>
                     <span>Lab Tests</span>
                 </a>
+                <a href="{% url 'reports_dashboard' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'reports_dashboard' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">assessment</span>
+                    <span>Reports</span>
+                </a>
                 {% elif user.role == 'RECEPTIONIST' or user.role == 'NURSE' %}
                 <!-- Register Patient -->
                 <a href="{% url 'register_patient' %}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 {% if request.resolver_match.url_name == 'register_patient' %}ring-2 ring-offset-2 ring-primary{% endif %}">
