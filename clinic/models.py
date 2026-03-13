@@ -10,6 +10,7 @@ class User(AbstractUser):
         ('DOCTOR', 'Doctor'),
         ('LAB_TECHNICIAN', 'Lab Technician'),
         ('PHARMACIST', 'Pharmacist'),
+        ('STORE_MANAGER', 'Store Manager'),
         ('ADMIN', 'Admin'),
     ]
     
@@ -17,6 +18,10 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     department = models.CharField(max_length=100, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    
+    @property
+    def is_store_manager(self):
+        return self.role == 'STORE_MANAGER' or self.is_superuser
     
     class Meta:
         verbose_name = 'User'

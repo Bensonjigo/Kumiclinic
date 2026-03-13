@@ -49,6 +49,7 @@ urlpatterns = [
     path('dashboard/pharmacy/history/', template_views.pharmacy_history, name='pharmacy_history'),
     path('dashboard/nurse/history/', template_views.nurse_history, name='nurse_history'),
     path('manage/lab-tests/', template_views.manage_lab_tests, name='manage_lab_tests'),
+    path('dashboard/inventory/', template_views.dashboard_inventory, name='dashboard_inventory'),
     path('dashboard/admin/', template_views.dashboard_admin, name='dashboard_admin'),
     
     # Legacy dashboard (kept for backward compatibility)

@@ -12,6 +12,7 @@ from .models import (
     Medicine, StockMovement, LabRequest, LabTestType, DailyReport, Report, User
 )
 from .audit import log_action
+from .views import login_view
 
 
 # =============================================================================
@@ -418,21 +419,56 @@ def dashboard_admin(request):
     return render(request, 'dashboard/admin.html', context)
 
 
-# =============================================================================
-# ORIGINAL VIEWS (Kept for compatibility)
-# =============================================================================
-
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user:
-            login(request, user)
-            log_action(user, 'LOGIN', description=f'User logged in', request=request)
-            return redirect('dashboard')
-        messages.error(request, 'Invalid credentials')
-    return render(request, 'clinic/login.html')
+@login_required
+def dashboard_inventory(request):
+    """
+    Inventory Dashboard (Store Manager):
+    - Medicine inventory overview
+    - Stock alerts
+    - Quick actions for managing inventory
+    """
+    # Medicine statistics
+    total_medicines = Medicine.objects.count()
+    low_stock_count = Medicine.objects.filter(
+        stock_quantity__lte=db_models.F('minimum_stock_level')
+    ).count()
+    out_of_stock = Medicine.objects.filter(stock_quantity=0).count()
+    in_stock = total_medicines - low_stock_count - out_of_stock
+    
+    # Low stock medicines
+    low_stock_medicines = Medicine.objects.filter(
+        stock_quantity__lte=db_models.F('minimum_stock_level')
+    ).order_by('stock_quantity')[:10]
+    
+    # Out of stock medicines
+    out_of_stock_medicines = Medicine.objects.filter(
+        stock_quantity=0
+    ).order_by('name')[:5]
+    
+    # Recent stock movements
+    recent_movements = StockMovement.objects.select_related(
+        'medicine', 'user'
+    ).order_by('-created_at')[:10]
+    
+    # Pharmacy stats
+    pending_prescriptions = Prescription.objects.filter(is_dispensed=False).count()
+    dispensed_today = Prescription.objects.filter(
+        is_dispensed=True,
+        updated_at__gte=timezone.now().date()
+    ).count()
+    
+    context = {
+        'total_medicines': total_medicines,
+        'low_stock_count': low_stock_count,
+        'out_of_stock': out_of_stock,
+        'in_stock': in_stock,
+        'low_stock_medicines': low_stock_medicines,
+        'out_of_stock_medicines': out_of_stock_medicines,
+        'recent_movements': recent_movements,
+        'pending_prescriptions': pending_prescriptions,
+        'dispensed_today': dispensed_today,
+    }
+    return render(request, 'dashboard/inventory.html', context)
 
 
 @login_required
