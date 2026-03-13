@@ -312,10 +312,6 @@
                             Quick Actions
                         </label>
                         <div class="space-y-2">
-                            <button type="button" onclick="orderLab()" id="btnOrderLab" class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 disabled:opacity-50" disabled>
-                                <span class="material-symbols-outlined text-lg">science</span>
-                                Order Labs
-                            </button>
                             <button type="button" onclick="prescribeMedication()" id="btnPrescribe" class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 disabled:opacity-50" disabled>
                                 <span class="material-symbols-outlined text-lg">medication</span>
                                 Prescribe
@@ -369,7 +365,6 @@ function showPatientDetail(visitId, name, dob, mrn, phone, address, weight, bp, 
     document.getElementById('visitIdInput').value = visitId;
     
     // Enable buttons and update info
-    document.getElementById('btnOrderLab').disabled = false;
     document.getElementById('btnPrescribe').disabled = false;
     document.getElementById('selectedPatientInfo').textContent = name + ' - Ready for consultation';
     
@@ -383,7 +378,6 @@ function showPatientList() {
     currentVisitId = null;
     
     // Disable buttons
-    document.getElementById('btnOrderLab').disabled = true;
     document.getElementById('btnPrescribe').disabled = true;
     document.getElementById('selectedPatientInfo').textContent = 'Select a patient to begin consultation';
 }
@@ -404,14 +398,6 @@ function switchTab(tabName) {
         content.classList.add('hidden');
     });
     document.getElementById('tab-content-' + tabName).classList.remove('hidden');
-}
-
-function orderLab() {
-    if (!currentVisitId) {
-        alert('Please select a patient first');
-        return;
-    }
-    window.location.href = '/lab/request/new/?visit_id=' + currentVisitId;
 }
 
 function prescribeMedication() {
