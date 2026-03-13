@@ -39,13 +39,10 @@ def medicine_pre_save(sender, instance, **kwargs):
         try:
             old_instance = Medicine.objects.get(pk=instance.pk)
             instance._old_stock = old_instance.stock_quantity
-            instance._old_expiry = old_instance.expiry_date
         except Medicine.DoesNotExist:
             instance._old_stock = 0
-            instance._old_expiry = instance.expiry_date
     else:
         instance._old_stock = 0
-        instance._old_expiry = instance.expiry_date
 
 
 @receiver(post_save, sender=Medicine)
@@ -55,15 +52,6 @@ def medicine_post_save(sender, instance, created, **kwargs):
             title=f"Low Stock Alert: {instance.name}",
             message=f"{instance.name} is running low. Current stock: {instance.stock_quantity} {instance.unit}",
             notification_type='LOW_STOCK',
-            user_id=1
-        )
-    
-    today = timezone.now().date()
-    if instance.expiry_date < today and instance._old_expiry >= today:
-        Notification.objects.create(
-            title=f"Medicine Expired: {instance.name}",
-            message=f"{instance.name} has expired on {instance.expiry_date}",
-            notification_type='EXPIRED_MEDICINE',
             user_id=1
         )
 
