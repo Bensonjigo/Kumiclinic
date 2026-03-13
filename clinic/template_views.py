@@ -373,7 +373,7 @@ def dashboard_admin(request):
     
     # Recent stock movements
     recent_movements = StockMovement.objects.select_related(
-        'medicine', 'user'
+        'medicine', 'performed_by'
     ).order_by('-created_at')[:10]
     
     # Pharmacy stats
@@ -425,7 +425,7 @@ def dashboard_inventory(request):
     
     # Recent stock movements
     recent_movements = StockMovement.objects.select_related(
-        'medicine', 'user'
+        'medicine', 'performed_by'
     ).order_by('-created_at')[:10]
     
     # Pharmacy stats
