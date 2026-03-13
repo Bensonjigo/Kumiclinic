@@ -914,18 +914,31 @@ def new_lab_request(request):
     if visit_id:
         visit = get_object_or_404(Visit, id=visit_id)
     
+    # Get lab test types from database
+    lab_test_types = LabTestType.objects.filter(is_active=True).order_by('name')
+    
     if request.method == 'POST':
         visit_id = request.POST.get('visit_id')
-        test_name = request.POST.get('test_name')
+        test_type_id = request.POST.get('test_type')
+        custom_test_name = request.POST.get('custom_test_name', '')
         notes = request.POST.get('notes', '')
         
         visit = get_object_or_404(Visit, id=visit_id)
-        LabRequest.objects.create(
+        
+        # Create lab request with the selected test type
+        lab_request = LabRequest.objects.create(
             visit=visit,
-            test_name=test_name,
             notes=notes,
             requested_by=request.user
         )
+        
+        if test_type_id:
+            lab_request.test_type_id = test_type_id
+        elif custom_test_name:
+            lab_request.custom_test_name = custom_test_name
+            lab_request.test_name = 'OTHER'
+        
+        lab_request.save()
         
         # Update visit status to IN_LAB if not already
         if visit.status == 'WAITING_FOR_DOCTOR':
@@ -934,7 +947,10 @@ def new_lab_request(request):
         messages.success(request, 'Lab test ordered successfully!')
         return redirect('dashboard_doctor')
     
-    return render(request, 'clinic/new_lab_request.html', {'visit': visit})
+    return render(request, 'clinic/new_lab_request.html', {
+        'visit': visit,
+        'lab_test_types': lab_test_types
+    })
 
 
 @login_required

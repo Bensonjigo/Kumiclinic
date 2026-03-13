@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto">
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-2xl font-bold mb-2">Order Lab Test</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 class="text-2xl font-bold mb-2 text-[#0d141b] dark:text-white">Order Lab Test</h2>
         {% if visit %}
         <p class="text-gray-500 mb-6">Patient: <strong>{{ visit.patient.full_name }}</strong></p>
         {% endif %}
@@ -15,8 +15,8 @@
             
             {% if not visit %}
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Select Visit</label>
-                <select name="visit_id" required class="w-full px-4 py-2 border rounded-lg">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Visit</label>
+                <select name="visit_id" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     <option value="">Select Patient Visit</option>
                     {% for v in visits %}
                     <option value="{{ v.id }}">{{ v.patient.full_name }} - {{ v.reason_for_visit }}</option>
@@ -28,41 +28,50 @@
             {% endif %}
             
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Lab Test</label>
-                <select name="test_name" required class="w-full px-4 py-2 border rounded-lg">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lab Test</label>
+                <select name="test_type" id="testTypeSelect" onchange="toggleCustomTest()" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     <option value="">Select Lab Test</option>
-                    <option value="CBC">Complete Blood Count (CBC)</option>
-                    <option value="URINALYSIS">Urinalysis</option>
-                    <option value="STOOL_EXAM">Stool Examination</option>
-                    <option value="BLOOD_SUGAR">Blood Sugar</option>
-                    <option value="TYPHOID">Typhoid Test</option>
-                    <option value="MALARIA">Malaria Test</option>
-                    <option value="PREGNANCY">Pregnancy Test</option>
-                    <option value="LIVER_FUNCTION">Liver Function Test</option>
-                    <option value="KIDNEY_FUNCTION">Kidney Function Test</option>
-                    <option value="LIPID_PROFILE">Lipid Profile</option>
-                    <option value="THYROID">Thyroid Function Test</option>
-                    <option value="HIV">HIV Test</option>
-                    <option value="HEPATITIS">Hepatitis B/C Test</option>
-                    <option value="OTHER">Other</option>
+                    {% for test in lab_test_types %}
+                    <option value="{{ test.id }}">{{ test.name }}</option>
+                    {% endfor %}
+                    <option value="other">Other (Custom)</option>
                 </select>
             </div>
             
+            <div id="customTestField" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Custom Test Name</label>
+                <input type="text" name="custom_test_name" placeholder="Enter custom test name" 
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Clinical Notes / Instructions</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Clinical Notes / Instructions</label>
                 <textarea name="notes" rows="3" placeholder="Enter any relevant clinical notes or instructions..."
-                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
             </div>
             
             <div class="flex gap-4">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
                     Order Lab Test
                 </button>
-                <a href="{% url 'dashboard_doctor' %}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300">
+                <a href="{% url 'dashboard_doctor' %}" class="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">
                     Cancel
                 </a>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function toggleCustomTest() {
+    const select = document.getElementById('testTypeSelect');
+    const customField = document.getElementById('customTestField');
+    
+    if (select.value === 'other') {
+        customField.classList.remove('hidden');
+    } else {
+        customField.classList.add('hidden');
+    }
+}
+</script>
 {% endblock %}
