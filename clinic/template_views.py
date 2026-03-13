@@ -348,73 +348,51 @@ def dashboard_pharmacy(request):
 @login_required
 def dashboard_admin(request):
     """
-    Admin Dashboard:
-    - Clinic summary and reports
-    - Full workflow overview
-    - All statistics
+    Admin Dashboard - Focus on Inventory:
+    - Medicine inventory overview
+    - Stock alerts
+    - Quick actions for managing inventory
     """
-    today = timezone.now().date()
-    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
-    
-    # Today's statistics
-    total_patients_today = Visit.objects.filter(visit_date__gte=today_start).count()
-    patients_waiting = Visit.objects.exclude(status__in=['COMPLETED', 'CANCELLED']).count()
-    completed_today = Visit.objects.filter(visit_date__gte=today_start, status='COMPLETED').count()
-    
-    # Staff counts by role
-    staff_counts = {
-        'receptionists': User.objects.filter(role='RECEPTIONIST').count(),
-        'nurses': User.objects.filter(role='NURSE').count(),
-        'doctors': User.objects.filter(role='DOCTOR').count(),
-        'lab_technicians': User.objects.filter(role='LAB_TECHNICIAN').count(),
-        'pharmacists': User.objects.filter(role='PHARMACIST').count(),
-    }
-    
-    # Workflow queue counts
-    waiting_triage = Visit.objects.filter(status='WAITING_FOR_TRIAGE').count()
-    waiting_doctor = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
-    in_lab = Visit.objects.filter(status='IN_LAB').count()
-    waiting_pharmacy = Visit.objects.filter(status='WAITING_FOR_PHARMACY').count()
-    
-    # Lab and pharmacy stats
-    pending_labs = LabRequest.objects.filter(status='PENDING').count()
-    pending_prescriptions = Prescription.objects.filter(is_dispensed=False).count()
-    
-    # Stock alerts
+    # Medicine statistics
+    total_medicines = Medicine.objects.count()
     low_stock_count = Medicine.objects.filter(
         stock_quantity__lte=db_models.F('minimum_stock_level')
     ).count()
-    expired_count = Medicine.objects.filter(expiry_date__lt=today).count()
-    
-    # Recent activity
-    recent_visits = Visit.objects.filter(
-        visit_date__gte=today_start
-    ).select_related('patient')[:10]
+    out_of_stock = Medicine.objects.filter(stock_quantity=0).count()
+    in_stock = total_medicines - low_stock_count - out_of_stock
     
     # Low stock medicines
     low_stock_medicines = Medicine.objects.filter(
         stock_quantity__lte=db_models.F('minimum_stock_level')
-    )[:5]
+    ).order_by('stock_quantity')[:10]
     
-    # Reports
-    recent_reports = DailyReport.objects.all()[:7]
+    # Out of stock medicines
+    out_of_stock_medicines = Medicine.objects.filter(
+        stock_quantity=0
+    ).order_by('name')[:5]
+    
+    # Recent stock movements
+    recent_movements = StockMovement.objects.select_related(
+        'medicine', 'user'
+    ).order_by('-created_at')[:10]
+    
+    # Pharmacy stats
+    pending_prescriptions = Prescription.objects.filter(is_dispensed=False).count()
+    dispensed_today = Prescription.objects.filter(
+        is_dispensed=True,
+        updated_at__gte=timezone.now().date()
+    ).count()
     
     context = {
-        'total_patients_today': total_patients_today,
-        'patients_waiting': patients_waiting,
-        'completed_today': completed_today,
-        'staff_counts': staff_counts,
-        'waiting_triage': waiting_triage,
-        'waiting_doctor': waiting_doctor,
-        'in_lab': in_lab,
-        'waiting_pharmacy': waiting_pharmacy,
-        'pending_labs': pending_labs,
-        'pending_prescriptions': pending_prescriptions,
+        'total_medicines': total_medicines,
         'low_stock_count': low_stock_count,
-        'expired_count': expired_count,
-        'recent_visits': recent_visits,
+        'out_of_stock': out_of_stock,
+        'in_stock': in_stock,
         'low_stock_medicines': low_stock_medicines,
-        'recent_reports': recent_reports,
+        'out_of_stock_medicines': out_of_stock_medicines,
+        'recent_movements': recent_movements,
+        'pending_prescriptions': pending_prescriptions,
+        'dispensed_today': dispensed_today,
     }
     return render(request, 'dashboard/admin.html', context)
 
