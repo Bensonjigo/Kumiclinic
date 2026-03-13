@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from django.db import models as db_models
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.core import serializers
 import json
 from .models import (
@@ -1354,15 +1354,16 @@ def reports_dashboard(request):
     
     # Determine allowed report_for based on role
     allowed_reports = []
-    if role == 'ADMIN':
+    if role == 'ADMIN' or role == 'STORE_MANAGER':
         allowed_reports = [
-            ('OVERALL', 'Overall Clinic'),
+            ('INVENTORY', 'Inventory'),
+            ('PHARMACY', 'Pharmacy'),
+            ('LAB', 'Laboratory'),
             ('NURSE', 'Nursing'),
             ('DOCTOR', 'Doctor/Consultation'),
-            ('LAB', 'Laboratory'),
-            ('PHARMACY', 'Pharmacy'),
+            ('OVERALL', 'Overall Clinic'),
         ]
-        report_for = request.GET.get('report_for', 'OVERALL')
+        report_for = request.GET.get('report_for', 'INVENTORY')
     elif role == 'NURSE':
         # Nurse handles both reception (patient registration) and nursing
         allowed_reports = [('NURSE', 'Nursing & Reception')]
@@ -1504,6 +1505,18 @@ def generate_report_data(report_for, start_date, end_date):
             'total_prescriptions': prescriptions.count(),
             'dispensed': prescriptions.filter(is_dispensed=True).count(),
             'pending': prescriptions.filter(is_dispensed=False).count(),
+        }
+    
+    if report_for in ['OVERALL', 'INVENTORY', 'PHARMACY']:
+        # Inventory stats
+        movements = StockMovement.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
+        data['inventory'] = {
+            'total_medicines': Medicine.objects.count(),
+            'low_stock': Medicine.objects.filter(stock_quantity__lte=db_models.F('minimum_stock_level'), stock_quantity__gt=0).count(),
+            'out_of_stock': Medicine.objects.filter(stock_quantity=0).count(),
+            'total_received': movements.filter(movement_type='PURCHASE').aggregate(total=Sum('quantity'))['total'] or 0,
+            'total_dispensed': movements.filter(movement_type='DISPENSE').aggregate(total=Sum('quantity'))['total'] or 0,
+            'total_movements': movements.count(),
         }
     
     # Summary

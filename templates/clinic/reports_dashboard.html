@@ -298,6 +298,44 @@
                     </div>
                     {% endif %}
                     
+                    <!-- Inventory Stats -->
+                    {% if data.inventory %}
+                    <div>
+                        <h3 class="text-lg font-bold text-[#0d141b] dark:text-white mb-4 flex items-center gap-2">
+                            <span class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                                <span class="material-symbols-outlined text-blue-600">inventory_2</span>
+                            </span>
+                            Inventory
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div class="stat-card border-l-4 border-l-blue-500">
+                                <p class="text-3xl font-black text-blue-600">{{ data.inventory.total_medicines|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Medicines</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-yellow-500">
+                                <p class="text-3xl font-black text-yellow-600">{{ data.inventory.low_stock|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Low Stock</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-red-500">
+                                <p class="text-3xl font-black text-red-600">{{ data.inventory.out_of_stock|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Out of Stock</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-green-500">
+                                <p class="text-3xl font-black text-green-600">+{{ data.inventory.total_received|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Received</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-purple-500">
+                                <p class="text-3xl font-black text-purple-600">-{{ data.inventory.total_dispensed|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Dispensed</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-gray-500">
+                                <p class="text-3xl font-black text-gray-600">{{ data.inventory.total_movements|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Movements</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <!-- Pharmacy Stats -->
                     {% if data.pharmacy %}
                     <div>
