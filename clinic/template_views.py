@@ -275,7 +275,7 @@ def pharmacy_history(request):
         is_dispensed=True
     ).select_related(
         'consultation__visit__patient', 'consultation__doctor', 'medicine'
-    ).order_by('-dispensed_date')[:50]
+    ).order_by('-created_at')[:50]
     
     return render(request, 'clinic/pharmacy_history.html', {
         'prescriptions': prescriptions

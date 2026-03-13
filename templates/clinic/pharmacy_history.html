@@ -56,12 +56,8 @@
                             {{ rx.quantity }} {{ rx.medicine.unit }}
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                            {% if rx.dispensed_date %}
-                            {{ rx.dispensed_date|date:"M d, Y" }}
-                            <p class="text-xs text-gray-400">{{ rx.dispensed_date|date:"g:i A" }}</p>
-                            {% else %}
-                            -
-                            {% endif %}
+                            {{ rx.created_at|date:"M d, Y" }}
+                            <p class="text-xs text-gray-400">{{ rx.created_at|date:"g:i A" }}</p>
                         </td>
                         <td class="px-4 py-3 text-right">
                             <button class="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded">
