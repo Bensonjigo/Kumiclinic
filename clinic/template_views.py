@@ -470,11 +470,6 @@ def dashboard_inventory(request):
     out_of_stock = Medicine.objects.filter(stock_quantity=0).count()
     in_stock = total_medicines - low_stock_count - out_of_stock
     
-    # Stock value
-    total_stock_value = Medicine.objects.aggregate(
-        total=Sum(db_models.F('stock_quantity') * db_models.F('selling_price'))
-    )['total'] or 0
-    
     # Category breakdown
     category_stats = Medicine.objects.values('category').annotate(
         count=Count('id'),
@@ -523,7 +518,6 @@ def dashboard_inventory(request):
         'low_stock_count': low_stock_count,
         'out_of_stock': out_of_stock,
         'in_stock': in_stock,
-        'total_stock_value': total_stock_value,
         'category_stats': category_stats,
         'supplier_stats': supplier_stats,
         'low_stock_medicines': low_stock_medicines,
@@ -1246,8 +1240,6 @@ def add_medicine(request):
         minimum_stock_level = request.POST.get('minimum_stock_level', 10)
         supplier = request.POST.get('supplier', '')
         supplier_contact = request.POST.get('supplier_contact', '')
-        cost_per_unit = request.POST.get('cost_per_unit', 0)
-        selling_price = request.POST.get('selling_price', 0)
         location = request.POST.get('location', '')
         
         if name and category and unit:
@@ -1259,8 +1251,6 @@ def add_medicine(request):
                 minimum_stock_level=int(minimum_stock_level) if minimum_stock_level else 10,
                 supplier=supplier,
                 supplier_contact=supplier_contact,
-                cost_per_unit=cost_per_unit or 0,
-                selling_price=selling_price or 0,
                 location=location
             )
             
@@ -1296,8 +1286,6 @@ def edit_medicine(request, medicine_id):
         medicine.minimum_stock_level = int(request.POST.get('minimum_stock_level', 10)) or 10
         medicine.supplier = request.POST.get('supplier', '')
         medicine.supplier_contact = request.POST.get('supplier_contact', '')
-        medicine.cost_per_unit = request.POST.get('cost_per_unit', 0) or 0
-        medicine.selling_price = request.POST.get('selling_price', 0) or 0
         medicine.location = request.POST.get('location', '')
         medicine.save()
         

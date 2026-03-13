@@ -209,8 +209,6 @@ class Medicine(models.Model):
     minimum_stock_level = models.PositiveIntegerField(default=10)
     supplier = models.CharField(max_length=50, choices=SUPPLIER_CHOICES, blank=True)
     supplier_contact = models.CharField(max_length=200, blank=True, help_text="Supplier contact info")
-    cost_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Cost per unit")
-    selling_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Selling price per unit")
     location = models.CharField(max_length=100, blank=True, help_text="Storage location e.g., Shelf A-1")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -224,10 +222,6 @@ class Medicine(models.Model):
     @property
     def is_low_stock(self):
         return self.stock_quantity <= self.minimum_stock_level
-    
-    @property
-    def stock_value(self):
-        return self.stock_quantity * self.selling_price
     
     @property
     def status(self):

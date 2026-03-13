@@ -111,9 +111,6 @@ class MedicineAdmin(admin.ModelAdmin):
         ('Stock Information', {
             'fields': ('stock_quantity', 'minimum_stock_level', 'location')
         }),
-        ('Pricing', {
-            'fields': ('cost_per_unit', 'selling_price')
-        }),
         ('Supplier Information', {
             'fields': ('supplier', 'supplier_contact')
         }),
