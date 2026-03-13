@@ -211,7 +211,11 @@
                         {% endif %}
                     </td>
                     <td class="px-4 py-3 text-gray-600 dark:text-gray-400">
-                        {{ movement.performed_by.get_full_name|default:movement.performed_by.username }}
+                        {% if movement.performed_by %}
+                            {{ movement.performed_by.get_full_name|default:movement.performed_by.username }}
+                        {% else %}
+                            <span class="text-gray-400">-</span>
+                        {% endif %}
                     </td>
                     <td class="px-4 py-3 text-gray-500 text-sm">
                         {{ movement.created_at|date:"M d, Y g:i A" }}
