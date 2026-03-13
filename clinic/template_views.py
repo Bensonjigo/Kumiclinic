@@ -12,12 +12,39 @@ from .models import (
     Medicine, StockMovement, LabRequest, LabTestType, DailyReport, Report, User
 )
 from .audit import log_action
-from .views import login_view
 
 
 # =============================================================================
-# ROLE-BASED DASHBOARD VIEWS
+# AUTH VIEWS
 # =============================================================================
+
+def login_view(request):
+    """Handle login form submission - works with HTML form POST"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Invalid username or password.')
+            return redirect('login')
+    
+    return render(request, 'clinic/login.html')
+
+
+def logout_view(request):
+    """Handle logout"""
+    if request.user.is_authenticated:
+        log_action(request.user, 'LOGOUT', description=f'User logged out', request=request)
+    logout(request)
+    return redirect('login')
+
 
 @login_required
 def dashboard_redirect(request):
@@ -35,6 +62,7 @@ def dashboard_redirect(request):
         'DOCTOR': 'dashboard_doctor',
         'LAB_TECHNICIAN': 'dashboard_lab',
         'PHARMACIST': 'dashboard_pharmacy',
+        'STORE_MANAGER': 'dashboard_inventory',
         'ADMIN': 'dashboard_admin',
     }
     
@@ -466,13 +494,6 @@ def profile_view(request):
         return redirect('profile')
     
     return render(request, 'clinic/profile.html', {'user': user})
-
-
-def logout_view(request):
-    if request.user.is_authenticated:
-        log_action(request.user, 'LOGOUT', description=f'User logged out', request=request)
-    logout(request)
-    return redirect('login')
 
 
 @login_required
