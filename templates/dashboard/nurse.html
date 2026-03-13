@@ -68,24 +68,50 @@
     </div>
 
     <div>
-        <h2 class="text-xl font-semibold mb-4">Quick Info</h2>
-        <div class="bg-white rounded-lg shadow p-4 mb-4">
-            <h3 class="font-medium text-gray-700 mb-2">Triage Checklist</h3>
-            <ul class="text-sm text-gray-600 space-y-2">
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Temperature</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Blood Pressure</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Weight</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Heart Rate</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Symptoms</li>
-            </ul>
-        </div>
+        <h2 class="text-xl font-semibold mb-4">Recent Patients</h2>
         
-        <div class="bg-blue-50 rounded-lg p-4">
-            <h3 class="font-medium text-blue-800 mb-2">Tips</h3>
-            <p class="text-sm text-blue-700">
-                Record all vital signs accurately. Patients with abnormal vitals should be prioritized.
-            </p>
-        </div>
+        {% if recent_patients %}
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Name</th>
+                                <th class="px-4 py-2 text-left">Type</th>
+                                <th class="px-4 py-2 text-left">Source</th>
+                                <th class="px-4 py-2 text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_patients %}
+                            <tr class="border-t hover:bg-gray-50">
+                                <td class="px-4 py-2">
+                                    <a href="{% url 'patient_detail' item.patient.id %}" class="text-blue-600 hover:underline">
+                                        {{ item.patient.full_name }}
+                                    </a>
+                                </td>
+                                <td class="px-4 py-2">{{ item.patient.get_patient_type_display }}</td>
+                                <td class="px-4 py-2">
+                                    {% if item.type == 'new_patient' %}
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">New Patient</span>
+                                    {% else %}
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">New Visit</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2">
+                                    <a href="{% url 'patient_detail' item.patient.id %}" class="text-blue-600 hover:underline">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+                <p>No recent patients today</p>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
