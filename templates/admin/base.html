@@ -1,0 +1,147 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ title }} - {{ site_header|default:'Django site admin' }}{% endblock %}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'admin/css/base.css' %}">
+    
+    <style>
+        :root {--primary:#3A7D9D;--primary-dark:#2D5A7B;--primary-light:#D4E6ED;--danger:#D9534F;--warning:#F0AD4E;--success:#5CB85C;--info:#5BC0DE;--gray:#6B7280;--light:#F4F7F9;--white:#FFFFFF;--border:#DEE2E6;--dark:#101922;}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Lexend,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#F4F7F9;color:#101922}
+        a{color:var(--primary);text-decoration:none}
+        a:hover{text-decoration:underline}
+        .main{display:flex;min-height:100vh;flex-direction:column}
+        .branding{background:linear-gradient(135deg,#3A7D9D 0%,#2D5A7B 100%);padding:0.75rem 1.5rem;display:flex;align-items:center;gap:12px;color:white}
+        .branding img{height:40px;width:auto;border-radius:4px}
+        .branding .site-name h1{font-size:1.25rem;font-weight:600}
+        .branding .site-name .subtitle{font-size:0.75rem;opacity:0.9}
+        .header{background:white;border-bottom:1px solid var(--border);padding:0.75rem 1.5rem;display:flex;justify-content:flex-end}
+        .user-tools{display:flex;align-items:center;gap:1rem;font-size:0.875rem}
+        .user-tools .welcome{color:var(--gray)}
+        .user-tools a,.user-tools button{color:var(--primary);text-decoration:none;background:none;border:none;cursor:pointer;font-size:14px}
+        .content-wrapper{flex:1;padding:2rem}
+        #content{max-width:1400px;margin:0 auto}
+        .dashboard-container{animation:fadeIn 0.3s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .dashboard-title{font-size:1.75rem;font-weight:600;margin-bottom:1.5rem;color:var(--dark)}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2rem}
+        .stat-card{background:white;border-radius:12px;padding:1.5rem;display:flex;align-items:center;gap:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+        .stat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+        .stat-primary .stat-icon{background:var(--primary-light);color:var(--primary)}
+        .stat-success .stat-icon{background:#E8F5E9;color:var(--success)}
+        .stat-warning .stat-icon{background:#FFF3E0;color:var(--warning)}
+        .stat-danger .stat-icon{background:#FFEBEE;color:var(--danger)}
+        .stat-info .stat-icon{background:#E3F2FD;color:var(--info)}
+        .stat-content{display:flex;flex-direction:column}
+        .stat-value{font-size:1.75rem;font-weight:600;color:var(--dark);line-height:1}
+        .stat-label{font-size:0.875rem;color:var(--gray);margin-top:0.25rem}
+        .recent-section{background:white;border-radius:12px;padding:1.5rem;margin-bottom:2rem;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+        .section-title{font-size:1.125rem;font-weight:600;margin-bottom:1rem}
+        .recent-table{width:100%;border-collapse:collapse}
+        .recent-table th,.recent-table td{padding:0.75rem 1rem;text-align:left;border-bottom:1px solid var(--border)}
+        .recent-table th{font-weight:600;color:var(--gray);font-size:0.75rem;text-transform:uppercase}
+        .app-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}
+        .app-module{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+        .app-header{background:linear-gradient(135deg,#3A7D9D 0%,#2D5A7B 100%);padding:1rem 1.5rem}
+        .app-title{color:white;font-size:1rem;font-weight:600;margin:0}
+        .model-item{display:flex;justify-content:space-between;padding:0.75rem 1rem;border-radius:8px}
+        .model-item:hover{background:var(--light)}
+        .model-name{color:var(--dark);text-decoration:none;font-weight:500}
+        .add-link{display:flex;align-items:center;gap:0.25rem;color:var(--primary);text-decoration:none;font-size:0.875rem}
+        .logo{display:flex;align-items:center}
+        .logo svg{display:block}
+        .login-container{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3A7D9D 0%,#2D5A7B 100%);padding:1rem}
+        .login-card{background:white;border-radius:16px;padding:2rem;width:100%;max-width:400px;box-shadow:0 20px 40px rgba(0,0,0,0.2)}
+        .login-header{text-align:center;margin-bottom:1.5rem}
+        .login-header h2{font-size:1.5rem;font-weight:600;margin-bottom:0.5rem}
+        .form-group{margin-bottom:1.25rem}
+        .form-group label{display:block;font-size:0.875rem;font-weight:500;margin-bottom:0.5rem}
+        .form-control{width:100%;padding:0.75rem 1rem;border:2px solid var(--border);border-radius:8px;font-size:1rem}
+        .form-control:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(58,125,157,0.1)}
+        .btn-login{width:100%;padding:0.875rem;background:var(--primary);color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer}
+        .btn-login:hover{background:var(--primary-dark)}
+        .login-footer{text-align:center;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border)}
+        .login-footer a{color:var(--gray);text-decoration:none;font-size:0.875rem}
+        /* Django Admin Overrides */
+        .module,.module table{border:none}
+        .add,.change{border:none}
+        input,select,textarea{border:1px solid var(--border);border-radius:6px;padding:0.5rem}
+        input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+        .submit-row input{background:var(--primary);color:white;border:none;padding:0.75rem 1.5rem;border-radius:6px;cursor:pointer}
+        .submit-row input:hover{background:var(--primary-dark)}
+        .deletelink{color:var(--danger)}
+        table{background:white;border-radius:8px;overflow:hidden}
+        thead th{background:var(--primary);color:white}
+        tbody tr:hover{background:var(--light)}
+        .row1{background:white}
+        .row2{background:#F9FAFB}
+    </style>
+    
+    {% block extrastyle %}{% endblock %}
+    {% block extrahead %}{% endblock %}
+</head>
+<body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}" data-admin-utc-offset="{% now 'z' %}">
+    {% block branding %}{% endblock %}
+
+    <div class="main" id="main">
+        {% if not is_popup %}
+        <header class="header">
+            {% block usertools %}
+            <div class="user-tools">
+                {% if has_permission %}
+                <span class="welcome">{% block welcomemsg %}Welcome,{% endblock %} <strong>{% firstof user.get_short_name user.get_username %}</strong></span>
+                {% block userlinks %}
+                {% if site_url %}
+                    <a href="{{ site_url }}">View site</a>
+                {% endif %}
+                {% if user.has_usable_password %}
+                <a href="{% url 'admin:password_change' %}">Change password</a>
+                {% endif %}
+                <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">Log out</button>
+                </form>
+                {% endblock %}
+                {% else %}
+                <a href="{% url 'admin:login' %}">Log in</a>
+                {% endif %}
+            </div>
+            {% endblock %}
+        </header>
+        {% endif %}
+
+        <div class="content-wrapper">
+            {% block nav-breadcrumbs %}
+            <nav class="breadcrumbs">
+                {% block breadcrumbs %}
+                <a href="{% url 'admin:index' %}">Home</a>
+                {% if title %} &rsaquo; {{ title }}{% endif %}
+                {% endblock %}
+            </nav>
+            {% endblock %}
+
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="message message-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div id="content" class="{% block coltype %}col-type{% endblock %}">
+                {% block content %}{% endblock %}
+                {% block sidebar %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    {% block footer %}{% endblock %}
+    {% block scripts %}{% endblock %}
+    {% block js %}{% endblock %}
+</body>
+</html>
