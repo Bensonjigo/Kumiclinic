@@ -84,10 +84,12 @@
                             <span class="material-symbols-outlined text-lg">people</span>
                             <span>All Patients</span>
                         </a>
+                        {% if user.role != 'DOCTOR' %}
                         <a href="{% url 'register_patient' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                             <span class="material-symbols-outlined text-lg">person_add</span>
                             <span>Register Patient</span>
                         </a>
+                        {% endif %}
                         <a href="{% url 'patients' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
                             <span class="material-symbols-outlined text-lg">search</span>
                             <span>Search Patient</span>
