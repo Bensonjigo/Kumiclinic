@@ -57,7 +57,7 @@ def dashboard_redirect(request):
         role = 'ADMIN'
     
     role_urls = {
-        'RECEPTIONIST': 'dashboard_reception',
+        'NURSE': 'dashboard_reception',
         'DOCTOR': 'dashboard_doctor',
         'LAB_TECHNICIAN': 'dashboard_lab',
         'PHARMACIST': 'dashboard_pharmacy',
@@ -65,12 +65,12 @@ def dashboard_redirect(request):
         'ADMIN': 'dashboard_admin',
     }
     
-    redirect_url = role_urls.get(role, 'dashboard_reception')
+    redirect_url = role_urls.get(role, 'dashboard_nurse')
     return redirect(redirect_url)
 
 
 @login_required
-def dashboard_reception(request):
+def dashboard_nurse(request):
     """
     Receptionist Dashboard (with nurse capabilities):
     - Recent patients
@@ -706,7 +706,7 @@ def register_patient(request):
 def edit_patient(request, patient_id):
     patient = get_object_or_404(Patient, id=patient_id)
     
-    if not (request.user.role == 'RECEPTIONIST' or request.user.is_superuser):
+    if not (request.user.role == 'NURSE' or request.user.is_superuser):
         messages.error(request, 'You do not have permission to edit patients.')
         return redirect('patient_detail', patient_id=patient.id)
     

@@ -5,7 +5,7 @@ from django.utils import timezone
 
 class User(AbstractUser):
     ROLE_CHOICES = [
-        ('RECEPTIONIST', 'Receptionist'),
+        ('NURSE', 'Nurse'),
         ('DOCTOR', 'Doctor'),
         ('LAB_TECHNICIAN', 'Lab Technician'),
         ('PHARMACIST', 'Pharmacist'),
@@ -13,7 +13,7 @@ class User(AbstractUser):
         ('ADMIN', 'Admin'),
     ]
     
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='RECEPTIONIST')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='NURSE')
     phone = models.CharField(max_length=20, blank=True)
     department = models.CharField(max_length=100, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
@@ -30,8 +30,8 @@ class User(AbstractUser):
         return f"{self.get_full_name() or self.username} ({self.get_role_display()})"
     
     @property
-    def is_receptionist(self):
-        return self.role == 'RECEPTIONIST' or self.is_superuser
+    def is_nurse(self):
+        return self.role == 'NURSE' or self.is_superuser
     
     @property
     def is_doctor(self):

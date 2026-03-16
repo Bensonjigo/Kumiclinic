@@ -39,7 +39,6 @@ urlpatterns = [
     # Role-based dashboards (main entry point is dashboard_redirect)
     path('dashboard/', template_views.dashboard_redirect, name='dashboard'),
     path('dashboard/role/', template_views.dashboard_redirect, name='dashboard_redirect'),
-    path('dashboard/reception/', template_views.dashboard_reception, name='dashboard_reception'),
     path('dashboard/nurse/', template_views.dashboard_nurse, name='dashboard_nurse'),
     path('dashboard/doctor/', template_views.dashboard_doctor, name='dashboard_doctor'),
     path('dashboard/history/', template_views.consultation_history, name='consultation_history'),

@@ -49,7 +49,7 @@ class IsReceptionistOrReadOnly(IsAuthenticated):
     def has_permission(self, request, view):
         if request.method in ['GET']:
             return True
-        return request.user.is_authenticated and (request.user.is_receptionist or request.user.is_superuser)
+        return request.user.is_authenticated and (request.user.is_nurse or request.user.is_superuser)
 
 
 class IsDoctorOrReadOnly(IsAuthenticated):
@@ -81,14 +81,14 @@ class CanAccessPatients(IsAuthenticated):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return request.user.role in ['RECEPTIONIST', 'DOCTOR', 'ADMIN'] or request.user.is_superuser
+        return request.user.role in ['NURSE', 'DOCTOR', 'ADMIN'] or request.user.is_superuser
 
 
 class CanAccessVisits(IsAuthenticated):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return request.user.role in ['RECEPTIONIST', 'DOCTOR', 'LAB_TECHNICIAN', 'PHARMACIST', 'ADMIN'] or request.user.is_superuser
+        return request.user.role in ['NURSE', 'DOCTOR', 'LAB_TECHNICIAN', 'PHARMACIST', 'ADMIN'] or request.user.is_superuser
 
 
 class CanAccessPrescriptions(IsAuthenticated):
@@ -594,7 +594,7 @@ def patient_data_view(request, visit_id):
     
     if not (user.is_superuser or 
             user.role == 'ADMIN' or
-            user.role == 'RECEPTIONIST' or
+            user.role == 'NURSE' or
             user.role == 'DOCTOR' or
             user.role == 'LAB_TECHNICIAN' or
             user.role == 'PHARMACIST'):
