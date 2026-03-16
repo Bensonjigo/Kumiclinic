@@ -1,6 +1,19 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+
+
+def validate_avatar_file(file):
+    max_size = 2 * 1024 * 1024  # 2MB
+    if file.size > max_size:
+        raise ValidationError("Avatar file too large. Maximum size is 2MB.")
+    
+    allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    ext = file.name.split('.')[-1].lower()
+    if ext not in allowed_extensions:
+        raise ValidationError("Unsupported file type. Allowed: JPEG, PNG, GIF, WebP")
+    return file
 
 
 class User(AbstractUser):
@@ -16,7 +29,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='NURSE')
     phone = models.CharField(max_length=20, blank=True)
     department = models.CharField(max_length=100, blank=True)
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, validators=[validate_avatar_file])
     
     @property
     def is_store_manager(self):

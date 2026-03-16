@@ -59,15 +59,8 @@ class IsDoctorOrReadOnly(IsAuthenticated):
         return request.user.is_authenticated and (request.user.is_doctor or request.user.is_superuser)
 
 
-# Nurse capabilities merged into Receptionist - kept for backward compatibility
+# Nurse capabilities merged into Nurse - kept for backward compatibility
 IsNurseOrReadOnly = IsReceptionistOrReadOnly
-
-
-class IsDoctorOrReadOnly(IsAuthenticated):
-    def has_permission(self, request, view):
-        if request.method in ['GET']:
-            return True
-        return request.user.is_authenticated and (request.user.is_doctor or request.user.is_superuser)
 
 
 class IsAdminOrReadOnly(IsAuthenticated):
