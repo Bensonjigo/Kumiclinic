@@ -72,7 +72,7 @@ def dashboard_redirect(request):
 @login_required
 def dashboard_nurse(request):
     """
-    Receptionist Dashboard (with nurse capabilities):
+    Nurse Dashboard (reception functions):
     - Recent patients
     - Waiting doctor queue
     - Quick stats for today
@@ -109,66 +109,6 @@ def dashboard_nurse(request):
         'visits_today': visits_today,
     }
     return render(request, 'dashboard/reception.html', context)
-
-
-@login_required
-def dashboard_nurse(request):
-    """
-    Nurse Dashboard:
-    - Patients waiting for triage
-    - Quick access to triage forms
-    - Today's triage count
-    """
-    today = timezone.now().date()
-    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
-    
-    # Patients waiting for triage
-    waiting_triage = Visit.objects.filter(
-        status='WAITING_FOR_TRIAGE'
-    ).select_related('patient').order_by('visit_date')
-    
-    # Today's triage count
-    triaged_today = Triage.objects.filter(
-        created_at__gte=today_start
-    ).count()
-    
-    # Queue statistics
-    total_waiting = Visit.objects.exclude(status__in=['COMPLETED', 'CANCELLED']).count()
-    waiting_doctor = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
-    
-    # Newly registered patients (today)
-    new_patients = Patient.objects.filter(
-        created_at__gte=today_start
-    ).order_by('-created_at')
-    
-    # New visits today
-    visits_today = Visit.objects.filter(
-        visit_date__gte=today_start
-    ).select_related('patient').order_by('-visit_date')
-    
-    # Combine both - newly registered patients and new visits
-    all_recent = []
-    for patient in new_patients:
-        all_recent.append({'type': 'new_patient', 'patient': patient, 'date': patient.created_at})
-    for visit in visits_today:
-        all_recent.append({'type': 'visit', 'patient': visit.patient, 'date': visit.visit_date, 'visit': visit})
-    
-    # Sort by date descending and remove duplicates (keep the earliest entry per patient)
-    seen_patients = set()
-    recent_combined = []
-    for item in sorted(all_recent, key=lambda x: x['date'], reverse=True):
-        if item['patient'].id not in seen_patients:
-            seen_patients.add(item['patient'].id)
-            recent_combined.append(item)
-    
-    context = {
-        'waiting_triage': waiting_triage,
-        'triaged_today': triaged_today,
-        'total_waiting': total_waiting,
-        'waiting_doctor': waiting_doctor,
-        'recent_patients': recent_combined,
-    }
-    return render(request, 'dashboard/nurse.html', context)
 
 
 @login_required
