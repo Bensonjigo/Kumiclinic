@@ -1237,6 +1237,10 @@ def add_medicine(request):
         location = request.POST.get('location', '')
         
         if name and category and unit:
+            if Medicine.objects.filter(name__iexact=name).exists():
+                messages.error(request, f'A medicine with the name "{name}" already exists. Please use a different name.')
+                return redirect('add_medicine')
+            
             medicine = Medicine.objects.create(
                 name=name,
                 category=category,
