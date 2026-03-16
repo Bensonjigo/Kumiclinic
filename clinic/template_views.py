@@ -57,7 +57,7 @@ def dashboard_redirect(request):
         role = 'ADMIN'
     
     role_urls = {
-        'NURSE': 'dashboard_reception',
+        'NURSE': 'dashboard_nurse',
         'DOCTOR': 'dashboard_doctor',
         'LAB_TECHNICIAN': 'dashboard_lab',
         'PHARMACIST': 'dashboard_pharmacy',
