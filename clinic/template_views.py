@@ -58,7 +58,6 @@ def dashboard_redirect(request):
     
     role_urls = {
         'RECEPTIONIST': 'dashboard_reception',
-        'NURSE': 'dashboard_reception',
         'DOCTOR': 'dashboard_doctor',
         'LAB_TECHNICIAN': 'dashboard_lab',
         'PHARMACIST': 'dashboard_pharmacy',
@@ -73,33 +72,29 @@ def dashboard_redirect(request):
 @login_required
 def dashboard_reception(request):
     """
-    Receptionist + Nurse Combined Dashboard:
+    Receptionist Dashboard (with nurse capabilities):
     - Recent patients
     - Waiting doctor queue
     - Quick stats for today
+    - Patient registration
     """
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Today's statistics
     total_patients_today = Visit.objects.filter(visit_date__gte=today_start).count()
     new_patients_today = Patient.objects.filter(created_at__gte=today_start).count()
     completed_today = Visit.objects.filter(visit_date__gte=today_start, status='COMPLETED').count()
     
-    # Queue counts
     waiting_doctor_count = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
     
-    # Recent patients (today)
     recent_patients = Patient.objects.filter(
         created_at__gte=today_start
     ).order_by('-created_at')
     
-    # Waiting for doctor (queryset for display)
     waiting_doctor_queue = Visit.objects.filter(
         status='WAITING_FOR_DOCTOR'
     ).select_related('patient').order_by('visit_date')
     
-    # Recent visits today
     visits_today = Visit.objects.filter(
         visit_date__gte=today_start
     ).select_related('patient').order_by('-visit_date')[:10]
@@ -711,7 +706,7 @@ def register_patient(request):
 def edit_patient(request, patient_id):
     patient = get_object_or_404(Patient, id=patient_id)
     
-    if not (request.user.role in ['NURSE', 'RECEPTIONIST'] or request.user.is_superuser):
+    if not (request.user.role == 'RECEPTIONIST' or request.user.is_superuser):
         messages.error(request, 'You do not have permission to edit patients.')
         return redirect('patient_detail', patient_id=patient.id)
     

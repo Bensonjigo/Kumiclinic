@@ -6,7 +6,6 @@ from django.utils import timezone
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('RECEPTIONIST', 'Receptionist'),
-        ('NURSE', 'Nurse'),
         ('DOCTOR', 'Doctor'),
         ('LAB_TECHNICIAN', 'Lab Technician'),
         ('PHARMACIST', 'Pharmacist'),
@@ -33,10 +32,6 @@ class User(AbstractUser):
     @property
     def is_receptionist(self):
         return self.role == 'RECEPTIONIST' or self.is_superuser
-    
-    @property
-    def is_nurse(self):
-        return self.role == 'NURSE' or self.is_superuser
     
     @property
     def is_doctor(self):
