@@ -8,7 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
 
@@ -66,6 +66,34 @@ class IsDoctorOrReadOnly(IsAuthenticated):
         return request.user.is_authenticated and (request.user.is_doctor or request.user.is_superuser)
 
 
+class IsAdminOrReadOnly(IsAuthenticated):
+    def has_permission(self, request, view):
+        if request.method in ['GET']:
+            return True
+        return request.user.is_authenticated and (request.user.role == 'ADMIN' or request.user.is_superuser)
+
+
+class CanAccessPatients(IsAuthenticated):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.role in ['RECEPTIONIST', 'NURSE', 'DOCTOR', 'ADMIN'] or request.user.is_superuser
+
+
+class CanAccessVisits(IsAuthenticated):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.role in ['RECEPTIONIST', 'NURSE', 'DOCTOR', 'LAB_TECHNICIAN', 'PHARMACIST', 'ADMIN'] or request.user.is_superuser
+
+
+class CanAccessPrescriptions(IsAuthenticated):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.role in ['DOCTOR', 'PHARMACIST', 'ADMIN'] or request.user.is_superuser
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -83,8 +111,15 @@ class UserViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.action == 'create':
-            return [AllowAny()]
+            if self.request.user.is_authenticated and self.request.user.is_superuser:
+                return [IsAuthenticated()]
+            return [IsAdminUser()]
         return super().get_permissions()
+    
+    def perform_create(self, serializer):
+        if not self.request.user.is_superuser:
+            raise PermissionError("Only administrators can create users")
+        serializer.save()
     
     @action(detail=False, methods=['get'])
     def me(self, request):
@@ -96,17 +131,34 @@ class UserViewSet(viewsets.ModelViewSet):
 @permission_classes([AllowAny])
 def login_view(request):
     from django.contrib.auth import authenticate
+    from django.contrib.auth.signals import user_login_failed
+    from django.core.cache import cache
+    from django.conf import settings
+    
     username = request.data.get('username')
     password = request.data.get('password')
+    
+    rate_limit_key = f'login_attempt_{request.META.get("REMOTE_ADDR", "unknown")}'
+    attempt_count = cache.get(rate_limit_key, 0)
+    
+    if attempt_count >= 5:
+        return Response(
+            {'error': 'Too many login attempts. Please try again in 5 minutes.'},
+            status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
     
     if username and password:
         user = authenticate(username=username, password=password)
         if user:
+            cache.delete(rate_limit_key)
             token, created = Token.objects.get_or_create(user=user)
             return Response({
                 'token': token.key,
                 'user': UserSerializer(user).data
             })
+        else:
+            cache.set(rate_limit_key, attempt_count + 1, 300)
+    
     return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
@@ -120,7 +172,7 @@ def logout_view(request):
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanAccessPatients]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['full_name', 'university_id', 'phone', 'department']
     filterset_fields = ['patient_type', 'gender']
@@ -155,9 +207,9 @@ class PatientViewSet(viewsets.ModelViewSet):
 
 
 class VisitViewSet(viewsets.ModelViewSet):
-    queryset = Visit.objects.all()
+    queryset = Visit.objects.select_related('patient', 'created_by', 'triage', 'consultation').prefetch_related('lab_requests', 'consultation__prescriptions').all()
     serializer_class = VisitListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanAccessVisits]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'patient__patient_type']
     search_fields = ['patient__full_name', 'patient__university_id', 'reason_for_visit']
@@ -529,10 +581,24 @@ class DailyReportViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def patient_data_view(request, visit_id):
     visit = get_object_or_404(Visit, id=visit_id)
     patient = visit.patient
+    
+    user = request.user
+    
+    if not (user.is_superuser or 
+            user.role == 'ADMIN' or
+            user.role == 'RECEPTIONIST' or
+            user.role == 'NURSE' or
+            user.role == 'DOCTOR' or
+            user.role == 'LAB_TECHNICIAN' or
+            user.role == 'PHARMACIST'):
+        return Response(
+            {'error': 'You do not have permission to view this patient data'},
+            status=status.HTTP_403_FORBIDDEN
+        )
     
     all_visits = Visit.objects.filter(patient=patient).prefetch_related(
         'consultation__prescriptions__medicine', 'lab_requests'

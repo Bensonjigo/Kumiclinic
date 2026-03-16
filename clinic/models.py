@@ -88,6 +88,12 @@ class Patient(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['university_id']),
+            models.Index(fields=['full_name']),
+            models.Index(fields=['patient_type']),
+            models.Index(fields=['created_at']),
+        ]
     
     def __str__(self):
         return f"{self.full_name} ({self.university_id})"
@@ -121,6 +127,12 @@ class Visit(models.Model):
     
     class Meta:
         ordering = ['-visit_date']
+        indexes = [
+            models.Index(fields=['visit_date']),
+            models.Index(fields=['status']),
+            models.Index(fields=['patient', 'visit_date']),
+            models.Index(fields=['created_at']),
+        ]
     
     def __str__(self):
         return f"Visit #{self.id} - {self.patient.full_name} ({self.get_status_display()})"
@@ -325,6 +337,12 @@ class LabRequest(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['date']),
+            models.Index(fields=['completed_date']),
+            models.Index(fields=['visit', 'status']),
+        ]
     
     def __str__(self):
         if self.test_type:
@@ -355,6 +373,10 @@ class Notification(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['created_at']),
+        ]
     
     def __str__(self):
         return f"{self.get_notification_type_display()}: {self.title}"
