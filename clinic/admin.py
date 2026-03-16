@@ -1,19 +1,72 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.template.response import TemplateResponse
+from django.urls import path
 from .models import (
     User, Patient, Visit, Triage, Consultation, Prescription,
     Medicine, StockMovement, LabRequest, LabTestType, Notification, DailyReport, AuditLog
 )
 
 
-@admin.register(LabTestType)
+class ClinicAdminSite(admin.AdminSite):
+    site_header = 'Kumi University Clinic'
+    site_title = 'Clinic Admin'
+    index_title = 'Dashboard'
+    login_template = 'admin/login.html'
+    
+    def index(self, request, extra_context=None):
+        from .models import Patient, Visit, Medicine, LabRequest, Prescription
+        from django.db.models import F
+        from django.utils import timezone
+        
+        today = timezone.now().date()
+        
+        try:
+            low_stock_count = Medicine.objects.filter(
+                stock_quantity__lt=F('minimum_stock_level')
+            ).count()
+        except Exception:
+            low_stock_count = 0
+        
+        stats = {
+            'total_patients': Patient.objects.count(),
+            'today_visits': Visit.objects.filter(visit_date=today).count(),
+            'total_medicines': Medicine.objects.count(),
+            'pending_labs': LabRequest.objects.filter(status='PENDING').count(),
+            'pending_prescriptions': Prescription.objects.filter(is_dispensed=False).count(),
+            'low_stock_medicines': low_stock_count,
+        }
+        
+        recent_visits = Visit.objects.select_related('patient', 'created_by').order_by('-visit_date')[:5]
+        
+        extra_context = extra_context or {}
+        extra_context.update({
+            'stats': stats,
+            'recent_visits': recent_visits,
+        })
+        return super().index(request, extra_context)
+    
+    def login(self, request, extra_context=None):
+        from django.contrib.auth.views import LoginView
+        return LoginView.as_view(template_name=self.login_template, extra_context=extra_context)(request)
+    
+    def get_urls(self):
+        from django.urls import include
+        urls = super().get_urls()
+        return urls
+
+
+clinic_admin_site = ClinicAdminSite(name='clinic_admin')
+
+
+@admin.register(LabTestType, site=clinic_admin_site)
 class LabTestTypeAdmin(admin.ModelAdmin):
     list_display = ['name', 'code', 'is_active', 'created_at']
     list_filter = ['is_active']
     search_fields = ['name', 'code']
 
 
-@admin.register(User)
+@admin.register(User, site=clinic_admin_site)
 class UserAdmin(BaseUserAdmin):
     list_display = ['username', 'email', 'first_name', 'last_name', 'role', 'is_active']
     list_filter = ['role', 'is_active', 'is_staff']
@@ -26,7 +79,7 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
-@admin.register(Patient)
+@admin.register(Patient, site=clinic_admin_site)
 class PatientAdmin(admin.ModelAdmin):
     list_display = ['full_name', 'university_id', 'patient_type', 'department', 'phone', 'gender', 'created_at']
     list_filter = ['patient_type', 'gender', 'department']
@@ -53,7 +106,7 @@ class LabRequestInline(admin.TabularInline):
     readonly_fields = ['created_at', 'updated_at']
 
 
-@admin.register(Visit)
+@admin.register(Visit, site=clinic_admin_site)
 class VisitAdmin(admin.ModelAdmin):
     list_display = ['id', 'patient', 'visit_date', 'status', 'created_by']
     list_filter = ['status', 'visit_date', 'patient__patient_type']
@@ -66,7 +119,7 @@ class VisitAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related('patient', 'created_by')
 
 
-@admin.register(Triage)
+@admin.register(Triage, site=clinic_admin_site)
 class TriageAdmin(admin.ModelAdmin):
     list_display = ['visit', 'temperature', 'blood_pressure', 'weight', 'recorded_by', 'created_at']
     search_fields = ['visit__patient__full_name', 'symptoms']
@@ -74,7 +127,7 @@ class TriageAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
 
 
-@admin.register(Consultation)
+@admin.register(Consultation, site=clinic_admin_site)
 class ConsultationAdmin(admin.ModelAdmin):
     list_display = ['visit', 'doctor', 'diagnosis', 'created_at']
     search_fields = ['visit__patient__full_name', 'diagnosis', 'doctor__username']
@@ -88,7 +141,7 @@ class PrescriptionInline(admin.TabularInline):
     readonly_fields = ['created_at', 'updated_at']
 
 
-@admin.register(Prescription)
+@admin.register(Prescription, site=clinic_admin_site)
 class PrescriptionAdmin(admin.ModelAdmin):
     list_display = ['medicine', 'consultation', 'dosage', 'quantity', 'is_dispensed', 'created_at']
     list_filter = ['is_dispensed', 'medicine__category']
@@ -96,7 +149,7 @@ class PrescriptionAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
 
 
-@admin.register(Medicine)
+@admin.register(Medicine, site=clinic_admin_site)
 class MedicineAdmin(admin.ModelAdmin):
     list_display = ['name', 'category', 'stock_quantity', 'unit', 'supplier', 'minimum_stock_level', 'is_low_stock']
     list_filter = ['category', 'supplier']
@@ -121,7 +174,7 @@ class MedicineAdmin(admin.ModelAdmin):
     is_low_stock.boolean = True
 
 
-@admin.register(StockMovement)
+@admin.register(StockMovement, site=clinic_admin_site)
 class StockMovementAdmin(admin.ModelAdmin):
     list_display = ['medicine', 'movement_type', 'quantity', 'performed_by', 'date']
     list_filter = ['movement_type', 'date', 'medicine__category']
@@ -130,7 +183,7 @@ class StockMovementAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at']
 
 
-@admin.register(LabRequest)
+@admin.register(LabRequest, site=clinic_admin_site)
 class LabRequestAdmin(admin.ModelAdmin):
     list_display = ['visit', 'test_name', 'status', 'requested_by', 'technician', 'date']
     list_filter = ['status', 'test_name', 'date']
@@ -139,7 +192,7 @@ class LabRequestAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
 
 
-@admin.register(Notification)
+@admin.register(Notification, site=clinic_admin_site)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ['title', 'notification_type', 'user', 'is_read', 'created_at']
     list_filter = ['notification_type', 'is_read']
@@ -147,7 +200,7 @@ class NotificationAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
 
 
-@admin.register(DailyReport)
+@admin.register(DailyReport, site=clinic_admin_site)
 class DailyReportAdmin(admin.ModelAdmin):
     list_display = ['report_date', 'total_patients', 'students_count', 'staff_count', 'completed_visits']
     list_filter = ['report_date']
@@ -155,7 +208,7 @@ class DailyReportAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at']
 
 
-@admin.register(AuditLog)
+@admin.register(AuditLog, site=clinic_admin_site)
 class AuditLogAdmin(admin.ModelAdmin):
     list_display = ['timestamp', 'user', 'action', 'model_name', 'description', 'ip_address']
     list_filter = ['action', 'model_name', 'timestamp']
