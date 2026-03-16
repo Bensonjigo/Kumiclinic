@@ -623,14 +623,13 @@ def register_patient(request):
         email = request.POST.get('email')
         address = request.POST.get('address')
         gender = request.POST.get('gender')
-        age = request.POST.get('age')
+        year_of_birth = request.POST.get('year_of_birth')
         
-        # Calculate date of birth from age
-        if age:
+        # Calculate date of birth from year of birth
+        if year_of_birth:
             try:
-                age = int(age)
-                today = timezone.now().date()
-                date_of_birth = today.replace(year=today.year - age)
+                year = int(year_of_birth)
+                date_of_birth = timezone.now().date().replace(month=1, day=1, year=year)
             except (ValueError, TypeError):
                 date_of_birth = None
         else:
@@ -645,7 +644,8 @@ def register_patient(request):
         # Visit Details
         reason_for_visit = request.POST.get('reason_for_visit')
         
-        if Patient.objects.filter(university_id=university_id).exists():
+        # Check for duplicate university_id only if provided
+        if university_id and Patient.objects.filter(university_id=university_id).exists():
             messages.error(request, 'A patient with this university ID already exists.')
             return redirect('register_patient')
         

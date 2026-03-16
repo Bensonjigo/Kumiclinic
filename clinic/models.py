@@ -59,17 +59,17 @@ class Patient(models.Model):
     PATIENT_TYPE_CHOICES = [
         ('STUDENT', 'Student'),
         ('STAFF', 'Staff'),
+        ('OTHER', 'Other'),
     ]
     
     GENDER_CHOICES = [
         ('MALE', 'Male'),
         ('FEMALE', 'Female'),
-        ('OTHER', 'Other'),
     ]
     
     full_name = models.CharField(max_length=200)
     patient_type = models.CharField(max_length=10, choices=PATIENT_TYPE_CHOICES)
-    university_id = models.CharField(max_length=50, unique=True)
+    university_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
     department = models.CharField(max_length=100)
     phone = models.CharField(max_length=20)
     email = models.EmailField(blank=True, null=True)

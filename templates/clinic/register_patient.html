@@ -25,10 +25,10 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Age *</label>
-                        <input type="number" name="age" required min="1" max="150"
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year of Birth *</label>
+                        <input type="number" name="year_of_birth" required min="1900" max="2025"
                             class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-background-light dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                            placeholder="Enter age in years">
+                            placeholder="e.g. 1995">
                     </div>
                     
                     <div>
@@ -38,7 +38,6 @@
                             <option value="">Select gender</option>
                             <option value="MALE">Male</option>
                             <option value="FEMALE">Female</option>
-                            <option value="OTHER">Other</option>
                         </select>
                     </div>
                     
@@ -49,14 +48,15 @@
                             <option value="">Select patient type</option>
                             <option value="STUDENT">Student</option>
                             <option value="STAFF">Staff</option>
+                            <option value="OTHER">Other</option>
                         </select>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">University ID *</label>
-                        <input type="text" name="university_id" id="universityId" required
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">University ID</label>
+                        <input type="text" name="university_id" id="universityId"
                             class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-background-light dark:bg-slate-800 text-[#0d141b] dark:text-white focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                            placeholder="STU/2024/001">
+                            placeholder="STU/2024/001 (Optional)">
                     </div>
                 </div>
             </div>
