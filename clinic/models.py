@@ -207,6 +207,8 @@ class Medicine(models.Model):
     stock_quantity = models.PositiveIntegerField(default=0)
     unit = models.CharField(max_length=20, help_text="e.g., tablets, ml, bottles")
     minimum_stock_level = models.PositiveIntegerField(default=10)
+    cost_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    selling_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     supplier = models.CharField(max_length=50, choices=SUPPLIER_CHOICES, blank=True)
     supplier_contact = models.CharField(max_length=200, blank=True, help_text="Supplier contact info")
     location = models.CharField(max_length=100, blank=True, help_text="Storage location e.g., Shelf A-1")
