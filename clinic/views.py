@@ -534,28 +534,31 @@ def patient_data_view(request, visit_id):
     visit = get_object_or_404(Visit, id=visit_id)
     patient = visit.patient
     
-    # Medical History - show only this visit's consultation
-    medical_history_html = ''
-    try:
-        consultation = visit.consultation
-        if consultation:
-            medical_history_html = f'''
-            <div class="border-b py-3">
-                <div class="flex justify-between items-start mb-1">
-                    <span class="font-medium">{visit.visit_date.strftime('%d %b %Y')}</span>
-                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{consultation.diagnosis}</span>
-                </div>
-                <p class="text-sm text-gray-600">{consultation.doctor_notes or 'No notes'}</p>
-            </div>
-            '''
-    except Exception:
-        pass
-    if not medical_history_html:
-        medical_history_html = '<p class="text-gray-500 text-sm">No consultation for this visit</p>'
+    all_visits = Visit.objects.filter(patient=patient).prefetch_related(
+        'consultation__prescriptions__medicine', 'lab_requests'
+    ).order_by('-visit_date')
     
-    # Lab Results - show only this visit's lab requests
+    medical_history_html = ''
+    for v in all_visits[:10]:
+        try:
+            consultation = v.consultation
+            if consultation:
+                medical_history_html += f'''
+                <div class="border-b py-3">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="font-medium">{v.visit_date.strftime('%d %b %Y')}</span>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{consultation.diagnosis}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">{consultation.doctor_notes or 'No notes'}</p>
+                </div>
+                '''
+        except Exception:
+            pass
+    if not medical_history_html:
+        medical_history_html = '<p class="text-gray-500 text-sm">No medical history found</p>'
+    
     lab_results_html = ''
-    lab_requests = LabRequest.objects.filter(visit=visit).order_by('-date')
+    lab_requests = LabRequest.objects.filter(visit__patient=patient).select_related('visit').order_by('-date')[:10]
     for lab in lab_requests:
         status_class = 'bg-gray-100 text-gray-800'
         if lab.status == 'COMPLETED':
@@ -579,11 +582,10 @@ def patient_data_view(request, visit_id):
         </div>
         '''
     if not lab_results_html:
-        lab_results_html = '<p class="text-gray-500 text-sm">No lab tests for this visit</p>'
+        lab_results_html = '<p class="text-gray-500 text-sm">No lab results found</p>'
     
-    # Medications - show only this visit's prescriptions
     medications_html = ''
-    prescriptions = Prescription.objects.filter(consultation__visit=visit).select_related('medicine', 'consultation__visit')
+    prescriptions = Prescription.objects.filter(consultation__visit__patient=patient).select_related('medicine', 'consultation__visit').order_by('-consultation__visit__visit_date')[:10]
     for rx in prescriptions:
         dispensed_class = 'bg-purple-100 text-purple-800' if rx.is_dispensed else 'bg-yellow-100 text-yellow-800'
         medications_html += f'''
@@ -597,9 +599,8 @@ def patient_data_view(request, visit_id):
         </div>
         '''
     if not medications_html:
-        medications_html = '<p class="text-gray-500 text-sm">No prescriptions for this visit</p>'
+        medications_html = '<p class="text-gray-500 text-sm">No medications found</p>'
     
-    # Visit Notes - show this visit's consultation (already correct)
     visit_notes_html = ''
     try:
         consultation = visit.consultation
