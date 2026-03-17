@@ -6,26 +6,50 @@
 <div class="bg-white rounded-lg shadow p-6">
     <h2 class="text-2xl font-bold mb-6">Prescriptions Waiting for Dispensing</h2>
     
-    {% if grouped_prescriptions %}
+    {% if prescriptions %}
     <div class="space-y-4">
-        {% for item in grouped_prescriptions %}
+        {% for prescription in prescriptions %}
         <div class="border rounded-lg p-4 hover:bg-gray-50">
             <div class="flex justify-between items-start">
                 <div>
                     <h3 class="font-semibold text-lg">
-                        {{ item.patient.full_name }}
+                        {{ prescription.consultation.visit.patient.full_name }}
                     </h3>
                     <p class="text-sm text-gray-500">
-                        Prescribed by: <span class="font-medium">{{ item.doctor.get_full_name|default:item.doctor.username }}</span>
+                        Visit #{{ prescription.consultation.visit.id }}
                     </p>
-                    <p class="text-sm text-gray-500">
-                        {{ item.prescriptions|length }} prescription(s)
-                    </p>
+                    <div class="mt-2 p-3 bg-blue-50 rounded-lg">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-pills text-blue-600"></i>
+                            <span class="font-medium">{{ prescription.medicine.name }}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span class="text-gray-500">Dosage:</span>
+                                <span class="ml-1">{{ prescription.dosage }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Quantity:</span>
+                                <span class="ml-1 font-medium">{{ prescription.quantity }} {{ prescription.medicine.unit }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-blue-100">
+                            <span class="text-sm text-gray-500">Available stock: </span>
+                            <span class="font-medium {% if prescription.medicine.stock_quantity < prescription.quantity %}text-red-600{% else %}text-green-600{% endif %}">
+                                {{ prescription.medicine.stock_quantity }} {{ prescription.medicine.unit }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 <button 
-                    onclick="viewPrescriptions({{ item.prescription_ids }})"
-                    class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                    <i class="fas fa-eye mr-1"></i> View
+                    {% if prescription.medicine.stock_quantity < prescription.quantity %}
+                    disabled
+                    class="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed"
+                    {% else %}
+                    onclick="confirmDispense({{ prescription.id }}, '{{ prescription.medicine.name }}', {{ prescription.quantity }}, '{{ prescription.medicine.unit }}')"
+                    class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                    {% endif %}>
+                    <i class="fas fa-check mr-1"></i> Dispense
                 </button>
             </div>
         </div>
@@ -42,109 +66,50 @@
     {% endif %}
 </div>
 
-<!-- View Prescriptions Modal -->
-<div id="view-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 p-6 max-h-[80vh] overflow-y-auto">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold">Prescription Details</h3>
-            <button onclick="closeViewModal()" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times text-xl"></i>
-            </button>
+<!-- Confirmation Modal -->
+<div id="dispense-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-pills text-green-600 text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold">Confirm Dispensing</h3>
+                <p class="text-sm text-gray-500">This action cannot be undone</p>
+            </div>
         </div>
         
-        <div id="prescription-details">
-            <!-- Prescription details will be loaded here -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            <p class="text-center">
+                Dispense <span id="modal-medicine" class="font-bold"></span>?
+            </p>
+            <p class="text-center text-gray-600 mt-1">
+                Quantity: <span id="modal-quantity" class="font-bold"></span> <span id="modal-unit"></span>
+            </p>
         </div>
         
-        <div class="flex gap-3 mt-4 pt-4 border-t">
-            <button onclick="closeViewModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
-                Close
+        <div class="flex gap-3">
+            <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
+                Cancel
             </button>
-            <button id="confirm-dispense-btn" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                <i class="fas fa-check mr-1"></i> Confirm & Dispense All
-            </button>
+            <a id="modal-confirm-btn" href="#" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-center">
+                Confirm Dispense
+            </a>
         </div>
     </div>
 </div>
 
 <script>
-let currentPrescriptionIds = [];
-
-function viewPrescriptions(ids) {
-    currentPrescriptionIds = ids;
-    
-    // Fetch prescription details
-    fetch('/api/prescriptions/?ids=' + ids.join(','))
-        .then(response => response.json())
-        .then(data => {
-            let html = '';
-            let allAvailable = true;
-            let totalItems = 0;
-            
-            data.forEach(rx => {
-                totalItems++;
-                const available = rx.stock_quantity >= rx.quantity;
-                if (!available) allAvailable = false;
-                
-                html += `
-                    <div class="p-3 bg-blue-50 rounded-lg mb-2">
-                        <div class="flex items-center gap-2 mb-2">
-                            <i class="fas fa-pills text-blue-600"></i>
-                            <span class="font-medium">${rx.medicine_name}</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                                <span class="text-gray-500">Quantity:</span>
-                                <span class="ml-1 font-medium">${rx.quantity} ${rx.unit}</span>
-                            </div>
-                            <div>
-                                <span class="text-gray-500">Available:</span>
-                                <span class="font-medium ${available ? 'text-green-600' : 'text-red-600'}">
-                                    ${rx.stock_quantity} ${rx.unit}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('prescription-details').innerHTML = html;
-            
-            const btn = document.getElementById('confirm-dispense-btn');
-            if (allAvailable) {
-                btn.onclick = () => confirmDispenseAll(ids);
-                btn.className = 'flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700';
-                btn.innerHTML = '<i class="fas fa-check mr-1"></i> Confirm & Dispense All';
-            } else {
-                btn.onclick = null;
-                btn.className = 'flex-1 bg-gray-300 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed';
-                btn.innerHTML = 'Insufficient Stock';
-            }
-            
-            document.getElementById('view-modal').classList.remove('hidden');
-        });
+function confirmDispense(id, medicine, quantity, unit) {
+    document.getElementById('modal-medicine').textContent = medicine;
+    document.getElementById('modal-quantity').textContent = quantity;
+    document.getElementById('modal-unit').textContent = unit;
+    document.getElementById('modal-confirm-btn').href = '/prescription/' + id + '/dispense/';
+    document.getElementById('dispense-modal').classList.remove('hidden');
 }
 
-function closeViewModal() {
-    document.getElementById('view-modal').classList.add('hidden');
-}
-
-function confirmDispenseAll(ids) {
-    if (!confirm('Are you sure you want to dispense all these medications?')) {
-        return;
-    }
-    
-    // Dispense all prescriptions
-    ids.forEach(id => {
-        fetch('/prescription/' + id + '/dispense/', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}'
-            }
-        }).then(() => {
-            window.location.reload();
-        });
-    });
+function closeModal() {
+    document.getElementById('dispense-modal').classList.add('hidden');
 }
 </script>
 {% endblock %}

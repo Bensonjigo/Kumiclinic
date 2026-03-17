@@ -1117,24 +1117,8 @@ def lab_result_form(request, lab_id):
 def pending_prescriptions(request):
     prescriptions = Prescription.objects.filter(
         is_dispensed=False
-    ).select_related('consultation__visit__patient', 'consultation__doctor', 'medicine').order_by('consultation__visit__visit_date')
-    
-    # Group prescriptions by visit
-    grouped = {}
-    for rx in prescriptions:
-        visit_id = rx.consultation.visit.id
-        if visit_id not in grouped:
-            grouped[visit_id] = {
-                'visit': rx.consultation.visit,
-                'patient': rx.consultation.visit.patient,
-                'doctor': rx.consultation.doctor,
-                'prescriptions': [],
-                'prescription_ids': []
-            }
-        grouped[visit_id]['prescriptions'].append(rx)
-        grouped[visit_id]['prescription_ids'].append(rx.id)
-    
-    return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped.values()})
+    ).select_related('consultation__visit__patient', 'medicine')
+    return render(request, 'clinic/pharmacy_queue.html', {'prescriptions': prescriptions})
 
 
 @login_required

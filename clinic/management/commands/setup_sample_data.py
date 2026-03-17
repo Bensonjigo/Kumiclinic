@@ -82,6 +82,7 @@ class Command(BaseCommand):
                     category=m['category'],
                     stock_quantity=m['stock'],
                     unit=m['unit'],
+                    expiry_date=date.today() + timedelta(days=365),
                     minimum_stock_level=m['min']
                 )
                 self.stdout.write(f'Created medicine: {medicine.name}')

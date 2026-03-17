@@ -694,26 +694,3 @@ def patient_data_view(request, visit_id):
         'medications': medications_html,
         'visit_notes': visit_notes_html,
     })
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def prescription_details_api(request):
-    ids = request.GET.get('ids', '').split(',')
-    prescriptions = Prescription.objects.filter(
-        id__in=ids
-    ).select_related('medicine', 'consultation__visit__patient')
-    
-    data = []
-    for rx in prescriptions:
-        data.append({
-            'id': rx.id,
-            'medicine_name': rx.medicine.name,
-            'quantity': rx.quantity,
-            'unit': rx.medicine.unit,
-            'stock_quantity': rx.medicine.stock_quantity,
-            'dosage': rx.dosage,
-            'is_dispensed': rx.is_dispensed
-        })
-    
-    return Response(data)
