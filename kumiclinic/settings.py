@@ -48,6 +48,7 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 # Custom CSRF failure handler - redirects to login instead of showing technical error
 CSRF_FAILURE_VIEW = 'clinic.views.csrf_failure'
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -72,6 +73,28 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# CORS Settings (requires django-cors-headers package)
+try:
+    import corsheaders
+    INSTALLED_APPS.append('corsheaders')
+    MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
+    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '').split(',')
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    CORS_ALLOW_HEADERS = ['Authorization', 'Content-Type', 'X-CSRFToken']
+except ImportError:
+    pass
+
+# CORS Settings (requires django-cors-headers package)
+try:
+    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '').split(',')
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    CORS_ALLOW_HEADERS = ['Authorization', 'Content-Type', 'X-CSRFToken']
+except Exception:
+    pass
+
+
 ROOT_URLCONF = 'kumiclinic.urls'
 
 TEMPLATES = [
@@ -91,7 +114,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'kumiclinic.wsgi.application'
-
+# Database configuration - using environment variables for security
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
