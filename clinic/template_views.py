@@ -1399,8 +1399,12 @@ def batch_dispense(request, visit_id):
                 )
                 dispensed_count += 1
         
-        # Check remaining prescriptions
-        remaining = visit.consultation.prescriptions.filter(is_dispensed=False, cannot_dispense=False).count()
+        # Check remaining prescriptions (fresh query)
+        remaining = Prescription.objects.filter(
+            consultation__visit=visit,
+            is_dispensed=False,
+            cannot_dispense=False
+        ).count()
         
         if remaining == 0:
             visit.update_status('COMPLETED')
