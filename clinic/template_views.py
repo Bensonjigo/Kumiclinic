@@ -1321,29 +1321,64 @@ def batch_dispense(request, visit_id):
         messages.error(request, 'No consultation found for this visit')
         return redirect('pending_prescriptions')
     
-    prescriptions = visit.consultation.prescriptions.filter(is_dispensed=False)
+    prescriptions = visit.consultation.prescriptions.filter(is_dispensed=False, cannot_dispense=False)
     
     if request.method == 'POST':
         dispensed_count = 0
-        failed_count = 0
+        cannot_dispense_count = 0
         errors = []
         
         for prescription in prescriptions:
             dispense_key = f'dispense_{prescription.id}'
+            partial_key = f'partial_{prescription.id}'
+            cannot_key = f'cannot_{prescription.id}'
+            partial_qty_key = f'partial_qty_{prescription.id}'
+            reason_key = f'reason_{prescription.id}'
             
-            if dispense_key in request.POST:
-                medicine = prescription.medicine
+            medicine = prescription.medicine
+            
+            # Handle "Mark as Cannot Dispense"
+            if cannot_key in request.POST:
+                reason = request.POST.get(reason_key, 'Out of stock')
+                prescription.cannot_dispense = True
+                prescription.cannot_dispense_reason = reason
+                prescription.save()
+                cannot_dispense_count += 1
+                log_action(
+                    request.user,
+                    'CANNOT_DISPENSE',
+                    'Prescription',
+                    prescription.id,
+                    f'Cannot dispense {medicine.name}: {reason}',
+                    request
+                )
+                continue
+            
+            # Handle dispensing (full or partial)
+            if dispense_key in request.POST or partial_key in request.POST:
+                # Determine quantity to dispense
+                if partial_key in request.POST:
+                    qty_str = request.POST.get(partial_qty_key, '0')
+                    try:
+                        qty_to_dispense = int(qty_str)
+                    except (ValueError, TypeError):
+                        qty_to_dispense = 0
+                else:
+                    qty_to_dispense = prescription.quantity
                 
-                if medicine.stock_quantity < prescription.quantity:
-                    failed_count += 1
-                    errors.append(f'{medicine.name}: Insufficient stock ({medicine.stock_quantity} available)')
+                if qty_to_dispense <= 0:
                     continue
                 
-                # Dispense the prescription
-                medicine.stock_quantity -= prescription.quantity
+                if medicine.stock_quantity < qty_to_dispense:
+                    errors.append(f'{medicine.name}: Only {medicine.stock_quantity} {medicine.unit} available')
+                    continue
+                
+                # Dispense
+                medicine.stock_quantity -= qty_to_dispense
                 medicine.save()
                 
                 prescription.is_dispensed = True
+                prescription.quantity = qty_to_dispense  # Update to actual dispensed quantity
                 prescription.dispensed_by = request.user
                 prescription.dispensed_at = timezone.now()
                 prescription.save()
@@ -1353,19 +1388,26 @@ def batch_dispense(request, visit_id):
                     'DISPENSE', 
                     'Prescription', 
                     prescription.id,
-                    f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}',
+                    f'Dispensed {qty_to_dispense} {medicine.unit} of {medicine.name}',
                     request
                 )
                 dispensed_count += 1
         
-        # Check if all prescriptions are dispensed
-        remaining = visit.consultation.prescriptions.filter(is_dispensed=False).count()
+        # Check remaining prescriptions
+        remaining = visit.consultation.prescriptions.filter(is_dispensed=False, cannot_dispense=False).count()
         
         if remaining == 0:
             visit.update_status('COMPLETED')
-            messages.success(request, f'All prescriptions dispensed! Visit completed.')
-        elif dispensed_count > 0:
-            messages.success(request, f'{dispensed_count} prescription(s) dispensed. {remaining} remaining.')
+            messages.success(request, f'All prescriptions handled! Visit completed.')
+        elif dispensed_count > 0 or cannot_dispense_count > 0:
+            msg = ''
+            if dispensed_count > 0:
+                msg += f'{dispensed_count} dispensed. '
+            if cannot_dispense_count > 0:
+                msg += f'{cannot_dispense_count} marked as cannot dispense. '
+            if remaining > 0:
+                msg += f'{remaining} remaining.'
+            messages.success(request, msg)
         else:
             for error in errors:
                 messages.error(request, error)

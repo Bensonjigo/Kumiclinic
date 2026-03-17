@@ -259,6 +259,10 @@ class Prescription(models.Model):
     quantity = models.PositiveIntegerField()
     notes = models.TextField(blank=True)
     is_dispensed = models.BooleanField(default=False)
+    cannot_dispense = models.BooleanField(default=False, help_text="Mark as cannot dispense (out of stock, etc.)")
+    cannot_dispense_reason = models.TextField(blank=True, help_text="Reason why cannot dispense")
+    dispensed_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='dispensed_prescriptions')
+    dispensed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
