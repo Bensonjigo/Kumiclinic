@@ -327,27 +327,38 @@ def dashboard_pharmacy(request):
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Group pending prescriptions by visit
-    visits_with_rx = Visit.objects.filter(
-        consultation__prescriptions__is_dispensed=False
-    ).prefetch_related(
-        'consultation__prescriptions__medicine',
+    # Get all pending prescriptions
+    prescriptions = Prescription.objects.filter(
+        is_dispensed=False,
+        consultation__isnull=False
+    ).select_related(
+        'consultation__visit__patient',
         'consultation__doctor',
-        'patient'
-    ).distinct().order_by('consultation__prescriptions__created_at')
+        'medicine'
+    ).order_by('consultation__visit__visit_date')
     
+    # Group by visit manually - no duplicates
     grouped_pending = []
-    for visit in visits_with_rx:
-        if visit.consultation:
-            pending_rx = visit.consultation.prescriptions.filter(is_dispensed=False)
-            if pending_rx:
-                grouped_pending.append({
-                    'visit': visit,
-                    'patient': visit.patient,
-                    'doctor': visit.consultation.doctor,
-                    'prescriptions': pending_rx,
-                    'rx_count': pending_rx.count()
-                })
+    seen_visits = set()
+    
+    for rx in prescriptions:
+        visit_id = rx.consultation.visit_id
+        
+        if visit_id in seen_visits:
+            continue
+        seen_visits.add(visit_id)
+        
+        # Get all pending prescriptions for this visit
+        visit = rx.consultation.visit
+        all_rx_for_visit = prescriptions.filter(consultation__visit=visit_id)
+        
+        grouped_pending.append({
+            'visit': visit,
+            'patient': visit.patient,
+            'doctor': rx.consultation.doctor,
+            'prescriptions': all_rx_for_visit,
+            'rx_count': all_rx_for_visit.count()
+        })
     
     # Today's dispensed count
     dispensed_today = Prescription.objects.filter(
