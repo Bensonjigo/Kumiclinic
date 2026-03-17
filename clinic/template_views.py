@@ -330,6 +330,7 @@ def dashboard_pharmacy(request):
     # Get all pending prescriptions
     prescriptions = Prescription.objects.filter(
         is_dispensed=False,
+        cannot_dispense=False,
         consultation__isnull=False
     ).select_related(
         'consultation__visit__patient',
@@ -1237,8 +1238,10 @@ def batch_lab_results(request, visit_id):
 @login_required
 def pending_prescriptions(request):
     # Get all pending prescriptions with their visits
+    # Filter out both dispensed AND cannot_dispense
     prescriptions = Prescription.objects.filter(
         is_dispensed=False,
+        cannot_dispense=False,
         consultation__isnull=False
     ).select_related(
         'consultation__visit__patient',
