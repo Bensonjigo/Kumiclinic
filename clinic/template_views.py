@@ -920,8 +920,26 @@ def consultation_form(request, visit_id):
 
 @login_required
 def pending_labs(request):
-    lab_requests = LabRequest.objects.filter(status='PENDING').select_related('visit__patient')
-    return render(request, 'clinic/lab_queue.html', {'lab_requests': lab_requests})
+    # Group lab requests by visit - get unique visits with pending labs
+    visits_with_labs = Visit.objects.filter(
+        lab_requests__status='PENDING'
+    ).prefetch_related(
+        'lab_requests',
+        'patient'
+    ).distinct().order_by('visit_date')
+    
+    # Build grouped data
+    grouped_labs = []
+    for visit in visits_with_labs:
+        pending_lab_requests = visit.lab_requests.filter(status='PENDING')
+        grouped_labs.append({
+            'visit': visit,
+            'patient': visit.patient,
+            'lab_requests': pending_lab_requests,
+            'lab_count': pending_lab_requests.count()
+        })
+    
+    return render(request, 'clinic/lab_queue.html', {'grouped_labs': grouped_labs})
 
 
 @login_required
@@ -1115,10 +1133,28 @@ def lab_result_form(request, lab_id):
 
 @login_required
 def pending_prescriptions(request):
-    prescriptions = Prescription.objects.filter(
-        is_dispensed=False
-    ).select_related('consultation__visit__patient', 'medicine')
-    return render(request, 'clinic/pharmacy_queue.html', {'prescriptions': prescriptions})
+    # Group prescriptions by visit - get unique visits with pending prescriptions
+    from django.db.models import Prefetch
+    
+    visits_with_prescriptions = Visit.objects.filter(
+        consultation__prescriptions__is_dispensed=False
+    ).prefetch_related(
+        'consultation__prescriptions__medicine',
+        'patient'
+    ).distinct().order_by('visit_date')
+    
+    # Build grouped data
+    grouped_prescriptions = []
+    for visit in visits_with_prescriptions:
+        pending_rx = visit.consultation.prescriptions.filter(is_dispensed=False) if visit.consultation else []
+        grouped_prescriptions.append({
+            'visit': visit,
+            'patient': visit.patient,
+            'prescriptions': pending_rx,
+            'rx_count': pending_rx.count()
+        })
+    
+    return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped_prescriptions})
 
 
 @login_required
