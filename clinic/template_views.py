@@ -1256,6 +1256,10 @@ def medicines_list(request):
 @login_required
 def add_medicine(request):
     """Create a new medicine"""
+    if request.user.role not in ['ADMIN', 'STORE_MANAGER'] and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to add medicines.')
+        return redirect('medicines')
+    
     if request.method == 'POST':
         name = request.POST.get('name')
         category = request.POST.get('category')
@@ -1305,6 +1309,10 @@ def add_medicine(request):
 @login_required
 def edit_medicine(request, medicine_id):
     """Edit an existing medicine"""
+    if request.user.role not in ['ADMIN', 'STORE_MANAGER'] and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to edit medicines.')
+        return redirect('medicines')
+    
     medicine = get_object_or_404(Medicine, id=medicine_id)
     
     if request.method == 'POST':
@@ -1328,6 +1336,10 @@ def edit_medicine(request, medicine_id):
 @login_required
 def delete_medicine(request, medicine_id):
     """Delete a medicine"""
+    if request.user.role not in ['ADMIN', 'STORE_MANAGER'] and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to delete medicines.')
+        return redirect('medicines')
+    
     if request.method == 'POST':
         medicine = get_object_or_404(Medicine, id=medicine_id)
         medicine_name = medicine.name
@@ -1347,6 +1359,10 @@ def delete_medicine(request, medicine_id):
 
 @login_required
 def add_stock(request, medicine_id):
+    if request.user.role not in ['ADMIN', 'STORE_MANAGER'] and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to add stock.')
+        return redirect('medicines')
+    
     if request.method == 'POST':
         medicine = get_object_or_404(Medicine, id=medicine_id)
         quantity = request.POST.get('quantity')
