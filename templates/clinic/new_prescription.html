@@ -70,8 +70,10 @@
             <div class="border-t pt-4">
                 <div class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p class="text-sm text-yellow-800">
-                        <strong>Important:</strong> Prescribe in the SAME unit as pharmacy stock (e.g., if stock is in "tablets", prescribe tablets; if in "ml", prescribe ml).
-                        Check the unit column in medicine list.
+                        <strong>Important:</strong> 
+                        • For <strong>Tablets/Capsules</strong>: Use the formula (Per Day × Times × Days)<br>
+                        • For <strong>Syrups/Injections</strong>: Enter quantity DIRECTLY (e.g., 1 bottle, 3 ml, etc.) - don't use the formula<br>
+                        The quantity you enter will be subtracted from pharmacy stock.
                     </p>
                 </div>
                 <h3 class="font-semibold mb-3">Prescribe Medicines</h3>
@@ -81,18 +83,21 @@
                             <span class="font-medium text-sm text-gray-600">Medicine 1</span>
                             <button type="button" class="text-red-500 text-sm hover:text-red-700 remove-medicine hidden">Remove</button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-7 gap-3">
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
-                                <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm">
-                                    <option value="">Select</option>
-                                    {% for medicine in medicines %}
-                                    <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.unit }})</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
+                            <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm" onchange="updateMedicineUnit(this)">
+                                <option value="">Select</option>
+                                {% for medicine in medicines %}
+                                <option value="{{ medicine.id }}" data-unit="{{ medicine.unit }}" data-category="{{ medicine.category }}">{{ medicine.name }} ({{ medicine.unit }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- For Tablets/Capsules -->
+                        <div class="calculation-fields grid grid-cols-1 md:grid-cols-4 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Tablets/Day</label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Per Day</label>
                                 <input type="number" step="0.5" name="dosage_per_day[]" placeholder="e.g., 2" 
                                     class="dosage-per-day w-full px-3 py-2 border rounded-lg text-sm" onchange="calculateQuantity(this)">
                             </div>
@@ -108,9 +113,20 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Total Qty</label>
-                                <input type="number" name="quantity[]" required min="1" placeholder="Auto"
+                                <input type="number" name="quantity[]" required min="1" placeholder="Auto/Enter"
                                     class="calc-quantity w-full px-3 py-2 border rounded-lg text-sm">
                             </div>
+                        </div>
+                        
+                        <!-- For Syrups/Injections - Direct entry -->
+                        <div class="direct-entry mt-3 hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Enter Quantity Directly</label>
+                            <div class="flex gap-2">
+                                <input type="number" name="direct_quantity[]" min="1" placeholder="e.g., 1" 
+                                    class="direct-qty w-24 px-3 py-2 border rounded-lg text-sm">
+                                <span class="text-sm text-gray-500 self-center unit-display">(unit)</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Enter the exact amount to dispense (e.g., 1 bottle, 2 vials)</p>
                         </div>
                     </div>
                 </div>
@@ -143,6 +159,28 @@
 <script>
 let medicineCount = 1;
 
+function updateMedicineUnit(select) {
+    const row = select.closest('.medicine-row');
+    const option = select.options[select.selectedIndex];
+    const category = option ? option.getAttribute('data-category') : '';
+    const unit = option ? option.getAttribute('data-unit') : '';
+    
+    const calcFields = row.querySelector('.calculation-fields');
+    const directEntry = row.querySelector('.direct-entry');
+    const unitDisplay = row.querySelector('.unit-display');
+    
+    // For syrups, injections, solutions - use direct entry
+    if (category === 'SYRUP' || category === 'INJECTION' || category === 'SOLUTION' || category === 'DROP') {
+        calcFields.classList.add('hidden');
+        directEntry.classList.remove('hidden');
+        unitDisplay.textContent = unit || '(unit)';
+    } else {
+        // For tablets, capsules, creams - use calculation
+        calcFields.classList.remove('hidden');
+        directEntry.classList.add('hidden');
+    }
+}
+
 function calculateQuantity(input) {
     const row = input.closest('.medicine-row');
     const dosagePerDay = parseFloat(row.querySelector('.dosage-per-day').value) || 0;
@@ -163,18 +201,21 @@ function addMedicine() {
             <span class="font-medium text-sm text-gray-600">Medicine ${medicineCount}</span>
             <button type="button" onclick="removeMedicine(this)" class="text-red-500 text-sm hover:text-red-700">Remove</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-7 gap-3">
-            <div class="md:col-span-2">
-                <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
-                <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm">
-                    <option value="">Select</option>
-                    {% for medicine in medicines %}
-                    <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.unit }})</option>
-                    {% endfor %}
-                </select>
-            </div>
+        
+        <div class="mb-3">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
+            <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm" onchange="updateMedicineUnit(this)">
+                <option value="">Select</option>
+                {% for medicine in medicines %}
+                <option value="{{ medicine.id }}" data-unit="{{ medicine.unit }}" data-category="{{ medicine.category }}">{{ medicine.name }} ({{ medicine.unit }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- For Tablets/Capsules -->
+        <div class="calculation-fields grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Tablets/Day</label>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Per Day</label>
                 <input type="number" step="0.5" name="dosage_per_day[]" placeholder="e.g., 2" 
                     class="dosage-per-day w-full px-3 py-2 border rounded-lg text-sm" onchange="calculateQuantity(this)">
             </div>
@@ -190,9 +231,20 @@ function addMedicine() {
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Total Qty</label>
-                <input type="number" name="quantity[]" required min="1" placeholder="Auto"
+                <input type="number" name="quantity[]" required min="1" placeholder="Auto/Enter"
                     class="calc-quantity w-full px-3 py-2 border rounded-lg text-sm">
             </div>
+        </div>
+        
+        <!-- For Syrups/Injections - Direct entry -->
+        <div class="direct-entry mt-3 hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Enter Quantity Directly</label>
+            <div class="flex gap-2">
+                <input type="number" name="direct_quantity[]" min="1" placeholder="e.g., 1" 
+                    class="direct-qty w-24 px-3 py-2 border rounded-lg text-sm">
+                <span class="text-sm text-gray-500 self-center unit-display">(unit)</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Enter the exact amount to dispense (e.g., 1 bottle, 2 vials)</p>
         </div>
     `;
     container.appendChild(row);

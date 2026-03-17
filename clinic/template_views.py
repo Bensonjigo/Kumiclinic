@@ -1129,8 +1129,11 @@ def new_prescription(request):
             )
         
         medicine_ids = request.POST.getlist('medicine[]')
-        dosages = request.POST.getlist('dosage[]')
+        dosage_per_day_list = request.POST.getlist('dosage_per_day[]')
+        times_per_day_list = request.POST.getlist('times_per_day[]')
+        num_days_list = request.POST.getlist('num_days[]')
         quantities = request.POST.getlist('quantity[]')
+        direct_quantities = request.POST.getlist('direct_quantity[]')
         
         prescription_count = 0
         for i in range(len(medicine_ids)):
@@ -1138,22 +1141,26 @@ def new_prescription(request):
                 try:
                     medicine = get_object_or_404(Medicine, id=medicine_ids[i])
                     
-                    # Build dosage string from the three new fields
-                    dosage_per_day = request.POST.getlist('dosage_per_day[]')
-                    times_per_day = request.POST.getlist('times_per_day[]')
-                    num_days = request.POST.getlist('num_days[]')
-                    
-                    dosage_str = ''
-                    if i < len(dosages) and dosages[i]:
-                        dosage_str = dosages[i]
-                    elif i < len(dosage_per_day) and dosage_per_day[i] and i < len(times_per_day) and times_per_day[i] and i < len(num_days) and num_days[i]:
-                        dosage_str = f"{dosage_per_day[i]} tablet(s) {times_per_day[i]} time(s) daily for {num_days[i]} days"
+                    # Check if this is direct entry (for syrups/injections) or calculated (for tablets)
+                    # Direct quantity takes priority if provided
+                    if i < len(direct_quantities) and direct_quantities[i]:
+                        # Direct entry for syrups/injections
+                        qty = int(direct_quantities[i])
+                        dosage_str = f"Direct: {qty} {medicine.unit}"
+                    else:
+                        # Use calculated quantity (tablets/capsules formula)
+                        qty = int(quantities[i]) if i < len(quantities) and quantities[i] else 1
+                        
+                        # Build dosage string
+                        dosage_str = ''
+                        if i < len(dosage_per_day_list) and dosage_per_day_list[i] and i < len(times_per_day_list) and times_per_day_list[i] and i < len(num_days_list) and num_days_list[i]:
+                            dosage_str = f"{dosage_per_day_list[i]} tablet(s) {times_per_day_list[i]} time(s) daily for {num_days_list[i]} days"
                     
                     Prescription.objects.create(
                         consultation=consultation,
                         medicine=medicine,
                         dosage=dosage_str,
-                        quantity=int(quantities[i]) if i < len(quantities) and quantities[i] else 1,
+                        quantity=qty,
                         notes=notes
                     )
                     prescription_count += 1
