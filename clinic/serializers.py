@@ -22,7 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(write_only=True, min_length=12, style={'input_type': 'password'})
     
     class Meta:
         model = User
@@ -30,6 +30,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
                   'role', 'phone', 'department']
     
     def create(self, validated_data):
+        validated_data.pop('is_staff', None)
+        validated_data.pop('is_superuser', None)
+        validated_data.pop('is_active', None)
+        validated_data.pop('groups', None)
+        validated_data.pop('user_permissions', None)
+        
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)

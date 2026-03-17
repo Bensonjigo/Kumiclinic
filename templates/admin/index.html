@@ -4,20 +4,20 @@
 {% block title %}Dashboard - Kumi University Clinic{% endblock %}
 
 {% block branding %}
-<div class="branding">
-    <div class="logo">
-        <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Kumi University Logo" style="height:40px;">
+<header id="header">
+    <div id="branding">
+        <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Kumi University">
+        <div id="site-name">
+            <span style="font-size:20px;font-weight:700;">Kumi University</span>
+            <span style="font-size:12px;opacity:0.8;display:block;margin-top:-2px;">Clinic Admin</span>
+        </div>
     </div>
-    <div class="site-name">
-        <h1>Kumi University Clinic</h1>
-        <span class="subtitle">Administration Panel</span>
-    </div>
-</div>
+</header>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <h1 class="dashboard-title">Dashboard</h1>
+    <h1>Dashboard</h1>
     
     <!-- Stats Grid -->
     <div class="stats-grid">
@@ -108,32 +108,32 @@
 
     <!-- Recent Visits -->
     <div class="recent-section">
-        <h2 class="section-title">Recent Visits</h2>
+        <h2 class="section-title" style="color:#101922;font-size:1.125rem;font-weight:600;margin-bottom:1rem;">Recent Visits</h2>
         <div class="table-container">
-            <table class="recent-table">
+            <table class="recent-table" style="width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;">
                 <thead>
-                    <tr>
-                        <th>Patient</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Created By</th>
+                    <tr style="background:#3A7D9D;color:white;">
+                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;">Patient</th>
+                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;">Date</th>
+                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;">Status</th>
+                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;">Created By</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for visit in recent_visits %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'admin:clinic_visit_change' visit.id %}">{{ visit.patient.full_name }}</a>
+                    <tr style="border-bottom:1px solid #DEE2E6;">
+                        <td style="padding:0.75rem 1rem;color:#101922;">
+                            <a href="{% url 'admin:clinic_visit_change' visit.id %}" style="color:#3A7D9D;text-decoration:none;font-weight:500;">{{ visit.patient.full_name }}</a>
                         </td>
-                        <td>{{ visit.visit_date|date:"M d, Y" }}</td>
-                        <td>
+                        <td style="padding:0.75rem 1rem;color:#101922;">{{ visit.visit_date|date:"M d, Y" }}</td>
+                        <td style="padding:0.75rem 1rem;">
                             <span class="status-badge status-{{ visit.status|lower }}">{{ visit.get_status_display }}</span>
                         </td>
-                        <td>{{ visit.created_by.get_full_name|default:visit.created_by.username }}</td>
+                        <td style="padding:0.75rem 1rem;color:#101922;">{{ visit.created_by.get_full_name|default:visit.created_by.username }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="empty-message">No recent visits</td>
+                        <td colspan="4" class="empty-message" style="padding:2rem;text-align:center;color:#6B7280;">No recent visits</td>
                     </tr>
                     {% endfor %}
                 </tbody>

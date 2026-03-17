@@ -1,11 +1,23 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+
+
+def validate_avatar_file(file):
+    max_size = 2 * 1024 * 1024  # 2MB
+    if file.size > max_size:
+        raise ValidationError("Avatar file too large. Maximum size is 2MB.")
+    
+    allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    ext = file.name.split('.')[-1].lower()
+    if ext not in allowed_extensions:
+        raise ValidationError("Unsupported file type. Allowed: JPEG, PNG, GIF, WebP")
+    return file
 
 
 class User(AbstractUser):
     ROLE_CHOICES = [
-        ('RECEPTIONIST', 'Receptionist'),
         ('NURSE', 'Nurse'),
         ('DOCTOR', 'Doctor'),
         ('LAB_TECHNICIAN', 'Lab Technician'),
@@ -14,10 +26,10 @@ class User(AbstractUser):
         ('ADMIN', 'Admin'),
     ]
     
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='RECEPTIONIST')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='NURSE')
     phone = models.CharField(max_length=20, blank=True)
     department = models.CharField(max_length=100, blank=True)
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, validators=[validate_avatar_file])
     
     @property
     def is_store_manager(self):
@@ -29,10 +41,6 @@ class User(AbstractUser):
     
     def __str__(self):
         return f"{self.get_full_name() or self.username} ({self.get_role_display()})"
-    
-    @property
-    def is_receptionist(self):
-        return self.role == 'RECEPTIONIST' or self.is_superuser
     
     @property
     def is_nurse(self):
@@ -59,17 +67,17 @@ class Patient(models.Model):
     PATIENT_TYPE_CHOICES = [
         ('STUDENT', 'Student'),
         ('STAFF', 'Staff'),
+        ('OTHER', 'Other'),
     ]
     
     GENDER_CHOICES = [
         ('MALE', 'Male'),
         ('FEMALE', 'Female'),
-        ('OTHER', 'Other'),
     ]
     
     full_name = models.CharField(max_length=200)
     patient_type = models.CharField(max_length=10, choices=PATIENT_TYPE_CHOICES)
-    university_id = models.CharField(max_length=50, unique=True)
+    university_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
     department = models.CharField(max_length=100)
     phone = models.CharField(max_length=20)
     email = models.EmailField(blank=True, null=True)
@@ -88,6 +96,12 @@ class Patient(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['university_id']),
+            models.Index(fields=['full_name']),
+            models.Index(fields=['patient_type']),
+            models.Index(fields=['created_at']),
+        ]
     
     def __str__(self):
         return f"{self.full_name} ({self.university_id})"
@@ -121,6 +135,12 @@ class Visit(models.Model):
     
     class Meta:
         ordering = ['-visit_date']
+        indexes = [
+            models.Index(fields=['visit_date']),
+            models.Index(fields=['status']),
+            models.Index(fields=['patient', 'visit_date']),
+            models.Index(fields=['created_at']),
+        ]
     
     def __str__(self):
         return f"Visit #{self.id} - {self.patient.full_name} ({self.get_status_display()})"
@@ -325,6 +345,12 @@ class LabRequest(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['date']),
+            models.Index(fields=['completed_date']),
+            models.Index(fields=['visit', 'status']),
+        ]
     
     def __str__(self):
         if self.test_type:
@@ -355,6 +381,10 @@ class Notification(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['created_at']),
+        ]
     
     def __str__(self):
         return f"{self.get_notification_type_display()}: {self.title}"
