@@ -131,6 +131,7 @@ def login_view(request):
     from django.contrib.auth.signals import user_login_failed
     from django.core.cache import cache
     from django.conf import settings
+    from clinic.audit import log_action
     
     username = request.data.get('username')
     password = request.data.get('password')
@@ -139,6 +140,12 @@ def login_view(request):
     attempt_count = cache.get(rate_limit_key, 0)
     
     if attempt_count >= 5:
+        log_action(
+            None, 
+            'LOGIN_BLOCKED', 
+            description=f'Rate limit exceeded for IP: {request.META.get("REMOTE_ADDR", "unknown")}',
+            request=request
+        )
         return Response(
             {'error': 'Too many login attempts. Please try again in 5 minutes.'},
             status=status.HTTP_429_TOO_MANY_REQUESTS
@@ -149,12 +156,24 @@ def login_view(request):
         if user:
             cache.delete(rate_limit_key)
             token, created = Token.objects.get_or_create(user=user)
+            log_action(
+                user, 
+                'LOGIN', 
+                description=f'User logged in successfully',
+                request=request
+            )
             return Response({
                 'token': token.key,
                 'user': UserSerializer(user).data
             })
         else:
             cache.set(rate_limit_key, attempt_count + 1, 300)
+            log_action(
+                None, 
+                'LOGIN_FAILED', 
+                description=f'Failed login attempt for username: {username}',
+                request=request
+            )
     
     return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -580,6 +599,8 @@ class DailyReportViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def patient_data_view(request, visit_id):
+    from clinic.audit import log_action
+    
     visit = get_object_or_404(Visit, id=visit_id)
     patient = visit.patient
     
@@ -591,10 +612,48 @@ def patient_data_view(request, visit_id):
             user.role == 'DOCTOR' or
             user.role == 'LAB_TECHNICIAN' or
             user.role == 'PHARMACIST'):
+        log_action(
+            user, 
+            'VIEW_DENIED', 
+            'PatientMedicalRecord', 
+            patient.id,
+            f'Attempted to view medical records for {patient.full_name} - ACCESS DENIED',
+            request
+        )
         return Response(
             {'error': 'You do not have permission to view this patient data'},
             status=status.HTTP_403_FORBIDDEN
         )
+    
+    # Additional authorization: Doctors can only see patients they've treated
+    if user.role == 'DOCTOR' and not user.is_superuser:
+        has_access = Consultation.objects.filter(
+            visit__patient=patient,
+            doctor=user
+        ).exists()
+        if not has_access:
+            log_action(
+                user, 
+                'VIEW_DENIED', 
+                'PatientMedicalRecord', 
+                patient.id,
+                f'Attempted to view medical records for {patient.full_name} - NOT THEIR PATIENT',
+                request
+            )
+            return Response(
+                {'error': 'You can only view records of patients you have treated'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    
+    # Log patient data access (HIPAA requirement)
+    log_action(
+        user, 
+        'VIEW', 
+        'PatientMedicalRecord', 
+        patient.id,
+        f'Viewed medical records for {patient.full_name}',
+        request
+    )
     
     all_visits = Visit.objects.filter(patient=patient).prefetch_related(
         'consultation__prescriptions__medicine', 'lab_requests'

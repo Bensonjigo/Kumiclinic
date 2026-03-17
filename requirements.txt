@@ -1,0 +1,11 @@
+# Django
+Django>=5.0
+djangorestframework>=3.14
+django-filter>=24.0
+django-cors-headers>=4.0
+
+# Database
+psycopg2-binary>=2.9
+
+# Production
+gunicorn>=21.0
