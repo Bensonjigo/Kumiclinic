@@ -61,8 +61,8 @@
                 <h3 class="font-semibold mb-3">Consultation Details</h3>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
-                    <input type="text" name="diagnosis" placeholder="Enter diagnosis"
-                        class="w-full px-4 py-2 border rounded-lg">
+                    <textarea name="diagnosis" rows="2" placeholder="Enter diagnosis"
+                        class="w-full px-4 py-2 border rounded-lg"></textarea>
                 </div>
             </div>
             
@@ -75,25 +75,35 @@
                             <span class="font-medium text-sm text-gray-600">Medicine 1</span>
                             <button type="button" class="text-red-500 text-sm hover:text-red-700 remove-medicine hidden">Remove</button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div>
+                        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+                            <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
                                 <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm">
-                                    <option value="">Select Medicine</option>
+                                    <option value="">Select</option>
                                     {% for medicine in medicines %}
-                                    <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
+                                    <option value="{{ medicine.id }}">{{ medicine.name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Dosage</label>
-                                <input type="text" name="dosage[]" required placeholder="e.g., 2 tablets tds"
-                                    class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Tablets/Day</label>
+                                <input type="number" step="0.5" name="dosage_per_day[]" placeholder="e.g., 2" 
+                                    class="dosage-per-day w-full px-3 py-2 border rounded-lg text-sm" onchange="calculateQuantity(this)">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Times/Day</label>
+                                <input type="number" step="0.5" name="times_per_day[]" placeholder="e.g., 3" 
+                                    class="times-per-day w-full px-3 py-2 border rounded-lg text-sm" onchange="calculateQuantity(this)">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Days</label>
+                                <input type="number" step="0.5" name="num_days[]" placeholder="e.g., 5" 
+                                    class="num-days w-full px-3 py-2 border rounded-lg text-sm" onchange="calculateQuantity(this)">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
-                                <input type="number" name="quantity[]" required min="1" placeholder="30"
-                                    class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <input type="number" name="quantity[]" required min="1" placeholder="Auto"
+                                    class="calc-quantity w-full px-3 py-2 border rounded-lg text-sm">
                             </div>
                         </div>
                     </div>
@@ -127,6 +137,16 @@
 <script>
 let medicineCount = 1;
 
+function calculateQuantity(input) {
+    const row = input.closest('.medicine-row');
+    const dosagePerDay = parseFloat(row.querySelector('.dosage-per-day').value) || 0;
+    const timesPerDay = parseFloat(row.querySelector('.times-per-day').value) || 0;
+    const numDays = parseFloat(row.querySelector('.num-days').value) || 0;
+    
+    const quantity = dosagePerDay * timesPerDay * numDays;
+    row.querySelector('.calc-quantity').value = quantity > 0 ? Math.ceil(quantity) : '';
+}
+
 function addMedicine() {
     medicineCount++;
     const container = document.getElementById('medicines-container');
@@ -137,25 +157,35 @@ function addMedicine() {
             <span class="font-medium text-sm text-gray-600">Medicine ${medicineCount}</span>
             <button type="button" onclick="removeMedicine(this)" class="text-red-500 text-sm hover:text-red-700">Remove</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <div class="md:col-span-2">
                 <label class="block text-xs font-medium text-gray-500 mb-1">Medicine</label>
                 <select name="medicine[]" required class="w-full px-3 py-2 border rounded-lg text-sm">
-                    <option value="">Select Medicine</option>
+                    <option value="">Select</option>
                     {% for medicine in medicines %}
-                    <option value="{{ medicine.id }}">{{ medicine.name }} ({{ medicine.stock_quantity }} {{ medicine.unit }})</option>
+                    <option value="{{ medicine.id }}">{{ medicine.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Dosage</label>
-                <input type="text" name="dosage[]" required placeholder="e.g., 2 tablets tds"
-                    class="w-full px-3 py-2 border rounded-lg text-sm">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Tablets/Day</label>
+                <input type="number" step="0.5" name="dosage_per_day[]" placeholder="e.g., 2" 
+                    class="dosage-per-day w-full px-3 py-2 border rounded-lg text-sm" onchange="calculateQuantity(this)">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Times/Day</label>
+                <input type="number" step="0.5" name="times_per_day[]" placeholder="e.g., 3" 
+                    class="times-per-day w-full px-3 py-2 border rounded-lg text-sm" onchange="calculateQuantity(this)">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Days</label>
+                <input type="number" step="0.5" name="num_days[]" placeholder="e.g., 5" 
+                    class="num-days w-full px-3 py-2 border rounded-lg text-sm" onchange="calculateQuantity(this)">
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
-                <input type="number" name="quantity[]" required min="1" placeholder="30"
-                    class="w-full px-3 py-2 border rounded-lg text-sm">
+                <input type="number" name="quantity[]" required min="1" placeholder="Auto"
+                    class="calc-quantity w-full px-3 py-2 border rounded-lg text-sm">
             </div>
         </div>
     `;
