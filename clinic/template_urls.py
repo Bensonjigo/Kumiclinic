@@ -69,6 +69,7 @@ urlpatterns = [
     path('lab/queue/', template_views.pending_labs, name='pending_labs'),
     path('lab/request/new/', template_views.new_lab_request, name='new_lab_request'),
     path('lab/<int:lab_id>/', template_views.lab_result_form, name='lab_result_form'),
+    path('lab/batch/<int:visit_id>/', template_views.batch_lab_results, name='batch_lab_results'),
     path('prescription/new/', template_views.new_prescription, name='new_prescription'),
     path('pharmacy/queue/', template_views.pending_prescriptions, name='pending_prescriptions'),
     path('prescription/<int:prescription_id>/dispense/', template_views.dispense_medicine, name='dispense_medicine'),

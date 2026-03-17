@@ -216,41 +216,61 @@ def dashboard_lab(request):
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Group pending lab requests by visit
+    # Get pending lab request visit IDs
+    pending_visit_ids = LabRequest.objects.filter(status='PENDING').values_list('visit_id', flat=True).distinct()
+    
     visits_with_pending_labs = Visit.objects.filter(
-        lab_requests__status='PENDING'
-    ).prefetch_related(
-        'lab_requests',
-        'patient'
-    ).distinct().order_by('lab_requests__date')
+        id__in=pending_visit_ids
+    ).select_related('patient').prefetch_related(
+        db_models.Prefetch(
+            'lab_requests',
+            queryset=LabRequest.objects.filter(status='PENDING'),
+            to_attr='pending_lab_list'
+        )
+    ).order_by('visit_date')
     
     grouped_pending = []
+    seen_pending = set()
     for visit in visits_with_pending_labs:
-        pending = visit.lab_requests.filter(status='PENDING')
-        grouped_pending.append({
-            'visit': visit,
-            'patient': visit.patient,
-            'lab_requests': pending,
-            'lab_count': pending.count()
-        })
+        if visit.id in seen_pending:
+            continue
+        seen_pending.add(visit.id)
+        pending = getattr(visit, 'pending_lab_list', [])
+        if pending:
+            grouped_pending.append({
+                'visit': visit,
+                'patient': visit.patient,
+                'lab_requests': pending,
+                'lab_count': len(pending)
+            })
     
-    # In progress labs - also group by visit
+    # Get in progress lab request visit IDs
+    in_progress_visit_ids = LabRequest.objects.filter(status='IN_PROGRESS').values_list('visit_id', flat=True).distinct()
+    
     visits_with_in_progress = Visit.objects.filter(
-        lab_requests__status='IN_PROGRESS'
-    ).prefetch_related(
-        'lab_requests',
-        'patient'
-    ).distinct().order_by('lab_requests__date')
+        id__in=in_progress_visit_ids
+    ).select_related('patient').prefetch_related(
+        db_models.Prefetch(
+            'lab_requests',
+            queryset=LabRequest.objects.filter(status='IN_PROGRESS'),
+            to_attr='in_progress_lab_list'
+        )
+    ).order_by('visit_date')
     
     grouped_in_progress = []
+    seen_in_progress = set()
     for visit in visits_with_in_progress:
-        in_progress = visit.lab_requests.filter(status='IN_PROGRESS')
-        grouped_in_progress.append({
-            'visit': visit,
-            'patient': visit.patient,
-            'lab_requests': in_progress,
-            'lab_count': in_progress.count()
-        })
+        if visit.id in seen_in_progress:
+            continue
+        seen_in_progress.add(visit.id)
+        in_progress = getattr(visit, 'in_progress_lab_list', [])
+        if in_progress:
+            grouped_in_progress.append({
+                'visit': visit,
+                'patient': visit.patient,
+                'lab_requests': in_progress,
+                'lab_count': len(in_progress)
+            })
     
     # Today's completed tests
     completed_today = LabRequest.objects.filter(
@@ -959,24 +979,38 @@ def consultation_form(request, visit_id):
 
 @login_required
 def pending_labs(request):
-    # Group lab requests by visit - get unique visits with pending labs
-    visits_with_labs = Visit.objects.filter(
-        lab_requests__status='PENDING'
-    ).prefetch_related(
-        'lab_requests',
-        'patient'
-    ).distinct().order_by('visit_date')
+    # Get all pending lab requests grouped by visit
+    from django.db.models import Prefetch
     
-    # Build grouped data
+    # Use a subquery approach to get unique visits
+    pending_lab_ids = LabRequest.objects.filter(status='PENDING').values_list('visit_id', flat=True).distinct()
+    
+    visits_with_labs = Visit.objects.filter(
+        id__in=pending_lab_ids
+    ).select_related('patient').prefetch_related(
+        db_models.Prefetch(
+            'lab_requests',
+            queryset=LabRequest.objects.filter(status='PENDING'),
+            to_attr='pending_lab_requests'
+        )
+    ).order_by('visit_date')
+    
+    # Build grouped data - filter out visits with no pending labs
     grouped_labs = []
+    seen_visits = set()
     for visit in visits_with_labs:
-        pending_lab_requests = visit.lab_requests.filter(status='PENDING')
-        grouped_labs.append({
-            'visit': visit,
-            'patient': visit.patient,
-            'lab_requests': pending_lab_requests,
-            'lab_count': pending_lab_requests.count()
-        })
+        if visit.id in seen_visits:
+            continue
+        seen_visits.add(visit.id)
+        
+        pending = getattr(visit, 'pending_lab_requests', [])
+        if pending:
+            grouped_labs.append({
+                'visit': visit,
+                'patient': visit.patient,
+                'lab_requests': pending,
+                'lab_count': len(pending)
+            })
     
     return render(request, 'clinic/lab_queue.html', {'grouped_labs': grouped_labs})
 
@@ -1168,6 +1202,43 @@ def lab_result_form(request, lab_id):
         return redirect('pending_labs')
     
     return render(request, 'clinic/lab_result_form.html', {'lab_request': lab_request})
+
+
+@login_required
+def batch_lab_results(request, visit_id):
+    """Process all lab results for a visit at once"""
+    visit = get_object_or_404(Visit, id=visit_id)
+    lab_requests = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS'])
+    
+    if request.method == 'POST':
+        # Process each lab result
+        for lab in lab_requests:
+            result_key = f'result_{lab.id}'
+            notes_key = f'notes_{lab.id}'
+            
+            if result_key in request.POST:
+                lab.status = 'COMPLETED'
+                lab.result = request.POST.get(result_key, '')
+                lab.notes = request.POST.get(notes_key, '')
+                lab.technician = request.user
+                lab.completed_date = timezone.now()
+                lab.save()
+        
+        # Check if there are still pending labs
+        remaining_pending = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        
+        if remaining_pending == 0:
+            visit.update_status('WAITING_FOR_DOCTOR')
+            messages.success(request, 'All lab results recorded! Patient returned to doctor.')
+        else:
+            messages.success(request, f'{lab_requests.count()} lab results recorded!')
+        
+        return redirect('pending_labs')
+    
+    return render(request, 'clinic/batch_lab_results.html', {
+        'visit': visit,
+        'lab_requests': lab_requests
+    })
 
 
 @login_required
