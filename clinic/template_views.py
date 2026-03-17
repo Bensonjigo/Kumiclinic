@@ -1377,8 +1377,19 @@ def batch_dispense(request, visit_id):
                 medicine.stock_quantity -= qty_to_dispense
                 medicine.save()
                 
+                # Check if partial - create new prescription for remaining
+                remaining_qty = prescription.quantity - qty_to_dispense
+                if remaining_qty > 0 and qty_to_dispense < prescription.quantity:
+                    # Create new prescription for remaining
+                    Prescription.objects.create(
+                        consultation=prescription.consultation,
+                        medicine=prescription.medicine,
+                        dosage=prescription.dosage,
+                        quantity=remaining_qty,
+                        notes=f'REMAINING from partial dispense on {timezone.now().date()}. Original qty: {prescription.quantity}'
+                    )
+                
                 prescription.is_dispensed = True
-                prescription.quantity = qty_to_dispense  # Update to actual dispensed quantity
                 prescription.dispensed_by = request.user
                 prescription.dispensed_at = timezone.now()
                 prescription.save()
@@ -1388,7 +1399,7 @@ def batch_dispense(request, visit_id):
                     'DISPENSE', 
                     'Prescription', 
                     prescription.id,
-                    f'Dispensed {qty_to_dispense} {medicine.unit} of {medicine.name}',
+                    f'Dispensed {qty_to_dispense} {medicine.unit} of {medicine.name}' + (f'. Remaining: {remaining_qty}' if remaining_qty > 0 else ''),
                     request
                 )
                 dispensed_count += 1
