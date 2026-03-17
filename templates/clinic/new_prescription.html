@@ -215,24 +215,4 @@ function updateRemoveButtons() {
     });
 }
 </script>
-
-function removeMedicine(btn) {
-    btn.closest('.medicine-row').remove();
-    updateRemoveButtons();
-}
-
-function updateRemoveButtons() {
-    const rows = document.querySelectorAll('.medicine-row');
-    rows.forEach((row, index) => {
-        const removeBtn = row.querySelector('.remove-medicine');
-        if (removeBtn) {
-            if (rows.length > 1) {
-                removeBtn.classList.remove('hidden');
-            } else {
-                removeBtn.classList.add('hidden');
-            }
-        }
-    });
-}
-</script>
 {% endblock %}
