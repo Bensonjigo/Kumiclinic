@@ -209,22 +209,48 @@ def consultation_history(request):
 def dashboard_lab(request):
     """
     Lab Technician Dashboard:
-    - Pending lab requests
+    - Pending lab requests (grouped by visit)
     - Completed tests today
     - Quick access to record results
     """
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Pending lab requests
-    pending_labs = LabRequest.objects.filter(
-        status='PENDING'
-    ).select_related('visit__patient', 'requested_by').order_by('date')
+    # Group pending lab requests by visit
+    visits_with_pending_labs = Visit.objects.filter(
+        lab_requests__status='PENDING'
+    ).prefetch_related(
+        'lab_requests',
+        'patient'
+    ).distinct().order_by('lab_requests__date')
     
-    # In progress labs
-    in_progress_labs = LabRequest.objects.filter(
-        status='IN_PROGRESS'
-    ).select_related('visit__patient', 'requested_by').order_by('date')
+    grouped_pending = []
+    for visit in visits_with_pending_labs:
+        pending = visit.lab_requests.filter(status='PENDING')
+        grouped_pending.append({
+            'visit': visit,
+            'patient': visit.patient,
+            'lab_requests': pending,
+            'lab_count': pending.count()
+        })
+    
+    # In progress labs - also group by visit
+    visits_with_in_progress = Visit.objects.filter(
+        lab_requests__status='IN_PROGRESS'
+    ).prefetch_related(
+        'lab_requests',
+        'patient'
+    ).distinct().order_by('lab_requests__date')
+    
+    grouped_in_progress = []
+    for visit in visits_with_in_progress:
+        in_progress = visit.lab_requests.filter(status='IN_PROGRESS')
+        grouped_in_progress.append({
+            'visit': visit,
+            'patient': visit.patient,
+            'lab_requests': in_progress,
+            'lab_count': in_progress.count()
+        })
     
     # Today's completed tests
     completed_today = LabRequest.objects.filter(
@@ -236,8 +262,8 @@ def dashboard_lab(request):
     total_pending = LabRequest.objects.filter(status='PENDING').count()
     
     context = {
-        'pending_labs': pending_labs,
-        'in_progress_labs': in_progress_labs,
+        'grouped_pending': grouped_pending,
+        'grouped_in_progress': grouped_in_progress,
         'completed_today': completed_today,
         'total_pending': total_pending,
     }
@@ -288,21 +314,34 @@ def nurse_history(request):
 def dashboard_pharmacy(request):
     """
     Pharmacist Dashboard:
-    - Pending prescriptions to dispense
+    - Pending prescriptions to dispense (grouped by visit)
     - Stock overview
     - Low stock alerts
     """
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Pending prescriptions
-    pending_prescriptions = Prescription.objects.filter(
-        is_dispensed=False
-    ).select_related(
-        'consultation__visit__patient',
+    # Group pending prescriptions by visit
+    visits_with_rx = Visit.objects.filter(
+        consultation__prescriptions__is_dispensed=False
+    ).prefetch_related(
+        'consultation__prescriptions__medicine',
         'consultation__doctor',
-        'medicine'
-    ).order_by('created_at')
+        'patient'
+    ).distinct().order_by('consultation__prescriptions__created_at')
+    
+    grouped_pending = []
+    for visit in visits_with_rx:
+        if visit.consultation:
+            pending_rx = visit.consultation.prescriptions.filter(is_dispensed=False)
+            if pending_rx:
+                grouped_pending.append({
+                    'visit': visit,
+                    'patient': visit.patient,
+                    'doctor': visit.consultation.doctor,
+                    'prescriptions': pending_rx,
+                    'rx_count': pending_rx.count()
+                })
     
     # Today's dispensed count
     dispensed_today = Prescription.objects.filter(
@@ -319,7 +358,7 @@ def dashboard_pharmacy(request):
     low_stock_medicines = low_stock[:5]
     
     context = {
-        'pending_prescriptions': pending_prescriptions,
+        'grouped_pending': grouped_pending,
         'dispensed_today': dispensed_today,
         'total_medicines': total_medicines,
         'low_stock_count': low_stock_count,

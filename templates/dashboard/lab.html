@@ -13,7 +13,7 @@
         <div class="stat-label">Pending Tests</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value text-blue-600">{{ in_progress_labs.count }}</div>
+        <div class="stat-value text-blue-600">{{ grouped_in_progress|length }}</div>
         <div class="stat-label">In Progress</div>
     </div>
     <div class="stat-card">
@@ -21,7 +21,7 @@
         <div class="stat-label">Completed Today</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value">{{ pending_labs.count }}</div>
+        <div class="stat-value">{{ total_pending }}</div>
         <div class="stat-label">Total Lab Requests</div>
     </div>
 </div>
@@ -33,32 +33,34 @@
             <a href="{% url 'pending_labs' %}" class="text-blue-600 hover:underline text-sm">View All</a>
         </div>
         
-        {% if pending_labs %}
+        {% if grouped_pending %}
             <div class="space-y-3">
-                {% for lab in pending_labs|slice:":10" %}
+                {% for group in grouped_pending|slice:":10" %}
                 <div class="queue-item">
                     <div class="queue-header">
                         <div>
                             <div class="queue-patient">
-                                <a href="{% url 'patient_detail' lab.visit.patient.id %}" class="text-blue-600 hover:underline">
-                                    {{ lab.visit.patient.full_name }}
+                                <a href="{% url 'patient_detail' group.patient.id %}" class="text-blue-600 hover:underline">
+                                    {{ group.patient.full_name }}
                                 </a>
+                                <span class="ml-2 bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded">
+                                    {{ group.lab_count }} test{{ group.lab_count|pluralize }}
+                                </span>
                             </div>
                             <div class="queue-meta">
-                                <span>{{ lab.visit.patient.get_patient_type_display }}</span>
+                                <span>{{ group.patient.get_patient_type_display }}</span>
                                 <span class="mx-2">|</span>
-                                <span>{{ lab.date|time:"g:i A" }}</span>
+                                <span>{{ group.visit.visit_date|date:"M d, g:i A" }}</span>
                             </div>
                         </div>
-                        <a href="{% url 'lab_result_form' lab.id %}" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition">
-                            <i class="fas fa-vial mr-1"></i> Record Result
+                        <a href="{% url 'visit_detail' group.visit.id %}" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition">
+                            <i class="fas fa-vial mr-1"></i> Process All ({{ group.lab_count }})
                         </a>
                     </div>
-                    <div class="flex items-center gap-2 mt-2">
-                        <span class="status-badge status-pending">{{ lab.get_test_name_display }}</span>
-                        {% if lab.test_name == 'OTHER' and lab.custom_test_name %}
-                            <span class="text-sm text-gray-500">{{ lab.custom_test_name }}</span>
-                        {% endif %}
+                    <div class="flex flex-wrap items-center gap-2 mt-2">
+                        {% for lab in group.lab_requests %}
+                            <span class="status-badge status-pending">{{ lab.get_test_name_display }}</span>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
@@ -76,22 +78,30 @@
             <h2 class="text-xl font-semibold">In Progress</h2>
         </div>
         
-        {% if in_progress_labs %}
+        {% if grouped_in_progress %}
             <div class="space-y-3 mb-6">
-                {% for lab in in_progress_labs %}
+                {% for group in grouped_in_progress %}
                 <div class="queue-item border-l-4 border-blue-400">
                     <div class="queue-header">
                         <div>
                             <div class="queue-patient">
-                                {{ lab.visit.patient.full_name }}
+                                {{ group.patient.full_name }}
+                                <span class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">
+                                    {{ group.lab_count }} test{{ group.lab_count|pluralize }}
+                                </span>
                             </div>
                             <div class="queue-meta">
                                 <span class="status-badge status-in-progress">In Progress</span>
                             </div>
                         </div>
-                        <a href="{% url 'lab_result_form' lab.id %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-                            <i class="fas fa-check mr-1"></i> Complete
+                        <a href="{% url 'visit_detail' group.visit.id %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-check mr-1"></i> Process All
                         </a>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 mt-2">
+                        {% for lab in group.lab_requests %}
+                            <span class="status-badge status-in-progress">{{ lab.get_test_name_display }}</span>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endfor %}

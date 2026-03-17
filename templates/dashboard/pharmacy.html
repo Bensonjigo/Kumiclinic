@@ -9,7 +9,7 @@
 {% block dashboard_content %}
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
     <div class="stat-card">
-        <div class="stat-value text-yellow-600">{{ pending_prescriptions.count }}</div>
+        <div class="stat-value text-yellow-600">{{ grouped_pending|length }}</div>
         <div class="stat-label">Pending Dispensing</div>
     </div>
     <div class="stat-card">
@@ -33,44 +33,45 @@
             <a href="{% url 'pending_prescriptions' %}" class="text-blue-600 hover:underline text-sm">View All</a>
         </div>
         
-        {% if pending_prescriptions %}
+        {% if grouped_pending %}
             <div class="space-y-3">
-                {% for prescription in pending_prescriptions|slice:":10" %}
+                {% for group in grouped_pending|slice:":10" %}
                 <div class="queue-item">
                     <div class="queue-header">
                         <div>
                             <div class="queue-patient">
-                                <a href="{% url 'patient_detail' prescription.consultation.visit.patient.id %}" class="text-blue-600 hover:underline">
-                                    {{ prescription.consultation.visit.patient.full_name }}
+                                <a href="{% url 'patient_detail' group.patient.id %}" class="text-blue-600 hover:underline">
+                                    {{ group.patient.full_name }}
                                 </a>
+                                <span class="ml-2 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded">
+                                    {{ group.rx_count }} prescription{{ group.rx_count|pluralize }}
+                                </span>
                             </div>
                             <div class="queue-meta">
-                                <span>Dr. {{ prescription.consultation.doctor.get_full_name|default:prescription.consultation.doctor.username }}</span>
+                                <span>Dr. {{ group.doctor.get_full_name|default:group.doctor.username }}</span>
                                 <span class="mx-2">|</span>
-                                <span>{{ prescription.created_at|time:"g:i A" }}</span>
+                                <span>{{ group.visit.visit_date|date:"M d, g:i A" }}</span>
                             </div>
                         </div>
-                        {% if prescription.medicine.stock_quantity >= prescription.quantity %}
-                        <a href="{% url 'dispense_medicine' prescription.id %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
-                            <i class="fas fa-check mr-1"></i> Dispense
+                        <a href="{% url 'visit_detail' group.visit.id %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                            <i class="fas fa-check mr-1"></i> Process All ({{ group.rx_count }})
                         </a>
-                        {% else %}
-                        <span class="bg-red-100 text-red-800 px-3 py-2 rounded text-sm">
-                            <i class="fas fa-exclamation-triangle mr-1"></i> Low Stock
-                        </span>
-                        {% endif %}
                     </div>
-                    <div class="mt-2 p-2 bg-gray-50 rounded">
-                        <div class="flex items-center justify-between">
+                    <div class="mt-2 space-y-1">
+                        {% for prescription in group.prescriptions %}
+                        <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
                             <div>
                                 <span class="font-medium">{{ prescription.medicine.name }}</span>
                                 <span class="text-sm text-gray-600 ml-2">{{ prescription.dosage }}</span>
                             </div>
                             <div class="text-sm">
                                 <span class="text-gray-500">Qty:</span>
-                                <span class="font-medium">{{ prescription.quantity }} {{ prescription.medicine.unit }}</span>
+                                <span class="font-medium {% if prescription.medicine.stock_quantity < prescription.quantity %}text-red-600{% endif %}">
+                                    {{ prescription.quantity }} {{ prescription.medicine.unit }}
+                                </span>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
