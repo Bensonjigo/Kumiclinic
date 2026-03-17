@@ -295,14 +295,28 @@ def dashboard_pharmacy(request):
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Pending prescriptions
-    pending_prescriptions = Prescription.objects.filter(
+    # Pending prescriptions - group by visit
+    prescriptions = Prescription.objects.filter(
         is_dispensed=False
     ).select_related(
         'consultation__visit__patient',
         'consultation__doctor',
         'medicine'
     ).order_by('created_at')
+    
+    # Group by visit
+    grouped_prescriptions = {}
+    for rx in prescriptions:
+        visit = rx.consultation.visit
+        if visit.id not in grouped_prescriptions:
+            grouped_prescriptions[visit.id] = {
+                'visit': visit,
+                'patient': visit.patient,
+                'doctor': rx.consultation.doctor,
+                'prescriptions': [rx],
+            }
+        else:
+            grouped_prescriptions[visit.id]['prescriptions'].append(rx)
     
     # Today's dispensed count
     dispensed_today = Prescription.objects.filter(
@@ -319,7 +333,7 @@ def dashboard_pharmacy(request):
     low_stock_medicines = low_stock[:5]
     
     context = {
-        'pending_prescriptions': pending_prescriptions,
+        'grouped_prescriptions': grouped_prescriptions.values(),
         'dispensed_today': dispensed_today,
         'total_medicines': total_medicines,
         'low_stock_count': low_stock_count,
@@ -580,9 +594,14 @@ def register_patient(request):
         reason_for_visit = request.POST.get('reason_for_visit')
         
         # Check for duplicate university_id only if provided
-        if university_id and Patient.objects.filter(university_id=university_id).exists():
-            messages.error(request, 'A patient with this university ID already exists.')
-            return redirect('register_patient')
+        if university_id:
+            if Patient.objects.filter(university_id=university_id).exists():
+                messages.error(request, 'A patient with this university ID already exists.')
+                return redirect('register_patient')
+        else:
+            # Generate unique ID for patients without university_id
+            import uuid
+            university_id = f"EXT-{uuid.uuid4().hex[:8].upper()}"
         
         patient = Patient.objects.create(
             full_name=full_name,
