@@ -694,3 +694,41 @@ def patient_data_view(request, visit_id):
         'medications': medications_html,
         'visit_notes': visit_notes_html,
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def prescription_by_visit(request):
+    visit_id = request.GET.get('visit_id')
+    if not visit_id:
+        return Response({'error': 'visit_id required'}, status=400)
+    
+    prescriptions = Prescription.objects.filter(
+        consultation__visit_id=visit_id,
+        is_dispensed=False
+    ).select_related('medicine', 'consultation__visit__patient', 'consultation__doctor')
+    
+    if not prescriptions.exists():
+        return Response({'error': 'No prescriptions found'}, status=404)
+    
+    first_rx = prescriptions.first()
+    visit = first_rx.consultation.visit
+    
+    data = {
+        'patient_name': visit.patient.full_name,
+        'doctor_name': first_rx.consultation.doctor.get_full_name() or first_rx.consultation.doctor.username,
+        'visit_date': visit.visit_date.strftime('%d %b %Y at %H:%M'),
+        'prescriptions': []
+    }
+    
+    for rx in prescriptions:
+        data['prescriptions'].append({
+            'id': rx.id,
+            'medicine': rx.medicine.name,
+            'quantity': rx.quantity,
+            'unit': rx.medicine.unit,
+            'stock': rx.medicine.stock_quantity,
+            'dosage': rx.dosage
+        })
+    
+    return Response(data)

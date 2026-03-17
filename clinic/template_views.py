@@ -1117,8 +1117,23 @@ def lab_result_form(request, lab_id):
 def pending_prescriptions(request):
     prescriptions = Prescription.objects.filter(
         is_dispensed=False
-    ).select_related('consultation__visit__patient', 'medicine')
-    return render(request, 'clinic/pharmacy_queue.html', {'prescriptions': prescriptions})
+    ).select_related('consultation__visit__patient', 'consultation__doctor', 'medicine').order_by('consultation__visit__visit_date')
+    
+    # Group by visit
+    grouped = {}
+    for rx in prescriptions:
+        visit = rx.consultation.visit
+        if visit.id not in grouped:
+            grouped[visit.id] = {
+                'visit': visit,
+                'patient': visit.patient,
+                'doctor': rx.consultation.doctor,
+                'prescriptions': [rx],
+            }
+        else:
+            grouped[visit.id]['prescriptions'].append(rx)
+    
+    return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped.values()})
 
 
 @login_required
@@ -1150,6 +1165,55 @@ def dispense_medicine(request, prescription_id):
                f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}', request)
     
     messages.success(request, f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}')
+    return redirect('pending_prescriptions')
+
+
+@login_required
+def dispense_all_prescriptions(request, visit_id):
+    visit = get_object_or_404(Visit, id=visit_id)
+    prescriptions = Prescription.objects.filter(
+        consultation__visit=visit,
+        is_dispensed=False
+    )
+    
+    if not prescriptions.exists():
+        messages.error(request, 'No prescriptions to dispense')
+        return redirect('pending_prescriptions')
+    
+    # Check stock for all
+    for rx in prescriptions:
+        if rx.medicine.stock_quantity < rx.quantity:
+            messages.error(request, f'Insufficient stock for {rx.medicine.name}')
+            return redirect('pending_prescriptions')
+    
+    # Dispense all
+    dispensed_count = 0
+    for rx in prescriptions:
+        rx.is_dispensed = True
+        rx.save()
+        
+        # Deduct stock
+        rx.medicine.stock_quantity -= rx.quantity
+        rx.medicine.save()
+        
+        # Record movement
+        StockMovement.objects.create(
+            medicine=rx.medicine,
+            movement_type='DISPENSE',
+            quantity=rx.quantity,
+            performed_by=request.user,
+            notes=f'Dispensed for Visit #{visit.id}'
+        )
+        
+        log_action(request.user, 'DISPENSE', 'Prescription', rx.id,
+                  f'Dispensed {rx.quantity} {rx.medicine.unit} of {rx.medicine.name}', request)
+        dispensed_count += 1
+    
+    # Update visit status
+    if visit.status == 'WAITING_FOR_PHARMACY':
+        visit.update_status('COMPLETED')
+    
+    messages.success(request, f'Dispensed {dispensed_count} prescription(s) successfully')
     return redirect('pending_prescriptions')
 
 
