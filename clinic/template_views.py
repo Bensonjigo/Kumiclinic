@@ -1026,7 +1026,7 @@ def new_prescription(request):
     if request.method == 'POST':
         visit_id = request.POST.get('visit_id')
         notes = request.POST.get('notes', '')
-        diagnosis = request.POST.get('diagnosis', 'Pending')
+        diagnosis = request.POST.get('diagnosis', '')
         treatment_plan = request.POST.get('treatment_plan', '')
         
         visit = get_object_or_404(Visit, id=visit_id)
@@ -1052,10 +1052,22 @@ def new_prescription(request):
             if medicine_ids[i]:
                 try:
                     medicine = get_object_or_404(Medicine, id=medicine_ids[i])
+                    
+                    # Build dosage string from the three new fields
+                    dosage_per_day = request.POST.getlist('dosage_per_day[]')
+                    times_per_day = request.POST.getlist('times_per_day[]')
+                    num_days = request.POST.getlist('num_days[]')
+                    
+                    dosage_str = ''
+                    if i < len(dosages) and dosages[i]:
+                        dosage_str = dosages[i]
+                    elif i < len(dosage_per_day) and dosage_per_day[i] and i < len(times_per_day) and times_per_day[i] and i < len(num_days) and num_days[i]:
+                        dosage_str = f"{dosage_per_day[i]} tablet(s) {times_per_day[i]} time(s) daily for {num_days[i]} days"
+                    
                     Prescription.objects.create(
                         consultation=consultation,
                         medicine=medicine,
-                        dosage=dosages[i] if i < len(dosages) else '',
+                        dosage=dosage_str,
                         quantity=int(quantities[i]) if i < len(quantities) and quantities[i] else 1,
                         notes=notes
                     )
