@@ -1243,7 +1243,8 @@ def batch_lab_results(request, visit_id):
 
 @login_required
 def pending_prescriptions(request):
-    # Get unique visit IDs with pending prescriptions
+    # Get unique visit IDs with pending prescriptions (including partial)
+    # Include prescriptions that have notes about remaining from partial dispense
     pending_visit_ids = Prescription.objects.filter(
         is_dispensed=False,
         consultation__isnull=False
@@ -1254,7 +1255,9 @@ def pending_prescriptions(request):
     ).select_related('patient', 'consultation').prefetch_related(
         db_models.Prefetch(
             'consultation__prescriptions',
-            queryset=Prescription.objects.filter(is_dispensed=False),
+            queryset=Prescription.objects.filter(
+                is_dispensed=False
+            ).order_by('-created_at'),
             to_attr='pending_rx_list'
         )
     ).order_by('visit_date')
@@ -1377,16 +1380,19 @@ def batch_dispense(request, visit_id):
                 medicine.stock_quantity -= qty_to_dispense
                 medicine.save()
                 
+                # Calculate remaining BEFORE updating the prescription
+                original_qty = prescription.quantity
+                remaining_qty = original_qty - qty_to_dispense
+                
                 # Check if partial - create new prescription for remaining
-                remaining_qty = prescription.quantity - qty_to_dispense
-                if remaining_qty > 0 and qty_to_dispense < prescription.quantity:
+                if remaining_qty > 0 and qty_to_dispense < original_qty:
                     # Create new prescription for remaining
                     Prescription.objects.create(
                         consultation=prescription.consultation,
                         medicine=prescription.medicine,
                         dosage=prescription.dosage,
                         quantity=remaining_qty,
-                        notes=f'REMAINING from partial dispense on {timezone.now().date()}. Original qty: {prescription.quantity}'
+                        notes=f'REMAINING from partial dispense on {timezone.now().date()}. Original qty: {original_qty}'
                     )
                 
                 prescription.is_dispensed = True
