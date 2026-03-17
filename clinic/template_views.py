@@ -1243,26 +1243,39 @@ def batch_lab_results(request, visit_id):
 
 @login_required
 def pending_prescriptions(request):
-    # Group prescriptions by visit - get unique visits with pending prescriptions
-    from django.db.models import Prefetch
+    # Get unique visit IDs with pending prescriptions
+    pending_visit_ids = Prescription.objects.filter(
+        is_dispensed=False,
+        consultation__isnull=False
+    ).values_list('consultation__visit_id', flat=True).distinct()
     
     visits_with_prescriptions = Visit.objects.filter(
-        consultation__prescriptions__is_dispensed=False
-    ).prefetch_related(
-        'consultation__prescriptions__medicine',
-        'patient'
-    ).distinct().order_by('visit_date')
+        id__in=pending_visit_ids
+    ).select_related('patient', 'consultation').prefetch_related(
+        db_models.Prefetch(
+            'consultation__prescriptions',
+            queryset=Prescription.objects.filter(is_dispensed=False),
+            to_attr='pending_rx_list'
+        )
+    ).order_by('visit_date')
     
-    # Build grouped data
+    # Build grouped data - filter duplicates
     grouped_prescriptions = []
+    seen_visits = set()
     for visit in visits_with_prescriptions:
-        pending_rx = visit.consultation.prescriptions.filter(is_dispensed=False) if visit.consultation else []
-        grouped_prescriptions.append({
-            'visit': visit,
-            'patient': visit.patient,
-            'prescriptions': pending_rx,
-            'rx_count': pending_rx.count()
-        })
+        if visit.id in seen_visits:
+            continue
+        seen_visits.add(visit.id)
+        
+        pending_rx = getattr(visit, 'pending_rx_list', [])
+        if pending_rx and visit.consultation:
+            grouped_prescriptions.append({
+                'visit': visit,
+                'patient': visit.patient,
+                'doctor': visit.consultation.doctor,
+                'prescriptions': pending_rx,
+                'rx_count': len(pending_rx)
+            })
     
     return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped_prescriptions})
 
@@ -1297,6 +1310,72 @@ def dispense_medicine(request, prescription_id):
     
     messages.success(request, f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}')
     return redirect('pending_prescriptions')
+
+
+@login_required
+def batch_dispense(request, visit_id):
+    """Dispense all prescriptions for a visit at once"""
+    visit = get_object_or_404(Visit, id=visit_id)
+    
+    if not visit.consultation:
+        messages.error(request, 'No consultation found for this visit')
+        return redirect('pending_prescriptions')
+    
+    prescriptions = visit.consultation.prescriptions.filter(is_dispensed=False)
+    
+    if request.method == 'POST':
+        dispensed_count = 0
+        failed_count = 0
+        errors = []
+        
+        for prescription in prescriptions:
+            dispense_key = f'dispense_{prescription.id}'
+            
+            if dispense_key in request.POST:
+                medicine = prescription.medicine
+                
+                if medicine.stock_quantity < prescription.quantity:
+                    failed_count += 1
+                    errors.append(f'{medicine.name}: Insufficient stock ({medicine.stock_quantity} available)')
+                    continue
+                
+                # Dispense the prescription
+                medicine.stock_quantity -= prescription.quantity
+                medicine.save()
+                
+                prescription.is_dispensed = True
+                prescription.dispensed_by = request.user
+                prescription.dispensed_at = timezone.now()
+                prescription.save()
+                
+                log_action(
+                    request.user, 
+                    'DISPENSE', 
+                    'Prescription', 
+                    prescription.id,
+                    f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}',
+                    request
+                )
+                dispensed_count += 1
+        
+        # Check if all prescriptions are dispensed
+        remaining = visit.consultation.prescriptions.filter(is_dispensed=False).count()
+        
+        if remaining == 0:
+            visit.update_status('COMPLETED')
+            messages.success(request, f'All prescriptions dispensed! Visit completed.')
+        elif dispensed_count > 0:
+            messages.success(request, f'{dispensed_count} prescription(s) dispensed. {remaining} remaining.')
+        else:
+            for error in errors:
+                messages.error(request, error)
+        
+        return redirect('pending_prescriptions')
+    
+    return render(request, 'clinic/batch_dispense.html', {
+        'visit': visit,
+        'prescriptions': prescriptions
+    })
 
 
 @login_required

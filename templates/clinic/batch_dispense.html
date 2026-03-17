@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Dispense Medications - {{ visit.patient.full_name }} - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <div class="mb-6">
+        <a href="{% url 'pending_prescriptions' %}" class="text-blue-600 hover:underline">&larr; Back to Pharmacy Queue</a>
+    </div>
+    
+    <h2 class="text-2xl font-bold mb-2">Dispense Medications for {{ visit.patient.full_name }}</h2>
+    <p class="text-gray-500 mb-6">Visit #{{ visit.id }} | {{ visit.visit_date|date:"M d, Y H:i" }} | Dr. {{ visit.consultation.doctor.get_full_name|default:visit.consultation.doctor.username }}</p>
+    
+    {% if prescriptions %}
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="space-y-4">
+            {% for rx in prescriptions %}
+            <div class="border rounded-lg p-4 {% if rx.medicine.stock_quantity < rx.quantity %}bg-red-50 border-red-200{% else %}bg-gray-50{% endif %}">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-start gap-3">
+                        <input 
+                            type="checkbox" 
+                            name="dispense_{{ rx.id }}" 
+                            id="dispense_{{ rx.id }}"
+                            class="mt-1 w-5 h-5 text-green-600 rounded"
+                            {% if rx.medicine.stock_quantity < rx.quantity %}disabled{% endif %}
+                        >
+                        <div>
+                            <label for="dispense_{{ rx.id }}" class="font-semibold text-lg cursor-pointer {% if rx.medicine.stock_quantity < rx.quantity %}text-red-600{% endif %}">
+                                {{ rx.medicine.name }}
+                            </label>
+                            <p class="text-sm text-gray-600">{{ rx.dosage }}</p>
+                            <p class="text-sm">
+                                Quantity: <span class="font-medium">{{ rx.quantity }} {{ rx.medicine.unit }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm text-gray-500">Available: </span>
+                        <span class="font-medium {% if rx.medicine.stock_quantity < rx.quantity %}text-red-600{% else %}text-green-600{% endif %}">
+                            {{ rx.medicine.stock_quantity }} {{ rx.medicine.unit }}
+                        </span>
+                        {% if rx.medicine.stock_quantity < rx.quantity %}
+                        <p class="text-xs text-red-600 mt-1">Insufficient stock!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-6 flex gap-4">
+            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                <i class="fas fa-check mr-2"></i>Dispense Selected
+            </button>
+            <a href="{% url 'pending_prescriptions' %}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">
+                Cancel
+            </a>
+        </div>
+        
+        <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p class="text-sm text-blue-700">
+                <i class="fas fa-info-circle mr-1"></i>
+                Stock will be automatically deducted when you dispense. Check the medications you want to dispense, then click "Dispense Selected".
+            </p>
+        </div>
+    </form>
+    {% else %}
+    <div class="text-center py-12">
+        <p class="text-gray-500">No pending prescriptions for this patient.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
