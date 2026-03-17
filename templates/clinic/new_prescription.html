@@ -70,8 +70,7 @@
             <div class="border-t pt-4">
                 <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p class="text-sm text-blue-800">
-                        <strong>Instructions:</strong> Select medicine, enter quantity to prescribe, and write dosage instructions. 
-                        The quantity you enter is what will be dispensed from pharmacy stock.
+                        Select medicine and enter quantity to prescribe.
                     </p>
                 </div>
                 <h3 class="font-semibold mb-3">Prescribe Medicines</h3>
@@ -98,9 +97,22 @@
                                     class="w-full px-3 py-2 border rounded-lg text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Dosage Instructions</label>
-                                <input type="text" name="dosage[]" placeholder="e.g., 3x daily after food" 
-                                    class="w-full px-3 py-2 border rounded-lg text-sm">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Frequency</label>
+                                <select name="dosage[]" class="w-full px-3 py-2 border rounded-lg text-sm">
+                                    <option value="">Select frequency</option>
+                                    <option value="Once daily">Once daily</option>
+                                    <option value="Twice daily">Twice daily</option>
+                                    <option value="3x daily">3x daily</option>
+                                    <option value="4x daily">4x daily</option>
+                                    <option value="Every 4 hours">Every 4 hours</option>
+                                    <option value="Every 6 hours">Every 6 hours</option>
+                                    <option value="Every 8 hours">Every 8 hours</option>
+                                    <option value="Once weekly">Once weekly</option>
+                                    <option value="As needed">As needed</option>
+                                    <option value="Before meals">Before meals</option>
+                                    <option value="After meals">After meals</option>
+                                    <option value="With food">With food</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -161,9 +173,22 @@ function addMedicine() {
                     class="w-full px-3 py-2 border rounded-lg text-sm">
             </div>
             <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Dosage Instructions</label>
-                <input type="text" name="dosage[]" placeholder="e.g., 3x daily after food" 
-                    class="w-full px-3 py-2 border rounded-lg text-sm">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Frequency</label>
+                <select name="dosage[]" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    <option value="">Select frequency</option>
+                    <option value="Once daily">Once daily</option>
+                    <option value="Twice daily">Twice daily</option>
+                    <option value="3x daily">3x daily</option>
+                    <option value="4x daily">4x daily</option>
+                    <option value="Every 4 hours">Every 4 hours</option>
+                    <option value="Every 6 hours">Every 6 hours</option>
+                    <option value="Every 8 hours">Every 8 hours</option>
+                    <option value="Once weekly">Once weekly</option>
+                    <option value="As needed">As needed</option>
+                    <option value="Before meals">Before meals</option>
+                    <option value="After meals">After meals</option>
+                    <option value="With food">With food</option>
+                </select>
             </div>
         </div>
     `;
