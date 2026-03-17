@@ -679,7 +679,8 @@ def patient_data_view(request, visit_id):
         medical_history_html = '<p class="text-gray-500 text-sm">No medical history found</p>'
     
     lab_results_html = ''
-    lab_requests = LabRequest.objects.filter(visit__patient=patient).select_related('visit').order_by('-date')[:10]
+    # Show only current visit's lab results, not historical data
+    lab_requests = LabRequest.objects.filter(visit=visit).order_by('-date')
     for lab in lab_requests:
         status_class = 'bg-gray-100 text-gray-800'
         if lab.status == 'COMPLETED':
@@ -706,7 +707,8 @@ def patient_data_view(request, visit_id):
         lab_results_html = '<p class="text-gray-500 text-sm">No lab results found</p>'
     
     medications_html = ''
-    prescriptions = Prescription.objects.filter(consultation__visit__patient=patient).select_related('medicine', 'consultation__visit').order_by('-consultation__visit__visit_date')[:10]
+    # Show only current visit's prescriptions, not historical data
+    prescriptions = Prescription.objects.filter(consultation__visit=visit).select_related('medicine', 'consultation')
     for rx in prescriptions:
         dispensed_class = 'bg-purple-100 text-purple-800' if rx.is_dispensed else 'bg-yellow-100 text-yellow-800'
         medications_html += f'''
