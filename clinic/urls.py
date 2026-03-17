@@ -20,4 +20,5 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('patient-data/<int:visit_id>/', views.patient_data_view, name='patient_data'),
+    path('prescriptions/', views.prescription_details_api, name='prescription_details_api'),
 ]
