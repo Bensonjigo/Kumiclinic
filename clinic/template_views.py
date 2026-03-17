@@ -216,61 +216,47 @@ def dashboard_lab(request):
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Get pending lab request visit IDs
-    pending_visit_ids = LabRequest.objects.filter(status='PENDING').values_list('visit_id', flat=True).distinct()
+    # Get pending lab requests
+    pending_labs = LabRequest.objects.filter(status='PENDING').select_related('visit__patient', 'visit').order_by('visit__visit_date')
     
-    visits_with_pending_labs = Visit.objects.filter(
-        id__in=pending_visit_ids
-    ).select_related('patient').prefetch_related(
-        db_models.Prefetch(
-            'lab_requests',
-            queryset=LabRequest.objects.filter(status='PENDING'),
-            to_attr='pending_lab_list'
-        )
-    ).order_by('visit_date')
-    
+    # Group by visit manually - this ensures no duplicates
     grouped_pending = []
     seen_pending = set()
-    for visit in visits_with_pending_labs:
-        if visit.id in seen_pending:
+    
+    for lab in pending_labs:
+        visit_id = lab.visit_id
+        if visit_id in seen_pending:
             continue
-        seen_pending.add(visit.id)
-        pending = getattr(visit, 'pending_lab_list', [])
-        if pending:
-            grouped_pending.append({
-                'visit': visit,
-                'patient': visit.patient,
-                'lab_requests': pending,
-                'lab_count': len(pending)
-            })
+        seen_pending.add(visit_id)
+        
+        all_labs = pending_labs.filter(visit_id=visit_id)
+        grouped_pending.append({
+            'visit': lab.visit,
+            'patient': lab.visit.patient,
+            'lab_requests': all_labs,
+            'lab_count': all_labs.count()
+        })
     
-    # Get in progress lab request visit IDs
-    in_progress_visit_ids = LabRequest.objects.filter(status='IN_PROGRESS').values_list('visit_id', flat=True).distinct()
+    # Get in progress lab requests
+    in_progress_labs = LabRequest.objects.filter(status='IN_PROGRESS').select_related('visit__patient', 'visit').order_by('visit__visit_date')
     
-    visits_with_in_progress = Visit.objects.filter(
-        id__in=in_progress_visit_ids
-    ).select_related('patient').prefetch_related(
-        db_models.Prefetch(
-            'lab_requests',
-            queryset=LabRequest.objects.filter(status='IN_PROGRESS'),
-            to_attr='in_progress_lab_list'
-        )
-    ).order_by('visit_date')
-    
+    # Group by visit manually
     grouped_in_progress = []
     seen_in_progress = set()
-    for visit in visits_with_in_progress:
-        if visit.id in seen_in_progress:
+    
+    for lab in in_progress_labs:
+        visit_id = lab.visit_id
+        if visit_id in seen_in_progress:
             continue
-        seen_in_progress.add(visit.id)
-        in_progress = getattr(visit, 'in_progress_lab_list', [])
-        if in_progress:
-            grouped_in_progress.append({
-                'visit': visit,
-                'patient': visit.patient,
-                'lab_requests': in_progress,
-                'lab_count': len(in_progress)
-            })
+        seen_in_progress.add(visit_id)
+        
+        all_labs = in_progress_labs.filter(visit_id=visit_id)
+        grouped_in_progress.append({
+            'visit': lab.visit,
+            'patient': lab.visit.patient,
+            'lab_requests': all_labs,
+            'lab_count': all_labs.count()
+        })
     
     # Today's completed tests
     completed_today = LabRequest.objects.filter(
@@ -979,38 +965,34 @@ def consultation_form(request, visit_id):
 
 @login_required
 def pending_labs(request):
-    # Get all pending lab requests grouped by visit
-    from django.db.models import Prefetch
+    # Get all pending lab requests
+    lab_requests = LabRequest.objects.filter(
+        status='PENDING'
+    ).select_related(
+        'visit__patient',
+        'visit'
+    ).order_by('visit__visit_date')
     
-    # Use a subquery approach to get unique visits
-    pending_lab_ids = LabRequest.objects.filter(status='PENDING').values_list('visit_id', flat=True).distinct()
-    
-    visits_with_labs = Visit.objects.filter(
-        id__in=pending_lab_ids
-    ).select_related('patient').prefetch_related(
-        db_models.Prefetch(
-            'lab_requests',
-            queryset=LabRequest.objects.filter(status='PENDING'),
-            to_attr='pending_lab_requests'
-        )
-    ).order_by('visit_date')
-    
-    # Build grouped data - filter out visits with no pending labs
+    # Group by visit manually - this ensures no duplicates
     grouped_labs = []
     seen_visits = set()
-    for visit in visits_with_labs:
-        if visit.id in seen_visits:
-            continue
-        seen_visits.add(visit.id)
+    
+    for lab in lab_requests:
+        visit_id = lab.visit_id
         
-        pending = getattr(visit, 'pending_lab_requests', [])
-        if pending:
-            grouped_labs.append({
-                'visit': visit,
-                'patient': visit.patient,
-                'lab_requests': pending,
-                'lab_count': len(pending)
-            })
+        if visit_id in seen_visits:
+            continue
+        seen_visits.add(visit_id)
+        
+        # Get all pending labs for this visit
+        all_labs_for_visit = lab_requests.filter(visit_id=visit_id)
+        
+        grouped_labs.append({
+            'visit': lab.visit,
+            'patient': lab.visit.patient,
+            'lab_requests': all_labs_for_visit,
+            'lab_count': all_labs_for_visit.count()
+        })
     
     return render(request, 'clinic/lab_queue.html', {'grouped_labs': grouped_labs})
 
@@ -1243,42 +1225,38 @@ def batch_lab_results(request, visit_id):
 
 @login_required
 def pending_prescriptions(request):
-    # Get unique visit IDs with pending prescriptions (including partial)
-    # Include prescriptions that have notes about remaining from partial dispense
-    pending_visit_ids = Prescription.objects.filter(
+    # Get all pending prescriptions with their visits
+    prescriptions = Prescription.objects.filter(
         is_dispensed=False,
         consultation__isnull=False
-    ).values_list('consultation__visit_id', flat=True).distinct()
+    ).select_related(
+        'consultation__visit__patient',
+        'consultation__doctor',
+        'medicine'
+    ).order_by('consultation__visit__visit_date')
     
-    visits_with_prescriptions = Visit.objects.filter(
-        id__in=pending_visit_ids
-    ).select_related('patient', 'consultation').prefetch_related(
-        db_models.Prefetch(
-            'consultation__prescriptions',
-            queryset=Prescription.objects.filter(
-                is_dispensed=False
-            ).order_by('-created_at'),
-            to_attr='pending_rx_list'
-        )
-    ).order_by('visit_date')
-    
-    # Build grouped data - filter duplicates
+    # Group by visit manually - this ensures no duplicates
     grouped_prescriptions = []
     seen_visits = set()
-    for visit in visits_with_prescriptions:
-        if visit.id in seen_visits:
-            continue
-        seen_visits.add(visit.id)
+    
+    for rx in prescriptions:
+        visit_id = rx.consultation.visit_id
         
-        pending_rx = getattr(visit, 'pending_rx_list', [])
-        if pending_rx and visit.consultation:
-            grouped_prescriptions.append({
-                'visit': visit,
-                'patient': visit.patient,
-                'doctor': visit.consultation.doctor,
-                'prescriptions': pending_rx,
-                'rx_count': len(pending_rx)
-            })
+        if visit_id in seen_visits:
+            continue
+        seen_visits.add(visit_id)
+        
+        # Get all pending prescriptions for this visit
+        visit = rx.consultation.visit
+        all_rx_for_visit = prescriptions.filter(consultation__visit=visit_id)
+        
+        grouped_prescriptions.append({
+            'visit': visit,
+            'patient': visit.patient,
+            'doctor': rx.consultation.doctor,
+            'prescriptions': all_rx_for_visit,
+            'rx_count': all_rx_for_visit.count()
+        })
     
     return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped_prescriptions})
 
