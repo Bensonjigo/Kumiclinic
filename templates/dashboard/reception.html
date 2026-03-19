@@ -9,6 +9,40 @@
 
 {% block dashboard_content %}
 
+{% if request.GET.registered %}
+<div id="registration-success-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-green-500 p-4">
+            <div class="flex items-center justify-center">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                    <span class="material-symbols-outlined text-green-500 text-4xl">check_circle</span>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 text-center">
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Registration Successful!</h3>
+            <p class="text-gray-600 mb-1">Patient <strong class="text-primary">{{ request.GET.name }}</strong></p>
+            <p class="text-sm text-gray-500">has been registered successfully.</p>
+        </div>
+        <div class="px-6 pb-6">
+            <button onclick="closeModal()" class="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function closeModal() {
+    document.getElementById('registration-success-modal').remove();
+    window.history.replaceState({}, '', window.location.pathname);
+}
+window.onload = function() {
+    setTimeout(closeModal, 10000);
+};
+</script>
+{% endif %}
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Main Queue -->
     <div class="lg:col-span-2">
@@ -194,7 +228,7 @@ function switchQueue(queueType) {
     
     const rows = document.querySelectorAll('.queue-row');
     rows.forEach(row => {
-        if (queueType === 'recent' && row.dataset.status === 'RECENT') {
+        if (queueType === 'recent' && (row.dataset.status === 'RECENT' || row.dataset.status === 'RECENT_VISIT')) {
             row.classList.remove('hidden');
         } else if (queueType === 'doctor' && row.dataset.status === 'WAITING_FOR_DOCTOR') {
             row.classList.remove('hidden');

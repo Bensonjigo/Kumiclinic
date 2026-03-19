@@ -52,6 +52,8 @@ def dashboard_redirect(request):
     Redirects logged-in users to their role-specific dashboard.
     This is the main entry point after login.
     """
+    from django.urls import reverse
+    
     role = request.user.role
     if request.user.is_superuser:
         role = 'ADMIN'
@@ -66,6 +68,13 @@ def dashboard_redirect(request):
     }
     
     redirect_url = role_urls.get(role, 'dashboard_nurse')
+    
+    registered = request.GET.get('registered')
+    name = request.GET.get('name')
+    
+    if registered and name:
+        return redirect(f"{reverse(redirect_url)}?registered={registered}&name={name}")
+    
     return redirect(redirect_url)
 
 
@@ -660,11 +669,8 @@ def register_patient(request):
         
         log_action(request.user, 'REGISTER', 'Patient', patient.id, 
                    f'Registered patient: {patient.full_name} ({patient.university_id})', request)
-        if has_vitals:
-            messages.success(request, f'Patient {patient.full_name} registered with visit and vital signs!')
-        else:
-            messages.success(request, f'Patient {patient.full_name} registered successfully!')
-        return redirect('dashboard')
+        from django.urls import reverse
+        return redirect(reverse('dashboard') + f'?registered={patient.id}&name={patient.full_name}')
     
     return render(request, 'clinic/register_patient.html')
 
