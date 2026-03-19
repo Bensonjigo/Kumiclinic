@@ -503,7 +503,7 @@ def profile_view(request):
             user.avatar = request.FILES['avatar']
         
         user.save()
-        messages.success(request, 'Profile updated successfully!')
+        messages.success(request, 'Profile updated!')
         return redirect('profile')
     
     return render(request, 'clinic/profile.html', {'user': user})
@@ -704,7 +704,7 @@ def edit_patient(request, patient_id):
         
         log_action(request.user, 'UPDATE', 'Patient', patient.id, 
                    f'Updated patient: {patient.full_name} ({patient.university_id})', request)
-        messages.success(request, f'Patient {patient.full_name} updated successfully!')
+        messages.success(request, f'{patient.full_name} updated!')
         return redirect('patient_detail', patient_id=patient.id)
     
     return render(request, 'clinic/edit_patient.html', {'patient': patient})
@@ -725,7 +725,7 @@ def delete_patient(request, patient_id):
         
         log_action(request.user, 'DELETE', 'Patient', patient_id, 
                    f'Deleted patient: {patient_name} ({university_id})', request)
-        messages.success(request, f'Patient {patient_name} deleted successfully!')
+        messages.success(request, f'{patient_name} deleted!')
         return redirect('patients')
     
     return render(request, 'clinic/delete_patient.html', {'patient': patient})
@@ -790,7 +790,7 @@ def new_visit(request):
             )
         
         if has_vitals:
-            messages.success(request, f'Visit created and vital signs recorded for {patient.full_name}')
+            messages.success(request, f'Visit created for {patient.full_name} with vitals')
         else:
             messages.success(request, f'Visit created for {patient.full_name}')
         return redirect('dashboard')
@@ -831,7 +831,7 @@ def triage_form(request, visit_id):
             recorded_by=request.user
         )
         visit.update_status('WAITING_FOR_DOCTOR')
-        messages.success(request, 'Triage recorded successfully!')
+        messages.success(request, 'Triage saved!')
         return redirect('pending_triages')
     
     return render(request, 'clinic/triage_form.html', {'visit': visit})
@@ -876,7 +876,7 @@ def consultation_form(request, visit_id):
                     lab_count += 1
             
             visit.update_status('IN_LAB')
-            messages.success(request, f'{lab_count} lab test(s) ordered. Patient moved to lab queue.')
+            messages.success(request, f'{lab_count} lab test(s) sent to lab queue')
             return redirect('pending_consultations')
         
         # Full consultation save
@@ -997,7 +997,7 @@ def new_lab_request(request):
         if visit.status == 'WAITING_FOR_DOCTOR':
             visit.update_status('IN_LAB')
         
-        messages.success(request, 'Lab test ordered successfully!')
+        messages.success(request, 'Lab test ordered!')
         return redirect('dashboard_doctor')
     
     return render(request, 'clinic/new_lab_request.html', {
@@ -1026,7 +1026,7 @@ def manage_lab_tests(request):
                     code=code.upper(),
                     description=description
                 )
-                messages.success(request, f'Lab test "{name}" added successfully!')
+                messages.success(request, f'Lab test "{name}" added!')
             else:
                 messages.error(request, 'Name and Code are required.')
         
@@ -1036,7 +1036,7 @@ def manage_lab_tests(request):
             test = get_object_or_404(LabTestType, id=test_id)
             test.is_active = not test.is_active
             test.save()
-            messages.success(request, f'Lab test "{test.name}" {"activated" if test.is_active else "deactivated"}!')
+            messages.success(request, f'Lab test "{test.name}" updated!')
         
         # Delete test
         elif 'delete_test' in request.POST:
@@ -1116,7 +1116,7 @@ def new_prescription(request):
             if visit.status in ['WAITING_FOR_DOCTOR', 'IN_LAB']:
                 visit.update_status('WAITING_FOR_PHARMACY')
         
-        messages.success(request, f'{prescription_count} prescription(s) created successfully!')
+        messages.success(request, f'{prescription_count} prescription(s) created!')
         return redirect('dashboard_doctor')
     
     medicines = Medicine.objects.all()
@@ -1143,7 +1143,7 @@ def lab_result_form(request, lab_id):
             # All labs complete - return to doctor for prescription
             visit.update_status('WAITING_FOR_DOCTOR')
         
-        messages.success(request, 'Lab result recorded!')
+        messages.success(request, 'Lab result saved!')
         return redirect('pending_labs')
     
     return render(request, 'clinic/lab_result_form.html', {'lab_request': lab_request})
@@ -1200,7 +1200,7 @@ def dispense_medicine(request, prescription_id):
     log_action(request.user, 'DISPENSE', 'Prescription', prescription.id,
                f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}', request)
     
-    messages.success(request, f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}')
+    messages.success(request, f'{prescription.quantity} {medicine.unit} of {medicine.name} dispensed')
     return redirect('pending_prescriptions')
 
 
@@ -1249,7 +1249,7 @@ def dispense_all_prescriptions(request, visit_id):
     if visit.status == 'WAITING_FOR_PHARMACY':
         visit.update_status('COMPLETED')
     
-    messages.success(request, f'Dispensed {dispensed_count} prescription(s) successfully')
+    messages.success(request, f'{dispensed_count} prescription(s) dispensed')
     return redirect('pending_prescriptions')
 
 
@@ -1315,7 +1315,7 @@ def add_medicine(request):
             
             log_action(request.user, 'CREATE', 'Medicine', medicine.id,
                        f'Created medicine: {medicine.name}', request)
-            messages.success(request, f'Medicine "{name}" created successfully!')
+            messages.success(request, f'Medicine "{name}" created!')
             return redirect('medicines')
         else:
             messages.error(request, 'Name, category, and unit are required.')
@@ -1344,7 +1344,7 @@ def edit_medicine(request, medicine_id):
         
         log_action(request.user, 'UPDATE', 'Medicine', medicine.id,
                    f'Updated medicine: {medicine.name}', request)
-        messages.success(request, f'Medicine "{medicine.name}" updated successfully!')
+        messages.success(request, f'Medicine "{medicine.name}" updated!')
         return redirect('medicines')
     
     return render(request, 'clinic/edit_medicine.html', {'medicine': medicine})
@@ -1369,7 +1369,7 @@ def delete_medicine(request, medicine_id):
         medicine.delete()
         log_action(request.user, 'DELETE', 'Medicine', medicine_id,
                    f'Deleted medicine: {medicine_name}', request)
-        messages.success(request, f'Medicine "{medicine_name}" deleted successfully!')
+        messages.success(request, f'Medicine "{medicine_name}" deleted!')
     
     return redirect('medicines')
 
@@ -1396,7 +1396,7 @@ def add_stock(request, medicine_id):
                 )
                 log_action(request.user, 'UPDATE', 'Medicine', medicine.id,
                            f'Added {quantity} {medicine.unit} to stock', request)
-                messages.success(request, f'Added {quantity} {medicine.unit} to {medicine.name}')
+                messages.success(request, f'{quantity} {medicine.unit} added to {medicine.name}')
         except (ValueError, TypeError):
             messages.error(request, 'Invalid quantity')
     
@@ -1485,7 +1485,7 @@ def reports_dashboard(request):
             data=data,
             generated_by=request.user
         )
-        messages.success(request, 'Report saved successfully!')
+        messages.success(request, 'Report saved!')
         return redirect('report_detail', report_id=report.id)
     
     # Get saved reports for this user's department
