@@ -87,9 +87,15 @@ def dashboard_nurse(request):
     
     waiting_doctor_count = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
     
-    recent_patients = Patient.objects.filter(
+    recent_patients = list(Patient.objects.filter(
         created_at__gte=today_start
-    ).order_by('-created_at')
+    ).order_by('-created_at'))
+    
+    recent_visits = list(Visit.objects.filter(
+        visit_date__gte=today_start
+    ).exclude(
+        patient__in=recent_patients
+    ).select_related('patient').order_by('-visit_date')[:10])
     
     waiting_doctor_queue = Visit.objects.filter(
         status='WAITING_FOR_DOCTOR'
@@ -105,6 +111,8 @@ def dashboard_nurse(request):
         'completed_today': completed_today,
         'waiting_doctor': waiting_doctor_count,
         'recent_patients': recent_patients,
+        'recent_visits': recent_visits,
+        'recent_total': len(recent_patients) + len(recent_visits),
         'waiting_doctor_queue': waiting_doctor_queue,
         'visits_today': visits_today,
     }
