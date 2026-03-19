@@ -603,6 +603,9 @@ def register_patient(request):
         
         # Next of Kin
         next_of_kin_name = request.POST.get('next_of_kin_name')
+        if not next_of_kin_name or not next_of_kin_name.strip():
+            messages.error(request, 'Next of Kin Full Name is required.')
+            return redirect('register_patient')
         next_of_kin_relationship = request.POST.get('next_of_kin_relationship')
         next_of_kin_contact = request.POST.get('next_of_kin_contact')
         next_of_kin_address = request.POST.get('next_of_kin_address')
