@@ -256,15 +256,11 @@
     </nav>
     {% endif %}
     
+    <!-- Toast Messages Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    
     <main class="flex-grow overflow-auto p-6 lg:p-8">
         <div class="mx-auto max-w-screen-2xl">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="mb-4 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-200{% else %}bg-primary/10 text-primary border border-primary/20{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
             
             {% block content %}{% endblock %}
         </div>
@@ -302,6 +298,48 @@
             });
         }
     </script>
+    
+    <!-- Django Messages as Toasts -->
+    {% if messages %}
+    <script>
+        const messages = [
+            {% for message in messages %}
+            {
+                text: "{{ message }}",
+                type: "{{ message.tags }}"
+            },
+            {% endfor %}
+        ];
+        
+        function showToast(text, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            const icon = type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info';
+            
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-72 transform translate-x-full transition-transform duration-300`;
+            toast.innerHTML = `
+                <span class="material-symbols-outlined">${icon}</span>
+                <span class="flex-1">${text}</span>
+                <button onclick="this.parentElement.remove()" class="hover:opacity-70">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+            
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+        
+        messages.forEach(msg => showToast(msg.text, msg.type));
+    </script>
+    {% endif %}
     
     {% block extra_js %}{% endblock %}
 </body>

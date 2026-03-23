@@ -16,10 +16,12 @@
                 <p class="text-gray-600 dark:text-gray-400 mt-1">Manage medicine stock and track inventory</p>
             </div>
             <div class="flex gap-3">
+                {% if request.user.role == 'ADMIN' or request.user.role == 'STORE_MANAGER' or request.user.is_superuser %}
                 <a href="{% url 'add_medicine' %}" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-2">
                     <span class="material-symbols-outlined">add</span>
                     Add Medicine
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -165,6 +167,7 @@
                         </td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-2">
+                                {% if request.user.role == 'ADMIN' or request.user.role == 'STORE_MANAGER' or request.user.is_superuser %}
                                 <a href="{% url 'edit_medicine' medicine.id %}" 
                                     class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
                                     <span class="material-symbols-outlined text-sm">edit</span>
@@ -183,6 +186,9 @@
                                     <span class="material-symbols-outlined text-sm">add</span>
                                     Add Stock
                                 </button>
+                                {% else %}
+                                <span class="text-sm text-gray-400">View only</span>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

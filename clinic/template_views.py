@@ -53,6 +53,8 @@ def dashboard_redirect(request):
     Redirects logged-in users to their role-specific dashboard.
     This is the main entry point after login.
     """
+    from django.urls import reverse
+    
     role = request.user.role
     if request.user.is_superuser:
         role = 'ADMIN'
@@ -69,6 +71,13 @@ def dashboard_redirect(request):
     }
     
     redirect_url = role_urls.get(role, 'dashboard_nurse')
+    
+    registered = request.GET.get('registered')
+    name = request.GET.get('name')
+    
+    if registered and name:
+        return redirect(f"{reverse(redirect_url)}?registered={registered}&name={name}")
+    
     return redirect(redirect_url)
 
 
@@ -90,9 +99,15 @@ def dashboard_nurse(request):
     
     waiting_doctor_count = Visit.objects.filter(status='WAITING_FOR_DOCTOR').count()
     
-    recent_patients = Patient.objects.filter(
+    recent_patients = list(Patient.objects.filter(
         created_at__gte=today_start
-    ).order_by('-created_at')
+    ).order_by('-created_at'))
+    
+    recent_visits = list(Visit.objects.filter(
+        visit_date__gte=today_start
+    ).exclude(
+        patient__in=recent_patients
+    ).select_related('patient').order_by('-visit_date')[:10])
     
     waiting_doctor_queue = Visit.objects.filter(
         status='WAITING_FOR_DOCTOR'
@@ -108,6 +123,8 @@ def dashboard_nurse(request):
         'completed_today': completed_today,
         'waiting_doctor': waiting_doctor_count,
         'recent_patients': recent_patients,
+        'recent_visits': recent_visits,
+        'recent_total': len(recent_patients) + len(recent_visits),
         'waiting_doctor_queue': waiting_doctor_queue,
         'visits_today': visits_today,
     }
@@ -330,11 +347,21 @@ def dashboard_pharmacy(request):
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
+<<<<<<< HEAD
     # Get all pending prescriptions
     prescriptions = Prescription.objects.filter(
         is_dispensed=False,
         cannot_dispense=False,
         consultation__isnull=False
+||||||| 7cc7b6d
+    # Pending prescriptions
+    pending_prescriptions = Prescription.objects.filter(
+        is_dispensed=False
+=======
+    # Pending prescriptions - group by visit
+    prescriptions = Prescription.objects.filter(
+        is_dispensed=False
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
     ).select_related(
         'consultation__visit__patient',
         'consultation__doctor',
@@ -364,6 +391,20 @@ def dashboard_pharmacy(request):
             'rx_count': all_rx_for_visit.count()
         })
     
+    # Group by visit
+    grouped_prescriptions = {}
+    for rx in prescriptions:
+        visit = rx.consultation.visit
+        if visit.id not in grouped_prescriptions:
+            grouped_prescriptions[visit.id] = {
+                'visit': visit,
+                'patient': visit.patient,
+                'doctor': rx.consultation.doctor,
+                'prescriptions': [rx],
+            }
+        else:
+            grouped_prescriptions[visit.id]['prescriptions'].append(rx)
+    
     # Today's dispensed count
     dispensed_today = Prescription.objects.filter(
         is_dispensed=True,
@@ -379,7 +420,13 @@ def dashboard_pharmacy(request):
     low_stock_medicines = low_stock[:5]
     
     context = {
+<<<<<<< HEAD
         'grouped_pending': grouped_pending,
+||||||| 7cc7b6d
+        'pending_prescriptions': pending_prescriptions,
+=======
+        'grouped_prescriptions': grouped_prescriptions.values(),
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
         'dispensed_today': dispensed_today,
         'total_medicines': total_medicines,
         'low_stock_count': low_stock_count,
@@ -532,7 +579,7 @@ def profile_view(request):
             user.avatar = request.FILES['avatar']
         
         user.save()
-        messages.success(request, 'Profile updated successfully!')
+        messages.success(request, 'Profile updated!')
         return redirect('profile')
     
     return render(request, 'clinic/profile.html', {'user': user})
@@ -632,6 +679,9 @@ def register_patient(request):
         
         # Next of Kin
         next_of_kin_name = request.POST.get('next_of_kin_name')
+        if not next_of_kin_name or not next_of_kin_name.strip():
+            messages.error(request, 'Next of Kin Full Name is required.')
+            return redirect('register_patient')
         next_of_kin_relationship = request.POST.get('next_of_kin_relationship')
         next_of_kin_contact = request.POST.get('next_of_kin_contact')
         next_of_kin_address = request.POST.get('next_of_kin_address')
@@ -640,9 +690,14 @@ def register_patient(request):
         reason_for_visit = request.POST.get('reason_for_visit')
         
         # Check for duplicate university_id only if provided
-        if university_id and Patient.objects.filter(university_id=university_id).exists():
-            messages.error(request, 'A patient with this university ID already exists.')
-            return redirect('register_patient')
+        if university_id:
+            if Patient.objects.filter(university_id=university_id).exists():
+                messages.error(request, 'A patient with this university ID already exists.')
+                return redirect('register_patient')
+        else:
+            # Generate unique ID for patients without university_id
+            import uuid
+            university_id = f"EXT-{uuid.uuid4().hex[:8].upper()}"
         
         patient = Patient.objects.create(
             full_name=full_name,
@@ -693,11 +748,8 @@ def register_patient(request):
         
         log_action(request.user, 'REGISTER', 'Patient', patient.id, 
                    f'Registered patient: {patient.full_name} ({patient.university_id})', request)
-        if has_vitals:
-            messages.success(request, f'Patient {patient.full_name} registered with visit and vital signs!')
-        else:
-            messages.success(request, f'Patient {patient.full_name} registered successfully!')
-        return redirect('dashboard')
+        from django.urls import reverse
+        return redirect(reverse('dashboard') + f'?registered={patient.id}&name={patient.full_name}')
     
     return render(request, 'clinic/register_patient.html')
 
@@ -728,7 +780,7 @@ def edit_patient(request, patient_id):
         
         log_action(request.user, 'UPDATE', 'Patient', patient.id, 
                    f'Updated patient: {patient.full_name} ({patient.university_id})', request)
-        messages.success(request, f'Patient {patient.full_name} updated successfully!')
+        messages.success(request, f'{patient.full_name} updated!')
         return redirect('patient_detail', patient_id=patient.id)
     
     return render(request, 'clinic/edit_patient.html', {'patient': patient})
@@ -749,7 +801,7 @@ def delete_patient(request, patient_id):
         
         log_action(request.user, 'DELETE', 'Patient', patient_id, 
                    f'Deleted patient: {patient_name} ({university_id})', request)
-        messages.success(request, f'Patient {patient_name} deleted successfully!')
+        messages.success(request, f'{patient_name} deleted!')
         return redirect('patients')
     
     return render(request, 'clinic/delete_patient.html', {'patient': patient})
@@ -814,7 +866,7 @@ def new_visit(request):
             )
         
         if has_vitals:
-            messages.success(request, f'Visit created and vital signs recorded for {patient.full_name}')
+            messages.success(request, f'Visit created for {patient.full_name} with vitals')
         else:
             messages.success(request, f'Visit created for {patient.full_name}')
         return redirect('dashboard')
@@ -855,7 +907,7 @@ def triage_form(request, visit_id):
             recorded_by=request.user
         )
         visit.update_status('WAITING_FOR_DOCTOR')
-        messages.success(request, 'Triage recorded successfully!')
+        messages.success(request, 'Triage saved!')
         return redirect('pending_triages')
     
     return render(request, 'clinic/triage_form.html', {'visit': visit})
@@ -900,7 +952,7 @@ def consultation_form(request, visit_id):
                     lab_count += 1
             
             visit.update_status('IN_LAB')
-            messages.success(request, f'{lab_count} lab test(s) ordered. Patient moved to lab queue.')
+            messages.success(request, f'{lab_count} lab test(s) sent to lab queue')
             return redirect('pending_consultations')
         
         # Handle counselling referral
@@ -1095,7 +1147,7 @@ def new_lab_request(request):
         if visit.status == 'WAITING_FOR_DOCTOR':
             visit.update_status('IN_LAB')
         
-        messages.success(request, 'Lab test ordered successfully!')
+        messages.success(request, 'Lab test ordered!')
         return redirect('dashboard_doctor')
     
     return render(request, 'clinic/new_lab_request.html', {
@@ -1124,7 +1176,7 @@ def manage_lab_tests(request):
                     code=code.upper(),
                     description=description
                 )
-                messages.success(request, f'Lab test "{name}" added successfully!')
+                messages.success(request, f'Lab test "{name}" added!')
             else:
                 messages.error(request, 'Name and Code are required.')
         
@@ -1134,7 +1186,7 @@ def manage_lab_tests(request):
             test = get_object_or_404(LabTestType, id=test_id)
             test.is_active = not test.is_active
             test.save()
-            messages.success(request, f'Lab test "{test.name}" {"activated" if test.is_active else "deactivated"}!')
+            messages.success(request, f'Lab test "{test.name}" updated!')
         
         # Delete test
         elif 'delete_test' in request.POST:
@@ -1211,7 +1263,7 @@ def new_prescription(request):
             if visit.status in ['WAITING_FOR_DOCTOR', 'IN_LAB']:
                 visit.update_status('WAITING_FOR_PHARMACY')
         
-        messages.success(request, f'{prescription_count} prescription(s) created successfully!')
+        messages.success(request, f'{prescription_count} prescription(s) created!')
         return redirect('dashboard_doctor')
     
     medicines = Medicine.objects.all()
@@ -1238,7 +1290,7 @@ def lab_result_form(request, lab_id):
             # All labs complete - return to doctor for prescription
             visit.update_status('WAITING_FOR_DOCTOR')
         
-        messages.success(request, 'Lab result recorded!')
+        messages.success(request, 'Lab result saved!')
         return redirect('pending_labs')
     
     return render(request, 'clinic/lab_result_form.html', {'lab_request': lab_request})
@@ -1286,6 +1338,7 @@ def pending_prescriptions(request):
     # Get all pending prescriptions with their visits
     # Filter out both dispensed AND cannot_dispense
     prescriptions = Prescription.objects.filter(
+<<<<<<< HEAD
         is_dispensed=False,
         cannot_dispense=False,
         consultation__isnull=False
@@ -1319,6 +1372,30 @@ def pending_prescriptions(request):
         })
     
     return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped_prescriptions})
+||||||| 7cc7b6d
+        is_dispensed=False
+    ).select_related('consultation__visit__patient', 'medicine')
+    return render(request, 'clinic/pharmacy_queue.html', {'prescriptions': prescriptions})
+=======
+        is_dispensed=False
+    ).select_related('consultation__visit__patient', 'consultation__doctor', 'medicine').order_by('consultation__visit__visit_date')
+    
+    # Group by visit
+    grouped = {}
+    for rx in prescriptions:
+        visit = rx.consultation.visit
+        if visit.id not in grouped:
+            grouped[visit.id] = {
+                'visit': visit,
+                'patient': visit.patient,
+                'doctor': rx.consultation.doctor,
+                'prescriptions': [rx],
+            }
+        else:
+            grouped[visit.id]['prescriptions'].append(rx)
+    
+    return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped.values()})
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
 
 
 @login_required
@@ -1349,7 +1426,56 @@ def dispense_medicine(request, prescription_id):
     log_action(request.user, 'DISPENSE', 'Prescription', prescription.id,
                f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}', request)
     
-    messages.success(request, f'Dispensed {prescription.quantity} {medicine.unit} of {medicine.name}')
+    messages.success(request, f'{prescription.quantity} {medicine.unit} of {medicine.name} dispensed')
+    return redirect('pending_prescriptions')
+
+
+@login_required
+def dispense_all_prescriptions(request, visit_id):
+    visit = get_object_or_404(Visit, id=visit_id)
+    prescriptions = Prescription.objects.filter(
+        consultation__visit=visit,
+        is_dispensed=False
+    )
+    
+    if not prescriptions.exists():
+        messages.error(request, 'No prescriptions to dispense')
+        return redirect('pending_prescriptions')
+    
+    # Check stock for all
+    for rx in prescriptions:
+        if rx.medicine.stock_quantity < rx.quantity:
+            messages.error(request, f'Insufficient stock for {rx.medicine.name}')
+            return redirect('pending_prescriptions')
+    
+    # Dispense all
+    dispensed_count = 0
+    for rx in prescriptions:
+        rx.is_dispensed = True
+        rx.save()
+        
+        # Deduct stock
+        rx.medicine.stock_quantity -= rx.quantity
+        rx.medicine.save()
+        
+        # Record movement
+        StockMovement.objects.create(
+            medicine=rx.medicine,
+            movement_type='DISPENSE',
+            quantity=rx.quantity,
+            performed_by=request.user,
+            notes=f'Dispensed for Visit #{visit.id}'
+        )
+        
+        log_action(request.user, 'DISPENSE', 'Prescription', rx.id,
+                  f'Dispensed {rx.quantity} {rx.medicine.unit} of {rx.medicine.name}', request)
+        dispensed_count += 1
+    
+    # Update visit status
+    if visit.status == 'WAITING_FOR_PHARMACY':
+        visit.update_status('COMPLETED')
+    
+    messages.success(request, f'{dispensed_count} prescription(s) dispensed')
     return redirect('pending_prescriptions')
 
 
@@ -1499,6 +1625,10 @@ def medicines_list(request):
 @login_required
 def add_medicine(request):
     """Create a new medicine"""
+    if request.user.role not in ['ADMIN', 'STORE_MANAGER'] and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to add medicines.')
+        return redirect('medicines')
+    
     if request.method == 'POST':
         name = request.POST.get('name')
         category = request.POST.get('category')
@@ -1537,7 +1667,7 @@ def add_medicine(request):
             
             log_action(request.user, 'CREATE', 'Medicine', medicine.id,
                        f'Created medicine: {medicine.name}', request)
-            messages.success(request, f'Medicine "{name}" created successfully!')
+            messages.success(request, f'Medicine "{name}" created!')
             return redirect('medicines')
         else:
             messages.error(request, 'Name, category, and unit are required.')
@@ -1548,6 +1678,10 @@ def add_medicine(request):
 @login_required
 def edit_medicine(request, medicine_id):
     """Edit an existing medicine"""
+    if request.user.role not in ['ADMIN', 'STORE_MANAGER'] and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to edit medicines.')
+        return redirect('medicines')
+    
     medicine = get_object_or_404(Medicine, id=medicine_id)
     
     if request.method == 'POST':
@@ -1562,7 +1696,7 @@ def edit_medicine(request, medicine_id):
         
         log_action(request.user, 'UPDATE', 'Medicine', medicine.id,
                    f'Updated medicine: {medicine.name}', request)
-        messages.success(request, f'Medicine "{medicine.name}" updated successfully!')
+        messages.success(request, f'Medicine "{medicine.name}" updated!')
         return redirect('medicines')
     
     return render(request, 'clinic/edit_medicine.html', {'medicine': medicine})
@@ -1571,6 +1705,10 @@ def edit_medicine(request, medicine_id):
 @login_required
 def delete_medicine(request, medicine_id):
     """Delete a medicine"""
+    if request.user.role not in ['ADMIN', 'STORE_MANAGER'] and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to delete medicines.')
+        return redirect('medicines')
+    
     if request.method == 'POST':
         medicine = get_object_or_404(Medicine, id=medicine_id)
         medicine_name = medicine.name
@@ -1583,13 +1721,17 @@ def delete_medicine(request, medicine_id):
         medicine.delete()
         log_action(request.user, 'DELETE', 'Medicine', medicine_id,
                    f'Deleted medicine: {medicine_name}', request)
-        messages.success(request, f'Medicine "{medicine_name}" deleted successfully!')
+        messages.success(request, f'Medicine "{medicine_name}" deleted!')
     
     return redirect('medicines')
 
 
 @login_required
 def add_stock(request, medicine_id):
+    if request.user.role not in ['ADMIN', 'STORE_MANAGER'] and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to add stock.')
+        return redirect('medicines')
+    
     if request.method == 'POST':
         medicine = get_object_or_404(Medicine, id=medicine_id)
         quantity = request.POST.get('quantity')
@@ -1606,7 +1748,7 @@ def add_stock(request, medicine_id):
                 )
                 log_action(request.user, 'UPDATE', 'Medicine', medicine.id,
                            f'Added {quantity} {medicine.unit} to stock', request)
-                messages.success(request, f'Added {quantity} {medicine.unit} to {medicine.name}')
+                messages.success(request, f'{quantity} {medicine.unit} added to {medicine.name}')
         except (ValueError, TypeError):
             messages.error(request, 'Invalid quantity')
     
@@ -1695,7 +1837,7 @@ def reports_dashboard(request):
             data=data,
             generated_by=request.user
         )
-        messages.success(request, 'Report saved successfully!')
+        messages.success(request, 'Report saved!')
         return redirect('report_detail', report_id=report.id)
     
     # Get saved reports for this user's department

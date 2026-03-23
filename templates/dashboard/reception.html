@@ -9,6 +9,40 @@
 
 {% block dashboard_content %}
 
+{% if request.GET.registered %}
+<div id="registration-success-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-green-500 p-4">
+            <div class="flex items-center justify-center">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                    <span class="material-symbols-outlined text-green-500 text-4xl">check_circle</span>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 text-center">
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Registration Successful!</h3>
+            <p class="text-gray-600 mb-1">Patient <strong class="text-primary">{{ request.GET.name }}</strong></p>
+            <p class="text-sm text-gray-500">has been registered successfully.</p>
+        </div>
+        <div class="px-6 pb-6">
+            <button onclick="closeModal()" class="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function closeModal() {
+    document.getElementById('registration-success-modal').remove();
+    window.history.replaceState({}, '', window.location.pathname);
+}
+window.onload = function() {
+    setTimeout(closeModal, 10000);
+};
+</script>
+{% endif %}
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Main Queue -->
     <div class="lg:col-span-2">
@@ -17,7 +51,7 @@
             <div class="border-b border-gray-200 dark:border-gray-700">
                 <div class="flex">
                     <button class="flex-1 py-4 text-sm font-semibold text-primary border-b-3 border-primary bg-primary/5" onclick="switchQueue('recent')" id="tab-recent">
-                        Recent Patients ({{ recent_patients|length }})
+                        Recent Patients ({{ recent_total }})
                     </button>
                     <button class="flex-1 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-3 border-transparent" onclick="switchQueue('doctor')" id="tab-doctor">
                         Waiting Doctor ({{ waiting_doctor }})
@@ -63,14 +97,45 @@
                                 </a>
                             </td>
                         </tr>
-                        {% empty %}
+                        {% endfor %}
+                        
+                        {% for visit in recent_visits %}
+                        <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 queue-row" data-status="RECENT_VISIT">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-blue-600">person</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</p>
+                                        <p class="text-xs text-gray-500">{{ visit.patient.university_id }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ visit.visit_date|time:"g:i A" }}</td>
+                            <td class="px-4 py-3">
+                                <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                                    {{ visit.patient.get_patient_type_display }}
+                                </span>
+                                <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 ml-1">New Visit</span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="{% url 'patient_detail' visit.patient.id %}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600">
+                                    <span class="material-symbols-outlined text-base">visibility</span>
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        {% if not recent_patients and not recent_visits %}
                         <tr>
                             <td colspan="4" class="px-4 py-12 text-center text-gray-500">
                                 <span class="material-symbols-outlined text-5xl mb-2 text-gray-300">person_off</span>
                                 <p>No recent patients</p>
                             </td>
                         </tr>
-                        {% endfor %}
+                        {% endif %}
                         
                         {% for visit in waiting_doctor_queue %}
                         <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 queue-row hidden" data-status="WAITING_FOR_DOCTOR">
@@ -163,7 +228,7 @@ function switchQueue(queueType) {
     
     const rows = document.querySelectorAll('.queue-row');
     rows.forEach(row => {
-        if (queueType === 'recent' && row.dataset.status === 'RECENT') {
+        if (queueType === 'recent' && (row.dataset.status === 'RECENT' || row.dataset.status === 'RECENT_VISIT')) {
             row.classList.remove('hidden');
         } else if (queueType === 'doctor' && row.dataset.status === 'WAITING_FOR_DOCTOR') {
             row.classList.remove('hidden');

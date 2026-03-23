@@ -9,7 +9,13 @@
 {% block dashboard_content %}
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
     <div class="stat-card">
+<<<<<<< HEAD
         <div class="stat-value text-yellow-600">{{ grouped_pending|length }}</div>
+||||||| 7cc7b6d
+        <div class="stat-value text-yellow-600">{{ pending_prescriptions.count }}</div>
+=======
+        <div class="stat-value text-yellow-600">{{ grouped_prescriptions|length }}</div>
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
         <div class="stat-label">Pending Dispensing</div>
     </div>
     <div class="stat-card">
@@ -33,9 +39,21 @@
             <a href="{% url 'pending_prescriptions' %}" class="text-blue-600 hover:underline text-sm">View All</a>
         </div>
         
+<<<<<<< HEAD
         {% if grouped_pending %}
+||||||| 7cc7b6d
+        {% if pending_prescriptions %}
+=======
+        {% if grouped_prescriptions %}
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
             <div class="space-y-3">
+<<<<<<< HEAD
                 {% for group in grouped_pending|slice:":10" %}
+||||||| 7cc7b6d
+                {% for prescription in pending_prescriptions|slice:":10" %}
+=======
+                {% for group in grouped_prescriptions|slice:":10" %}
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
                 <div class="queue-item">
                     <div class="queue-header">
                         <div>
@@ -50,25 +68,57 @@
                             <div class="queue-meta">
                                 <span>Dr. {{ group.doctor.get_full_name|default:group.doctor.username }}</span>
                                 <span class="mx-2">|</span>
+<<<<<<< HEAD
                                 <span>{{ group.visit.visit_date|date:"M d, g:i A" }}</span>
+||||||| 7cc7b6d
+                                <span>{{ prescription.created_at|time:"g:i A" }}</span>
+=======
+                                <span>{{ group.prescriptions.0.created_at|time:"g:i A" }}</span>
+                                <span class="mx-2">|</span>
+                                <span class="text-primary font-medium">{{ group.prescriptions|length }} item(s)</span>
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
                             </div>
                         </div>
+<<<<<<< HEAD
                         <a href="{% url 'batch_dispense' group.visit.id %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
                             <i class="fas fa-check mr-1"></i> Process All ({{ group.rx_count }})
+||||||| 7cc7b6d
+                        {% if prescription.medicine.stock_quantity >= prescription.quantity %}
+                        <a href="{% url 'dispense_medicine' prescription.id %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                            <i class="fas fa-check mr-1"></i> Dispense
+=======
+                        <a href="{% url 'pending_prescriptions' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                            <i class="fas fa-eye mr-1"></i> View
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
                         </a>
                     </div>
+<<<<<<< HEAD
                     <div class="mt-2 space-y-1">
                         {% for prescription in group.prescriptions %}
                         <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
+||||||| 7cc7b6d
+                    <div class="mt-2 p-2 bg-gray-50 rounded">
+                        <div class="flex items-center justify-between">
+=======
+                    <div class="mt-2 p-2 bg-gray-50 rounded">
+                        {% for rx in group.prescriptions %}
+                        <div class="flex items-center justify-between py-1 {% if not forloop.last %}border-b border-gray-200{% endif %}">
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
                             <div>
-                                <span class="font-medium">{{ prescription.medicine.name }}</span>
-                                <span class="text-sm text-gray-600 ml-2">{{ prescription.dosage }}</span>
+                                <span class="font-medium">{{ rx.medicine.name }}</span>
+                                <span class="text-sm text-gray-600 ml-2">{{ rx.dosage }}</span>
                             </div>
                             <div class="text-sm">
                                 <span class="text-gray-500">Qty:</span>
+<<<<<<< HEAD
                                 <span class="font-medium {% if prescription.medicine.stock_quantity < prescription.quantity %}text-red-600{% endif %}">
                                     {{ prescription.quantity }} {{ prescription.medicine.unit }}
                                 </span>
+||||||| 7cc7b6d
+                                <span class="font-medium">{{ prescription.quantity }} {{ prescription.medicine.unit }}</span>
+=======
+                                <span class="font-medium">{{ rx.quantity }} {{ rx.medicine.unit }}</span>
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
                             </div>
                         </div>
                         {% endfor %}

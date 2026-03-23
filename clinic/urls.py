@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from . import template_views
 
 router = DefaultRouter()
 router.register(r'users', views.UserViewSet)
@@ -20,4 +21,6 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('patient-data/<int:visit_id>/', views.patient_data_view, name='patient_data'),
+    path('prescription-details/', views.prescription_by_visit, name='prescription_details'),
+    path('prescription/dispense-all/<int:visit_id>/', template_views.dispense_all_prescriptions, name='dispense_all'),
 ]
