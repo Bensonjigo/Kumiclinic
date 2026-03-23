@@ -63,7 +63,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {% for visit in lab_results_ready %}
             <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-2 border-green-400 dark:border-green-600 p-4 hover:shadow-lg"
-                 onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+                 onclick="showPatientDetail({{ visit.id }}, {{ visit.patient.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
                 <div class="flex items-center gap-3 mb-3">
                     <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                         <span class="material-symbols-outlined text-green-600 text-xl">medication</span>
@@ -100,7 +100,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {% for visit in in_lab %}
             <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-2 border-yellow-300 dark:border-yellow-600 p-4 hover:shadow-lg"
-                 onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+                 onclick="showPatientDetail({{ visit.id }}, {{ visit.patient.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
                 <div class="flex items-center gap-3 mb-3">
                     <div class="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
                         <span class="material-symbols-outlined text-yellow-600 text-xl">science</span>
@@ -133,7 +133,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {% for visit in waiting_for_consultation %}
             <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg"
-                 onclick="showPatientDetail({{ visit.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+                 onclick="showPatientDetail({{ visit.id }}, {{ visit.patient.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
                 <div class="flex items-center gap-3 mb-3">
                     <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                         <span class="material-symbols-outlined text-primary text-xl">person</span>
@@ -204,7 +204,7 @@
                     </div>
                     
                     <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <a href="#" class="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                        <a href="{% url 'consultation_history' %}" id="viewHistoryLink" class="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                             <span class="material-symbols-outlined">history</span>
                             View Full History
                         </a>
@@ -321,13 +321,18 @@
 
 <script>
 let currentVisitId = null;
+let currentPatientId = null;
 
-function showPatientDetail(visitId, name, dob, mrn, phone, address, weight, bp, hr, temp, spo2) {
+function showPatientDetail(visitId, patientId, name, dob, mrn, phone, address, weight, bp, hr, temp, spo2) {
     currentVisitId = visitId;
+    currentPatientId = patientId;
     
     // Hide list, show detail
     document.getElementById('patientListView').classList.add('hidden');
     document.getElementById('patientDetailView').classList.remove('hidden');
+    
+    // Update history link
+    document.getElementById('viewHistoryLink').href = '/dashboard/history/' + patientId + '/';
     
     // Populate patient info
     document.getElementById('detailPatientName').textContent = name;

@@ -42,6 +42,7 @@ urlpatterns = [
     path('dashboard/nurse/', template_views.dashboard_nurse, name='dashboard_nurse'),
     path('dashboard/doctor/', template_views.dashboard_doctor, name='dashboard_doctor'),
     path('dashboard/history/', template_views.consultation_history, name='consultation_history'),
+    path('dashboard/history/<int:patient_id>/', template_views.consultation_history, name='patient_consultation_history'),
     path('dashboard/lab/', template_views.dashboard_lab, name='dashboard_lab'),
     path('dashboard/lab/history/', template_views.lab_history, name='lab_history'),
     path('dashboard/pharmacy/', template_views.dashboard_pharmacy, name='dashboard_pharmacy'),

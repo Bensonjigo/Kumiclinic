@@ -205,20 +205,26 @@ def dashboard_doctor(request):
 
 
 @login_required
-def consultation_history(request):
+def consultation_history(request, patient_id=None):
     """View all consultations and patient history"""
     # Get all visits with consultations (regardless of status)
-    completed_visits = Visit.objects.filter(
+    queryset = Visit.objects.filter(
         consultation__isnull=False
     ).select_related(
         'patient', 'consultation__doctor'
     ).prefetch_related(
         'consultation__prescriptions__medicine',
         'lab_requests'
-    ).order_by('-visit_date')[:50]
+    ).order_by('-visit_date')
+    
+    if patient_id:
+        queryset = queryset.filter(patient_id=patient_id)
+    
+    completed_visits = queryset[:50]
     
     return render(request, 'clinic/consultation_history.html', {
-        'completed_visits': completed_visits
+        'completed_visits': completed_visits,
+        'patient_id': patient_id
     })
 
 
