@@ -129,13 +129,14 @@ window.onload = function() {
                         {% endfor %}
                         
                         {% if not recent_patients and not recent_visits %}
-                        <tr>
+                        <tr class="queue-row" data-status="RECENT">
                             <td colspan="4" class="px-4 py-12 text-center text-gray-500">
                                 <span class="material-symbols-outlined text-5xl mb-2 text-gray-300">person_off</span>
-                                <p>No recent patients</p>
+                                <p>No recent patients today</p>
                             </td>
                         </tr>
                         {% endif %}
+                        
                         
                         {% for visit in waiting_doctor_queue %}
                         <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 queue-row hidden" data-status="WAITING_FOR_DOCTOR">
@@ -164,6 +165,15 @@ window.onload = function() {
                             </td>
                         </tr>
                         {% endfor %}
+                        
+                        {% if not waiting_doctor_queue %}
+                        <tr class="queue-row hidden" data-status="WAITING_FOR_DOCTOR">
+                            <td colspan="4" class="px-4 py-12 text-center text-gray-500">
+                                <span class="material-symbols-outlined text-5xl mb-2 text-gray-300">check_circle</span>
+                                <p>No patients waiting for doctor</p>
+                            </td>
+                        </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
