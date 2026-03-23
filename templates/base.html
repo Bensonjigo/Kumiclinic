@@ -154,6 +154,14 @@
                     <span class="material-symbols-outlined">science</span>
                     <span>Lab Tests</span>
                 </a>
+                <a href="{% url 'manage_counselling_types' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'manage_counselling_types' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">psychology</span>
+                    <span>Counselling</span>
+                </a>
+                <a href="{% url 'manage_scan_types' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'manage_scan_types' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">image</span>
+                    <span>Scanning</span>
+                </a>
                 {% elif user.role == 'RECEPTIONIST' or user.role == 'NURSE' %}
                 <!-- Register Patient -->
                 <a href="{% url 'register_patient' %}" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 {% if request.resolver_match.url_name == 'register_patient' %}ring-2 ring-offset-2 ring-primary{% endif %}">
@@ -203,6 +211,36 @@
                 
                 {% if user.role == 'NURSE' %}
                 <a href="{% url 'nurse_history' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'nurse_history' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>History</span>
+                </a>
+                {% endif %}
+                
+                {% if user.role == 'COUNSELLOR' %}
+                <a href="{% url 'dashboard_counselling' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'dashboard_counselling' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">psychology</span>
+                    <span>Counselling</span>
+                </a>
+                <a href="{% url 'pending_counselling' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pending_counselling' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">pending</span>
+                    <span>Queue</span>
+                </a>
+                <a href="{% url 'counselling_history' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'counselling_history' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>History</span>
+                </a>
+                {% endif %}
+                
+                {% if user.role == 'SCAN_TECHNICIAN' %}
+                <a href="{% url 'dashboard_scanning' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'dashboard_scanning' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">image</span>
+                    <span>Scanning</span>
+                </a>
+                <a href="{% url 'pending_scans' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'pending_scans' %}text-primary bg-primary/10{% endif %}">
+                    <span class="material-symbols-outlined">pending</span>
+                    <span>Queue</span>
+                </a>
+                <a href="{% url 'scan_history' %}" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {% if request.resolver_match.url_name == 'scan_history' %}text-primary bg-primary/10{% endif %}">
                     <span class="material-symbols-outlined">history</span>
                     <span>History</span>
                 </a>

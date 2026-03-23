@@ -9,7 +9,8 @@ from django.core import serializers
 import json
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, LabTestType, DailyReport, Report, User
+    Medicine, StockMovement, LabRequest, LabTestType, DailyReport, Report, User,
+    CounsellingReferral, CounsellingType, ScanReferral, ScanType
 )
 from .audit import log_action
 
@@ -61,6 +62,8 @@ def dashboard_redirect(request):
         'DOCTOR': 'dashboard_doctor',
         'LAB_TECHNICIAN': 'dashboard_lab',
         'PHARMACIST': 'dashboard_pharmacy',
+        'COUNSELLOR': 'dashboard_counselling',
+        'SCAN_TECHNICIAN': 'dashboard_scanning',
         'STORE_MANAGER': 'dashboard_inventory',
         'ADMIN': 'dashboard_admin',
     }
@@ -898,6 +901,52 @@ def consultation_form(request, visit_id):
             
             visit.update_status('IN_LAB')
             messages.success(request, f'{lab_count} lab test(s) ordered. Patient moved to lab queue.')
+            return redirect('pending_consultations')
+        
+        # Handle counselling referral
+        if request.POST.get('refer_counselling'):
+            counselling_types = request.POST.getlist('counselling_type')
+            reason = request.POST.get('counselling_reason', '')
+            
+            ref_count = 0
+            for ctype in counselling_types:
+                if ctype:
+                    CounsellingReferral.objects.create(
+                        visit=visit,
+                        custom_type=ctype,
+                        reason=reason,
+                        requested_by=request.user
+                    )
+                    ref_count += 1
+            
+            if ref_count > 0 and visit.status == 'WAITING_FOR_DOCTOR':
+                visit.update_status('IN_COUNSELLING')
+                messages.success(request, f'{ref_count} counselling referral(s) created. Patient moved to counselling queue.')
+            else:
+                messages.success(request, f'{ref_count} counselling referral(s) created.')
+            return redirect('pending_consultations')
+        
+        # Handle scanning referral
+        if request.POST.get('refer_scanning'):
+            scan_types = request.POST.getlist('scan_type')
+            clinical_notes = request.POST.get('scan_clinical_notes', '')
+            
+            ref_count = 0
+            for stype in scan_types:
+                if stype:
+                    ScanReferral.objects.create(
+                        visit=visit,
+                        custom_type=stype,
+                        clinical_notes=clinical_notes,
+                        requested_by=request.user
+                    )
+                    ref_count += 1
+            
+            if ref_count > 0 and visit.status == 'WAITING_FOR_DOCTOR':
+                visit.update_status('IN_SCANNING')
+                messages.success(request, f'{ref_count} scan referral(s) created. Patient moved to scanning queue.')
+            else:
+                messages.success(request, f'{ref_count} scan referral(s) created.')
             return redirect('pending_consultations')
         
         # Full consultation save
@@ -1754,3 +1803,412 @@ def generate_report_data(report_for, start_date, end_date):
     }
     
     return data
+
+
+# =============================================================================
+# COUNSELLING VIEWS
+# =============================================================================
+
+@login_required
+def dashboard_counselling(request):
+    """
+    Counsellor Dashboard:
+    - Pending counselling referrals
+    - In-progress sessions
+    - Completed today
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    pending_referrals = CounsellingReferral.objects.filter(status='PENDING').select_related(
+        'visit__patient', 'visit'
+    ).order_by('created_at')
+    
+    grouped_pending = []
+    seen_pending = set()
+    for ref in pending_referrals:
+        visit_id = ref.visit_id
+        if visit_id in seen_pending:
+            continue
+        seen_pending.add(visit_id)
+        
+        all_refs = pending_referrals.filter(visit_id=visit_id)
+        grouped_pending.append({
+            'visit': ref.visit,
+            'patient': ref.visit.patient,
+            'referrals': all_refs,
+            'ref_count': all_refs.count()
+        })
+    
+    in_progress = CounsellingReferral.objects.filter(status='IN_PROGRESS').select_related(
+        'visit__patient', 'visit'
+    ).order_by('created_at')
+    
+    completed_today = CounsellingReferral.objects.filter(
+        status='COMPLETED',
+        completed_date__gte=today_start
+    ).count()
+    
+    total_pending = CounsellingReferral.objects.filter(status='PENDING').count()
+    
+    context = {
+        'grouped_pending': grouped_pending,
+        'in_progress': in_progress,
+        'completed_today': completed_today,
+        'total_pending': total_pending,
+    }
+    return render(request, 'dashboard/counselling.html', context)
+
+
+@login_required
+def pending_counselling(request):
+    """Pending counselling queue"""
+    referrals = CounsellingReferral.objects.filter(status='PENDING').select_related(
+        'visit__patient', 'visit', 'requested_by'
+    ).order_by('created_at')
+    
+    grouped = []
+    seen = set()
+    for ref in referrals:
+        if ref.visit_id in seen:
+            continue
+        seen.add(ref.visit_id)
+        
+        all_refs = referrals.filter(visit_id=ref.visit_id)
+        grouped.append({
+            'visit': ref.visit,
+            'patient': ref.visit.patient,
+            'referrals': all_refs,
+            'count': all_refs.count()
+        })
+    
+    return render(request, 'clinic/counselling_queue.html', {'grouped_referrals': grouped})
+
+
+@login_required
+def new_counselling_referral(request):
+    """Create a new counselling referral"""
+    visit_id = request.GET.get('visit_id')
+    visit = None
+    if visit_id:
+        visit = get_object_or_404(Visit, id=visit_id)
+    
+    counselling_types = CounsellingType.objects.filter(is_active=True).order_by('name')
+    
+    if request.method == 'POST':
+        visit_id = request.POST.get('visit_id')
+        type_id = request.POST.get('counselling_type')
+        custom_type = request.POST.get('custom_type', '')
+        reason = request.POST.get('reason', '')
+        
+        visit = get_object_or_404(Visit, id=visit_id)
+        
+        ref = CounsellingReferral.objects.create(
+            visit=visit,
+            reason=reason,
+            requested_by=request.user
+        )
+        
+        if type_id:
+            ref.referral_type_id = type_id
+        elif custom_type:
+            ref.custom_type = custom_type
+        
+        ref.save()
+        
+        if visit.status == 'WAITING_FOR_DOCTOR':
+            visit.update_status('IN_COUNSELLING')
+        
+        messages.success(request, 'Counselling referral created!')
+        return redirect('dashboard_doctor')
+    
+    return render(request, 'clinic/new_counselling_referral.html', {
+        'visit': visit,
+        'counselling_types': counselling_types
+    })
+
+
+@login_required
+def start_counselling(request, referral_id):
+    """Start a counselling session"""
+    ref = get_object_or_404(CounsellingReferral, id=referral_id)
+    
+    if request.method == 'POST':
+        ref.status = 'IN_PROGRESS'
+        ref.handled_by = request.user
+        ref.session_date = timezone.now()
+        ref.save()
+        
+        messages.success(request, 'Counselling session started!')
+        return redirect('pending_counselling')
+    
+    return render(request, 'clinic/start_counselling.html', {'referral': ref})
+
+
+@login_required
+def complete_counselling(request, referral_id):
+    """Complete a counselling session"""
+    ref = get_object_or_404(CounsellingReferral, id=referral_id)
+    
+    if request.method == 'POST':
+        ref.status = 'COMPLETED'
+        ref.notes = request.POST.get('notes', '')
+        ref.completed_date = timezone.now()
+        ref.save()
+        
+        visit = ref.visit
+        pending = visit.counselling_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        
+        if pending == 0:
+            visit.update_status('WAITING_FOR_DOCTOR')
+        
+        messages.success(request, 'Counselling completed!')
+        return redirect('pending_counselling')
+    
+    return render(request, 'clinic/complete_counselling.html', {'referral': ref})
+
+
+@login_required
+def counselling_history(request):
+    """Counselling history"""
+    referrals = CounsellingReferral.objects.filter(status='COMPLETED').select_related(
+        'visit__patient', 'requested_by', 'handled_by'
+    ).order_by('-completed_date')[:50]
+    
+    return render(request, 'clinic/counselling_history.html', {'referrals': referrals})
+
+
+@login_required
+def manage_counselling_types(request):
+    """Manage counselling types"""
+    if not request.user.is_superuser and request.user.role != 'ADMIN':
+        messages.error(request, 'Permission denied.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        if 'add_type' in request.POST:
+            CounsellingType.objects.create(
+                name=request.POST.get('name'),
+                code=request.POST.get('code').upper(),
+                description=request.POST.get('description', '')
+            )
+            messages.success(request, 'Counselling type added!')
+        elif 'toggle_type' in request.POST:
+            t = get_object_or_404(CounsellingType, id=request.POST.get('type_id'))
+            t.is_active = not t.is_active
+            t.save()
+            messages.success(request, f'Type {"activated" if t.is_active else "deactivated"}!')
+        elif 'delete_type' in request.POST:
+            t = get_object_or_404(CounsellingType, id=request.POST.get('type_id'))
+            t.delete()
+            messages.success(request, 'Type deleted!')
+        
+        return redirect('manage_counselling_types')
+    
+    types = CounsellingType.objects.all().order_by('name')
+    return render(request, 'clinic/manage_counselling_types.html', {'types': types})
+
+
+# =============================================================================
+# SCANNING VIEWS
+# =============================================================================
+
+@login_required
+def dashboard_scanning(request):
+    """
+    Scan Technician Dashboard:
+    - Pending scan referrals
+    - In-progress scans
+    - Completed today
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    pending_referrals = ScanReferral.objects.filter(status='PENDING').select_related(
+        'visit__patient', 'visit'
+    ).order_by('created_at')
+    
+    grouped_pending = []
+    seen_pending = set()
+    for ref in pending_referrals:
+        visit_id = ref.visit_id
+        if visit_id in seen_pending:
+            continue
+        seen_pending.add(visit_id)
+        
+        all_refs = pending_referrals.filter(visit_id=visit_id)
+        grouped_pending.append({
+            'visit': ref.visit,
+            'patient': ref.visit.patient,
+            'referrals': all_refs,
+            'ref_count': all_refs.count()
+        })
+    
+    in_progress = ScanReferral.objects.filter(status='IN_PROGRESS').select_related(
+        'visit__patient', 'visit'
+    ).order_by('created_at')
+    
+    completed_today = ScanReferral.objects.filter(
+        status='COMPLETED',
+        completed_date__gte=today_start
+    ).count()
+    
+    total_pending = ScanReferral.objects.filter(status='PENDING').count()
+    
+    context = {
+        'grouped_pending': grouped_pending,
+        'in_progress': in_progress,
+        'completed_today': completed_today,
+        'total_pending': total_pending,
+    }
+    return render(request, 'dashboard/scanning.html', context)
+
+
+@login_required
+def pending_scans(request):
+    """Pending scan queue"""
+    referrals = ScanReferral.objects.filter(status='PENDING').select_related(
+        'visit__patient', 'visit', 'requested_by'
+    ).order_by('created_at')
+    
+    grouped = []
+    seen = set()
+    for ref in referrals:
+        if ref.visit_id in seen:
+            continue
+        seen.add(ref.visit_id)
+        
+        all_refs = referrals.filter(visit_id=ref.visit_id)
+        grouped.append({
+            'visit': ref.visit,
+            'patient': ref.visit.patient,
+            'referrals': all_refs,
+            'count': all_refs.count()
+        })
+    
+    return render(request, 'clinic/scanning_queue.html', {'grouped_referrals': grouped})
+
+
+@login_required
+def new_scan_referral(request):
+    """Create a new scan referral"""
+    visit_id = request.GET.get('visit_id')
+    visit = None
+    if visit_id:
+        visit = get_object_or_404(Visit, id=visit_id)
+    
+    scan_types = ScanType.objects.filter(is_active=True).order_by('name')
+    
+    if request.method == 'POST':
+        visit_id = request.POST.get('visit_id')
+        type_id = request.POST.get('scan_type')
+        custom_type = request.POST.get('custom_type', '')
+        clinical_notes = request.POST.get('clinical_notes', '')
+        
+        visit = get_object_or_404(Visit, id=visit_id)
+        
+        ref = ScanReferral.objects.create(
+            visit=visit,
+            clinical_notes=clinical_notes,
+            requested_by=request.user
+        )
+        
+        if type_id:
+            ref.scan_type_id = type_id
+        elif custom_type:
+            ref.custom_type = custom_type
+        
+        ref.save()
+        
+        if visit.status == 'WAITING_FOR_DOCTOR':
+            visit.update_status('IN_SCANNING')
+        
+        messages.success(request, 'Scan referral created!')
+        return redirect('dashboard_doctor')
+    
+    return render(request, 'clinic/new_scan_referral.html', {
+        'visit': visit,
+        'scan_types': scan_types
+    })
+
+
+@login_required
+def start_scan(request, referral_id):
+    """Start a scan"""
+    ref = get_object_or_404(ScanReferral, id=referral_id)
+    
+    if request.method == 'POST':
+        ref.status = 'IN_PROGRESS'
+        ref.handled_by = request.user
+        ref.appointment_date = timezone.now()
+        ref.save()
+        
+        messages.success(request, 'Scan started!')
+        return redirect('pending_scans')
+    
+    return render(request, 'clinic/start_scan.html', {'referral': ref})
+
+
+@login_required
+def complete_scan(request, referral_id):
+    """Complete a scan"""
+    ref = get_object_or_404(ScanReferral, id=referral_id)
+    
+    if request.method == 'POST':
+        ref.status = 'COMPLETED'
+        ref.findings = request.POST.get('findings', '')
+        ref.technician_notes = request.POST.get('technician_notes', '')
+        ref.completed_date = timezone.now()
+        ref.save()
+        
+        visit = ref.visit
+        pending = visit.scan_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        
+        if pending == 0:
+            visit.update_status('WAITING_FOR_DOCTOR')
+        
+        messages.success(request, 'Scan completed!')
+        return redirect('pending_scans')
+    
+    return render(request, 'clinic/complete_scan.html', {'referral': ref})
+
+
+@login_required
+def scan_history(request):
+    """Scan history"""
+    referrals = ScanReferral.objects.filter(status='COMPLETED').select_related(
+        'visit__patient', 'requested_by', 'handled_by'
+    ).order_by('-completed_date')[:50]
+    
+    return render(request, 'clinic/scan_history.html', {'referrals': referrals})
+
+
+@login_required
+def manage_scan_types(request):
+    """Manage scan types"""
+    if not request.user.is_superuser and request.user.role != 'ADMIN':
+        messages.error(request, 'Permission denied.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        if 'add_type' in request.POST:
+            ScanType.objects.create(
+                name=request.POST.get('name'),
+                code=request.POST.get('code').upper(),
+                description=request.POST.get('description', '')
+            )
+            messages.success(request, 'Scan type added!')
+        elif 'toggle_type' in request.POST:
+            t = get_object_or_404(ScanType, id=request.POST.get('type_id'))
+            t.is_active = not t.is_active
+            t.save()
+            messages.success(request, f'Type {"activated" if t.is_active else "deactivated"}!')
+        elif 'delete_type' in request.POST:
+            t = get_object_or_404(ScanType, id=request.POST.get('type_id'))
+            t.delete()
+            messages.success(request, 'Type deleted!')
+        
+        return redirect('manage_scan_types')
+    
+    types = ScanType.objects.all().order_by('name')
+    return render(request, 'clinic/manage_scan_types.html', {'types': types})
