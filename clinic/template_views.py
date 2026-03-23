@@ -9,7 +9,8 @@ from django.core import serializers
 import json
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, LabTestType, DailyReport, Report, User
+    Medicine, StockMovement, LabRequest, LabTestType, DailyReport, Report, User,
+    CounsellingReferral, CounsellingType, ScanReferral, ScanType
 )
 from .audit import log_action
 
@@ -63,6 +64,8 @@ def dashboard_redirect(request):
         'DOCTOR': 'dashboard_doctor',
         'LAB_TECHNICIAN': 'dashboard_lab',
         'PHARMACIST': 'dashboard_pharmacy',
+        'COUNSELLOR': 'dashboard_counselling',
+        'SCAN_TECHNICIAN': 'dashboard_scanning',
         'STORE_MANAGER': 'dashboard_inventory',
         'ADMIN': 'dashboard_admin',
     }
@@ -232,22 +235,54 @@ def consultation_history(request, patient_id=None):
 def dashboard_lab(request):
     """
     Lab Technician Dashboard:
-    - Pending lab requests
+    - Pending lab requests (grouped by visit)
     - Completed tests today
     - Quick access to record results
     """
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-    # Pending lab requests
-    pending_labs = LabRequest.objects.filter(
-        status='PENDING'
-    ).select_related('visit__patient', 'requested_by').order_by('date')
+    # Get pending lab requests
+    pending_labs = LabRequest.objects.filter(status='PENDING').select_related('visit__patient', 'visit').order_by('visit__visit_date')
     
-    # In progress labs
-    in_progress_labs = LabRequest.objects.filter(
-        status='IN_PROGRESS'
-    ).select_related('visit__patient', 'requested_by').order_by('date')
+    # Group by visit manually - this ensures no duplicates
+    grouped_pending = []
+    seen_pending = set()
+    
+    for lab in pending_labs:
+        visit_id = lab.visit_id
+        if visit_id in seen_pending:
+            continue
+        seen_pending.add(visit_id)
+        
+        all_labs = pending_labs.filter(visit_id=visit_id)
+        grouped_pending.append({
+            'visit': lab.visit,
+            'patient': lab.visit.patient,
+            'lab_requests': all_labs,
+            'lab_count': all_labs.count()
+        })
+    
+    # Get in progress lab requests
+    in_progress_labs = LabRequest.objects.filter(status='IN_PROGRESS').select_related('visit__patient', 'visit').order_by('visit__visit_date')
+    
+    # Group by visit manually
+    grouped_in_progress = []
+    seen_in_progress = set()
+    
+    for lab in in_progress_labs:
+        visit_id = lab.visit_id
+        if visit_id in seen_in_progress:
+            continue
+        seen_in_progress.add(visit_id)
+        
+        all_labs = in_progress_labs.filter(visit_id=visit_id)
+        grouped_in_progress.append({
+            'visit': lab.visit,
+            'patient': lab.visit.patient,
+            'lab_requests': all_labs,
+            'lab_count': all_labs.count()
+        })
     
     # Today's completed tests
     completed_today = LabRequest.objects.filter(
@@ -259,8 +294,8 @@ def dashboard_lab(request):
     total_pending = LabRequest.objects.filter(status='PENDING').count()
     
     context = {
-        'pending_labs': pending_labs,
-        'in_progress_labs': in_progress_labs,
+        'grouped_pending': grouped_pending,
+        'grouped_in_progress': grouped_in_progress,
         'completed_today': completed_today,
         'total_pending': total_pending,
     }
@@ -311,21 +346,56 @@ def nurse_history(request):
 def dashboard_pharmacy(request):
     """
     Pharmacist Dashboard:
-    - Pending prescriptions to dispense
+    - Pending prescriptions to dispense (grouped by visit)
     - Stock overview
     - Low stock alerts
     """
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
+<<<<<<< HEAD
+    # Get all pending prescriptions
+    prescriptions = Prescription.objects.filter(
+        is_dispensed=False,
+        cannot_dispense=False,
+        consultation__isnull=False
+||||||| 7cc7b6d
+    # Pending prescriptions
+    pending_prescriptions = Prescription.objects.filter(
+        is_dispensed=False
+=======
     # Pending prescriptions - group by visit
     prescriptions = Prescription.objects.filter(
         is_dispensed=False
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
     ).select_related(
         'consultation__visit__patient',
         'consultation__doctor',
         'medicine'
-    ).order_by('created_at')
+    ).order_by('consultation__visit__visit_date')
+    
+    # Group by visit manually - no duplicates
+    grouped_pending = []
+    seen_visits = set()
+    
+    for rx in prescriptions:
+        visit_id = rx.consultation.visit_id
+        
+        if visit_id in seen_visits:
+            continue
+        seen_visits.add(visit_id)
+        
+        # Get all pending prescriptions for this visit
+        visit = rx.consultation.visit
+        all_rx_for_visit = prescriptions.filter(consultation__visit=visit_id)
+        
+        grouped_pending.append({
+            'visit': visit,
+            'patient': visit.patient,
+            'doctor': rx.consultation.doctor,
+            'prescriptions': all_rx_for_visit,
+            'rx_count': all_rx_for_visit.count()
+        })
     
     # Group by visit
     grouped_prescriptions = {}
@@ -356,7 +426,13 @@ def dashboard_pharmacy(request):
     low_stock_medicines = low_stock[:5]
     
     context = {
+<<<<<<< HEAD
+        'grouped_pending': grouped_pending,
+||||||| 7cc7b6d
+        'pending_prescriptions': pending_prescriptions,
+=======
         'grouped_prescriptions': grouped_prescriptions.values(),
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
         'dispensed_today': dispensed_today,
         'total_medicines': total_medicines,
         'low_stock_count': low_stock_count,
@@ -885,6 +961,52 @@ def consultation_form(request, visit_id):
             messages.success(request, f'{lab_count} lab test(s) sent to lab queue')
             return redirect('pending_consultations')
         
+        # Handle counselling referral
+        if request.POST.get('refer_counselling'):
+            counselling_types = request.POST.getlist('counselling_type')
+            reason = request.POST.get('counselling_reason', '')
+            
+            ref_count = 0
+            for ctype in counselling_types:
+                if ctype:
+                    CounsellingReferral.objects.create(
+                        visit=visit,
+                        custom_type=ctype,
+                        reason=reason,
+                        requested_by=request.user
+                    )
+                    ref_count += 1
+            
+            if ref_count > 0 and visit.status == 'WAITING_FOR_DOCTOR':
+                visit.update_status('IN_COUNSELLING')
+                messages.success(request, f'{ref_count} counselling referral(s) created. Patient moved to counselling queue.')
+            else:
+                messages.success(request, f'{ref_count} counselling referral(s) created.')
+            return redirect('pending_consultations')
+        
+        # Handle scanning referral
+        if request.POST.get('refer_scanning'):
+            scan_types = request.POST.getlist('scan_type')
+            clinical_notes = request.POST.get('scan_clinical_notes', '')
+            
+            ref_count = 0
+            for stype in scan_types:
+                if stype:
+                    ScanReferral.objects.create(
+                        visit=visit,
+                        custom_type=stype,
+                        clinical_notes=clinical_notes,
+                        requested_by=request.user
+                    )
+                    ref_count += 1
+            
+            if ref_count > 0 and visit.status == 'WAITING_FOR_DOCTOR':
+                visit.update_status('IN_SCANNING')
+                messages.success(request, f'{ref_count} scan referral(s) created. Patient moved to scanning queue.')
+            else:
+                messages.success(request, f'{ref_count} scan referral(s) created.')
+            return redirect('pending_consultations')
+        
         # Full consultation save
         diagnosis = request.POST.get('diagnosis')
         if not diagnosis:
@@ -962,8 +1084,36 @@ def consultation_form(request, visit_id):
 
 @login_required
 def pending_labs(request):
-    lab_requests = LabRequest.objects.filter(status='PENDING').select_related('visit__patient')
-    return render(request, 'clinic/lab_queue.html', {'lab_requests': lab_requests})
+    # Get all pending lab requests
+    lab_requests = LabRequest.objects.filter(
+        status='PENDING'
+    ).select_related(
+        'visit__patient',
+        'visit'
+    ).order_by('visit__visit_date')
+    
+    # Group by visit manually - this ensures no duplicates
+    grouped_labs = []
+    seen_visits = set()
+    
+    for lab in lab_requests:
+        visit_id = lab.visit_id
+        
+        if visit_id in seen_visits:
+            continue
+        seen_visits.add(visit_id)
+        
+        # Get all pending labs for this visit
+        all_labs_for_visit = lab_requests.filter(visit_id=visit_id)
+        
+        grouped_labs.append({
+            'visit': lab.visit,
+            'patient': lab.visit.patient,
+            'lab_requests': all_labs_for_visit,
+            'lab_count': all_labs_for_visit.count()
+        })
+    
+    return render(request, 'clinic/lab_queue.html', {'grouped_labs': grouped_labs})
 
 
 @login_required
@@ -1086,8 +1236,8 @@ def new_prescription(request):
             )
         
         medicine_ids = request.POST.getlist('medicine[]')
-        dosages = request.POST.getlist('dosage[]')
         quantities = request.POST.getlist('quantity[]')
+        dosages = request.POST.getlist('dosage[]')
         
         prescription_count = 0
         for i in range(len(medicine_ids)):
@@ -1095,26 +1245,23 @@ def new_prescription(request):
                 try:
                     medicine = get_object_or_404(Medicine, id=medicine_ids[i])
                     
-                    # Build dosage string from the three new fields
-                    dosage_per_day = request.POST.getlist('dosage_per_day[]')
-                    times_per_day = request.POST.getlist('times_per_day[]')
-                    num_days = request.POST.getlist('num_days[]')
+                    # Get quantity - doctor enters this manually
+                    qty = int(quantities[i]) if i < len(quantities) and quantities[i] else 1
                     
+                    # Get dosage instructions - doctor writes this
                     dosage_str = ''
                     if i < len(dosages) and dosages[i]:
                         dosage_str = dosages[i]
-                    elif i < len(dosage_per_day) and dosage_per_day[i] and i < len(times_per_day) and times_per_day[i] and i < len(num_days) and num_days[i]:
-                        dosage_str = f"{dosage_per_day[i]} tablet(s) {times_per_day[i]} time(s) daily for {num_days[i]} days"
                     
                     Prescription.objects.create(
                         consultation=consultation,
                         medicine=medicine,
                         dosage=dosage_str,
-                        quantity=int(quantities[i]) if i < len(quantities) and quantities[i] else 1,
+                        quantity=qty,
                         notes=notes
                     )
                     prescription_count += 1
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, Exception):
                     pass
         
         if prescription_count > 0:
@@ -1156,8 +1303,86 @@ def lab_result_form(request, lab_id):
 
 
 @login_required
+def batch_lab_results(request, visit_id):
+    """Process all lab results for a visit at once"""
+    visit = get_object_or_404(Visit, id=visit_id)
+    lab_requests = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS'])
+    
+    if request.method == 'POST':
+        # Process each lab result
+        for lab in lab_requests:
+            result_key = f'result_{lab.id}'
+            notes_key = f'notes_{lab.id}'
+            
+            if result_key in request.POST:
+                lab.status = 'COMPLETED'
+                lab.result = request.POST.get(result_key, '')
+                lab.notes = request.POST.get(notes_key, '')
+                lab.technician = request.user
+                lab.completed_date = timezone.now()
+                lab.save()
+        
+        # Check if there are still pending labs
+        remaining_pending = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        
+        if remaining_pending == 0:
+            visit.update_status('WAITING_FOR_DOCTOR')
+            messages.success(request, 'All lab results recorded! Patient returned to doctor.')
+        else:
+            messages.success(request, f'{lab_requests.count()} lab results recorded!')
+        
+        return redirect('pending_labs')
+    
+    return render(request, 'clinic/batch_lab_results.html', {
+        'visit': visit,
+        'lab_requests': lab_requests
+    })
+
+
+@login_required
 def pending_prescriptions(request):
+    # Get all pending prescriptions with their visits
+    # Filter out both dispensed AND cannot_dispense
     prescriptions = Prescription.objects.filter(
+<<<<<<< HEAD
+        is_dispensed=False,
+        cannot_dispense=False,
+        consultation__isnull=False
+    ).select_related(
+        'consultation__visit__patient',
+        'consultation__doctor',
+        'medicine'
+    ).order_by('consultation__visit__visit_date')
+    
+    # Group by visit manually - this ensures no duplicates
+    grouped_prescriptions = []
+    seen_visits = set()
+    
+    for rx in prescriptions:
+        visit_id = rx.consultation.visit_id
+        
+        if visit_id in seen_visits:
+            continue
+        seen_visits.add(visit_id)
+        
+        # Get all pending prescriptions for this visit
+        visit = rx.consultation.visit
+        all_rx_for_visit = prescriptions.filter(consultation__visit=visit_id)
+        
+        grouped_prescriptions.append({
+            'visit': visit,
+            'patient': visit.patient,
+            'doctor': rx.consultation.doctor,
+            'prescriptions': all_rx_for_visit,
+            'rx_count': all_rx_for_visit.count()
+        })
+    
+    return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped_prescriptions})
+||||||| 7cc7b6d
+        is_dispensed=False
+    ).select_related('consultation__visit__patient', 'medicine')
+    return render(request, 'clinic/pharmacy_queue.html', {'prescriptions': prescriptions})
+=======
         is_dispensed=False
     ).select_related('consultation__visit__patient', 'consultation__doctor', 'medicine').order_by('consultation__visit__visit_date')
     
@@ -1176,6 +1401,7 @@ def pending_prescriptions(request):
             grouped[visit.id]['prescriptions'].append(rx)
     
     return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped.values()})
+>>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
 
 
 @login_required
@@ -1257,6 +1483,132 @@ def dispense_all_prescriptions(request, visit_id):
     
     messages.success(request, f'{dispensed_count} prescription(s) dispensed')
     return redirect('pending_prescriptions')
+
+
+@login_required
+def batch_dispense(request, visit_id):
+    """Dispense all prescriptions for a visit at once"""
+    visit = get_object_or_404(Visit, id=visit_id)
+    
+    if not visit.consultation:
+        messages.error(request, 'No consultation found for this visit')
+        return redirect('pending_prescriptions')
+    
+    prescriptions = visit.consultation.prescriptions.filter(is_dispensed=False, cannot_dispense=False)
+    
+    if request.method == 'POST':
+        dispensed_count = 0
+        cannot_dispense_count = 0
+        errors = []
+        
+        for prescription in prescriptions:
+            dispense_key = f'dispense_{prescription.id}'
+            partial_key = f'partial_{prescription.id}'
+            cannot_key = f'cannot_{prescription.id}'
+            partial_qty_key = f'partial_qty_{prescription.id}'
+            reason_key = f'reason_{prescription.id}'
+            
+            medicine = prescription.medicine
+            
+            # Handle "Mark as Cannot Dispense"
+            if cannot_key in request.POST:
+                reason = request.POST.get(reason_key, 'Out of stock')
+                prescription.cannot_dispense = True
+                prescription.cannot_dispense_reason = reason
+                prescription.save()
+                cannot_dispense_count += 1
+                log_action(
+                    request.user,
+                    'CANNOT_DISPENSE',
+                    'Prescription',
+                    prescription.id,
+                    f'Cannot dispense {medicine.name}: {reason}',
+                    request
+                )
+                continue
+            
+            # Handle dispensing (full or partial)
+            if dispense_key in request.POST or partial_key in request.POST:
+                # Determine quantity to dispense
+                if partial_key in request.POST:
+                    qty_str = request.POST.get(partial_qty_key, '0')
+                    try:
+                        qty_to_dispense = int(qty_str)
+                    except (ValueError, TypeError):
+                        qty_to_dispense = 0
+                else:
+                    qty_to_dispense = prescription.quantity
+                
+                if qty_to_dispense <= 0:
+                    continue
+                
+                if medicine.stock_quantity < qty_to_dispense:
+                    errors.append(f'{medicine.name}: Only {medicine.stock_quantity} {medicine.unit} available')
+                    continue
+                
+                # Dispense
+                medicine.stock_quantity -= qty_to_dispense
+                medicine.save()
+                
+                # Calculate remaining BEFORE updating the prescription
+                original_qty = prescription.quantity
+                remaining_qty = original_qty - qty_to_dispense
+                
+                # Check if partial - create new prescription for remaining
+                if remaining_qty > 0 and qty_to_dispense < original_qty:
+                    # Create new prescription for remaining
+                    Prescription.objects.create(
+                        consultation=prescription.consultation,
+                        medicine=prescription.medicine,
+                        dosage=prescription.dosage,
+                        quantity=remaining_qty,
+                        notes=f'REMAINING from partial dispense on {timezone.now().date()}. Original qty: {original_qty}'
+                    )
+                
+                prescription.is_dispensed = True
+                prescription.dispensed_by = request.user
+                prescription.dispensed_at = timezone.now()
+                prescription.save()
+                
+                log_action(
+                    request.user, 
+                    'DISPENSE', 
+                    'Prescription', 
+                    prescription.id,
+                    f'Dispensed {qty_to_dispense} {medicine.unit} of {medicine.name}' + (f'. Remaining: {remaining_qty}' if remaining_qty > 0 else ''),
+                    request
+                )
+                dispensed_count += 1
+        
+        # Check remaining prescriptions (fresh query)
+        remaining = Prescription.objects.filter(
+            consultation__visit=visit,
+            is_dispensed=False,
+            cannot_dispense=False
+        ).count()
+        
+        if remaining == 0:
+            visit.update_status('COMPLETED')
+            messages.success(request, f'All prescriptions handled! Visit completed.')
+        elif dispensed_count > 0 or cannot_dispense_count > 0:
+            msg = ''
+            if dispensed_count > 0:
+                msg += f'{dispensed_count} dispensed. '
+            if cannot_dispense_count > 0:
+                msg += f'{cannot_dispense_count} marked as cannot dispense. '
+            if remaining > 0:
+                msg += f'{remaining} remaining.'
+            messages.success(request, msg)
+        else:
+            for error in errors:
+                messages.error(request, error)
+        
+        return redirect('pending_prescriptions')
+    
+    return render(request, 'clinic/batch_dispense.html', {
+        'visit': visit,
+        'prescriptions': prescriptions
+    })
 
 
 @login_required
@@ -1599,3 +1951,412 @@ def generate_report_data(report_for, start_date, end_date):
     }
     
     return data
+
+
+# =============================================================================
+# COUNSELLING VIEWS
+# =============================================================================
+
+@login_required
+def dashboard_counselling(request):
+    """
+    Counsellor Dashboard:
+    - Pending counselling referrals
+    - In-progress sessions
+    - Completed today
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    pending_referrals = CounsellingReferral.objects.filter(status='PENDING').select_related(
+        'visit__patient', 'visit'
+    ).order_by('created_at')
+    
+    grouped_pending = []
+    seen_pending = set()
+    for ref in pending_referrals:
+        visit_id = ref.visit_id
+        if visit_id in seen_pending:
+            continue
+        seen_pending.add(visit_id)
+        
+        all_refs = pending_referrals.filter(visit_id=visit_id)
+        grouped_pending.append({
+            'visit': ref.visit,
+            'patient': ref.visit.patient,
+            'referrals': all_refs,
+            'ref_count': all_refs.count()
+        })
+    
+    in_progress = CounsellingReferral.objects.filter(status='IN_PROGRESS').select_related(
+        'visit__patient', 'visit'
+    ).order_by('created_at')
+    
+    completed_today = CounsellingReferral.objects.filter(
+        status='COMPLETED',
+        completed_date__gte=today_start
+    ).count()
+    
+    total_pending = CounsellingReferral.objects.filter(status='PENDING').count()
+    
+    context = {
+        'grouped_pending': grouped_pending,
+        'in_progress': in_progress,
+        'completed_today': completed_today,
+        'total_pending': total_pending,
+    }
+    return render(request, 'dashboard/counselling.html', context)
+
+
+@login_required
+def pending_counselling(request):
+    """Pending counselling queue"""
+    referrals = CounsellingReferral.objects.filter(status='PENDING').select_related(
+        'visit__patient', 'visit', 'requested_by'
+    ).order_by('created_at')
+    
+    grouped = []
+    seen = set()
+    for ref in referrals:
+        if ref.visit_id in seen:
+            continue
+        seen.add(ref.visit_id)
+        
+        all_refs = referrals.filter(visit_id=ref.visit_id)
+        grouped.append({
+            'visit': ref.visit,
+            'patient': ref.visit.patient,
+            'referrals': all_refs,
+            'count': all_refs.count()
+        })
+    
+    return render(request, 'clinic/counselling_queue.html', {'grouped_referrals': grouped})
+
+
+@login_required
+def new_counselling_referral(request):
+    """Create a new counselling referral"""
+    visit_id = request.GET.get('visit_id')
+    visit = None
+    if visit_id:
+        visit = get_object_or_404(Visit, id=visit_id)
+    
+    counselling_types = CounsellingType.objects.filter(is_active=True).order_by('name')
+    
+    if request.method == 'POST':
+        visit_id = request.POST.get('visit_id')
+        type_id = request.POST.get('counselling_type')
+        custom_type = request.POST.get('custom_type', '')
+        reason = request.POST.get('reason', '')
+        
+        visit = get_object_or_404(Visit, id=visit_id)
+        
+        ref = CounsellingReferral.objects.create(
+            visit=visit,
+            reason=reason,
+            requested_by=request.user
+        )
+        
+        if type_id:
+            ref.referral_type_id = type_id
+        elif custom_type:
+            ref.custom_type = custom_type
+        
+        ref.save()
+        
+        if visit.status == 'WAITING_FOR_DOCTOR':
+            visit.update_status('IN_COUNSELLING')
+        
+        messages.success(request, 'Counselling referral created!')
+        return redirect('dashboard_doctor')
+    
+    return render(request, 'clinic/new_counselling_referral.html', {
+        'visit': visit,
+        'counselling_types': counselling_types
+    })
+
+
+@login_required
+def start_counselling(request, referral_id):
+    """Start a counselling session"""
+    ref = get_object_or_404(CounsellingReferral, id=referral_id)
+    
+    if request.method == 'POST':
+        ref.status = 'IN_PROGRESS'
+        ref.handled_by = request.user
+        ref.session_date = timezone.now()
+        ref.save()
+        
+        messages.success(request, 'Counselling session started!')
+        return redirect('pending_counselling')
+    
+    return render(request, 'clinic/start_counselling.html', {'referral': ref})
+
+
+@login_required
+def complete_counselling(request, referral_id):
+    """Complete a counselling session"""
+    ref = get_object_or_404(CounsellingReferral, id=referral_id)
+    
+    if request.method == 'POST':
+        ref.status = 'COMPLETED'
+        ref.notes = request.POST.get('notes', '')
+        ref.completed_date = timezone.now()
+        ref.save()
+        
+        visit = ref.visit
+        pending = visit.counselling_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        
+        if pending == 0:
+            visit.update_status('WAITING_FOR_DOCTOR')
+        
+        messages.success(request, 'Counselling completed!')
+        return redirect('pending_counselling')
+    
+    return render(request, 'clinic/complete_counselling.html', {'referral': ref})
+
+
+@login_required
+def counselling_history(request):
+    """Counselling history"""
+    referrals = CounsellingReferral.objects.filter(status='COMPLETED').select_related(
+        'visit__patient', 'requested_by', 'handled_by'
+    ).order_by('-completed_date')[:50]
+    
+    return render(request, 'clinic/counselling_history.html', {'referrals': referrals})
+
+
+@login_required
+def manage_counselling_types(request):
+    """Manage counselling types"""
+    if not request.user.is_superuser and request.user.role != 'ADMIN':
+        messages.error(request, 'Permission denied.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        if 'add_type' in request.POST:
+            CounsellingType.objects.create(
+                name=request.POST.get('name'),
+                code=request.POST.get('code').upper(),
+                description=request.POST.get('description', '')
+            )
+            messages.success(request, 'Counselling type added!')
+        elif 'toggle_type' in request.POST:
+            t = get_object_or_404(CounsellingType, id=request.POST.get('type_id'))
+            t.is_active = not t.is_active
+            t.save()
+            messages.success(request, f'Type {"activated" if t.is_active else "deactivated"}!')
+        elif 'delete_type' in request.POST:
+            t = get_object_or_404(CounsellingType, id=request.POST.get('type_id'))
+            t.delete()
+            messages.success(request, 'Type deleted!')
+        
+        return redirect('manage_counselling_types')
+    
+    types = CounsellingType.objects.all().order_by('name')
+    return render(request, 'clinic/manage_counselling_types.html', {'types': types})
+
+
+# =============================================================================
+# SCANNING VIEWS
+# =============================================================================
+
+@login_required
+def dashboard_scanning(request):
+    """
+    Scan Technician Dashboard:
+    - Pending scan referrals
+    - In-progress scans
+    - Completed today
+    """
+    today = timezone.now().date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    
+    pending_referrals = ScanReferral.objects.filter(status='PENDING').select_related(
+        'visit__patient', 'visit'
+    ).order_by('created_at')
+    
+    grouped_pending = []
+    seen_pending = set()
+    for ref in pending_referrals:
+        visit_id = ref.visit_id
+        if visit_id in seen_pending:
+            continue
+        seen_pending.add(visit_id)
+        
+        all_refs = pending_referrals.filter(visit_id=visit_id)
+        grouped_pending.append({
+            'visit': ref.visit,
+            'patient': ref.visit.patient,
+            'referrals': all_refs,
+            'ref_count': all_refs.count()
+        })
+    
+    in_progress = ScanReferral.objects.filter(status='IN_PROGRESS').select_related(
+        'visit__patient', 'visit'
+    ).order_by('created_at')
+    
+    completed_today = ScanReferral.objects.filter(
+        status='COMPLETED',
+        completed_date__gte=today_start
+    ).count()
+    
+    total_pending = ScanReferral.objects.filter(status='PENDING').count()
+    
+    context = {
+        'grouped_pending': grouped_pending,
+        'in_progress': in_progress,
+        'completed_today': completed_today,
+        'total_pending': total_pending,
+    }
+    return render(request, 'dashboard/scanning.html', context)
+
+
+@login_required
+def pending_scans(request):
+    """Pending scan queue"""
+    referrals = ScanReferral.objects.filter(status='PENDING').select_related(
+        'visit__patient', 'visit', 'requested_by'
+    ).order_by('created_at')
+    
+    grouped = []
+    seen = set()
+    for ref in referrals:
+        if ref.visit_id in seen:
+            continue
+        seen.add(ref.visit_id)
+        
+        all_refs = referrals.filter(visit_id=ref.visit_id)
+        grouped.append({
+            'visit': ref.visit,
+            'patient': ref.visit.patient,
+            'referrals': all_refs,
+            'count': all_refs.count()
+        })
+    
+    return render(request, 'clinic/scanning_queue.html', {'grouped_referrals': grouped})
+
+
+@login_required
+def new_scan_referral(request):
+    """Create a new scan referral"""
+    visit_id = request.GET.get('visit_id')
+    visit = None
+    if visit_id:
+        visit = get_object_or_404(Visit, id=visit_id)
+    
+    scan_types = ScanType.objects.filter(is_active=True).order_by('name')
+    
+    if request.method == 'POST':
+        visit_id = request.POST.get('visit_id')
+        type_id = request.POST.get('scan_type')
+        custom_type = request.POST.get('custom_type', '')
+        clinical_notes = request.POST.get('clinical_notes', '')
+        
+        visit = get_object_or_404(Visit, id=visit_id)
+        
+        ref = ScanReferral.objects.create(
+            visit=visit,
+            clinical_notes=clinical_notes,
+            requested_by=request.user
+        )
+        
+        if type_id:
+            ref.scan_type_id = type_id
+        elif custom_type:
+            ref.custom_type = custom_type
+        
+        ref.save()
+        
+        if visit.status == 'WAITING_FOR_DOCTOR':
+            visit.update_status('IN_SCANNING')
+        
+        messages.success(request, 'Scan referral created!')
+        return redirect('dashboard_doctor')
+    
+    return render(request, 'clinic/new_scan_referral.html', {
+        'visit': visit,
+        'scan_types': scan_types
+    })
+
+
+@login_required
+def start_scan(request, referral_id):
+    """Start a scan"""
+    ref = get_object_or_404(ScanReferral, id=referral_id)
+    
+    if request.method == 'POST':
+        ref.status = 'IN_PROGRESS'
+        ref.handled_by = request.user
+        ref.appointment_date = timezone.now()
+        ref.save()
+        
+        messages.success(request, 'Scan started!')
+        return redirect('pending_scans')
+    
+    return render(request, 'clinic/start_scan.html', {'referral': ref})
+
+
+@login_required
+def complete_scan(request, referral_id):
+    """Complete a scan"""
+    ref = get_object_or_404(ScanReferral, id=referral_id)
+    
+    if request.method == 'POST':
+        ref.status = 'COMPLETED'
+        ref.findings = request.POST.get('findings', '')
+        ref.technician_notes = request.POST.get('technician_notes', '')
+        ref.completed_date = timezone.now()
+        ref.save()
+        
+        visit = ref.visit
+        pending = visit.scan_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        
+        if pending == 0:
+            visit.update_status('WAITING_FOR_DOCTOR')
+        
+        messages.success(request, 'Scan completed!')
+        return redirect('pending_scans')
+    
+    return render(request, 'clinic/complete_scan.html', {'referral': ref})
+
+
+@login_required
+def scan_history(request):
+    """Scan history"""
+    referrals = ScanReferral.objects.filter(status='COMPLETED').select_related(
+        'visit__patient', 'requested_by', 'handled_by'
+    ).order_by('-completed_date')[:50]
+    
+    return render(request, 'clinic/scan_history.html', {'referrals': referrals})
+
+
+@login_required
+def manage_scan_types(request):
+    """Manage scan types"""
+    if not request.user.is_superuser and request.user.role != 'ADMIN':
+        messages.error(request, 'Permission denied.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        if 'add_type' in request.POST:
+            ScanType.objects.create(
+                name=request.POST.get('name'),
+                code=request.POST.get('code').upper(),
+                description=request.POST.get('description', '')
+            )
+            messages.success(request, 'Scan type added!')
+        elif 'toggle_type' in request.POST:
+            t = get_object_or_404(ScanType, id=request.POST.get('type_id'))
+            t.is_active = not t.is_active
+            t.save()
+            messages.success(request, f'Type {"activated" if t.is_active else "deactivated"}!')
+        elif 'delete_type' in request.POST:
+            t = get_object_or_404(ScanType, id=request.POST.get('type_id'))
+            t.delete()
+            messages.success(request, 'Type deleted!')
+        
+        return redirect('manage_scan_types')
+    
+    types = ScanType.objects.all().order_by('name')
+    return render(request, 'clinic/manage_scan_types.html', {'types': types})

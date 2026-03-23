@@ -6,23 +6,36 @@
 <div class="bg-white rounded-lg shadow p-6">
     <h2 class="text-2xl font-bold mb-6">Pending Lab Tests</h2>
     
-    {% if lab_requests %}
+    {% if grouped_labs %}
     <div class="space-y-4">
-        {% for lab in lab_requests %}
+        {% for group in grouped_labs %}
         <div class="border rounded-lg p-4 hover:bg-gray-50">
             <div class="flex justify-between items-start">
-                <div>
-                    <h3 class="font-semibold text-lg">{{ lab.visit.patient.full_name }}</h3>
-                    <p class="text-sm text-gray-500">Visit #{{ lab.visit.id }}</p>
-                    <div class="mt-2 p-2 bg-purple-50 rounded">
-                        <p><strong>Test:</strong> {{ lab.get_test_name_display }}</p>
-                        <p><strong>Requested:</strong> {{ lab.date|timesince }} ago</p>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-lg">{{ group.patient.full_name }}</h3>
+                    <p class="text-sm text-gray-500">Visit #{{ group.visit.id }} • {{ group.visit.visit_date|date:"M d, Y H:i" }}</p>
+                    
+                    <div class="mt-3 p-3 bg-purple-50 rounded-lg">
+                        <p class="font-medium text-purple-800 mb-2">
+                            <span class="bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-sm">{{ group.lab_count }}</span>
+                            Lab Test{{ group.lab_count|pluralize }} Requested:
+                        </p>
+                        <ul class="list-disc list-inside space-y-1">
+                            {% for lab in group.lab_requests %}
+                            <li class="text-gray-700">
+                                {{ lab.get_test_name_display }}
+                                {% if lab.notes %}<span class="text-gray-500 text-sm">({{ lab.notes }}){% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 </div>
-                <a href="{% url 'lab_result_form' lab.id %}" 
-                    class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
-                    Record Result
-                </a>
+                <div class="ml-4">
+                    <a href="{% url 'batch_lab_results' group.visit.id %}" 
+                        class="block bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 text-center">
+                        Process All ({{ group.lab_count }})
+                    </a>
+                </div>
             </div>
         </div>
         {% endfor %}

@@ -52,6 +52,24 @@ urlpatterns = [
     path('dashboard/inventory/', template_views.dashboard_inventory, name='dashboard_inventory'),
     path('dashboard/admin/', template_views.dashboard_admin, name='dashboard_admin'),
     
+    # Counselling URLs
+    path('dashboard/counselling/', template_views.dashboard_counselling, name='dashboard_counselling'),
+    path('counselling/queue/', template_views.pending_counselling, name='pending_counselling'),
+    path('counselling/referral/new/', template_views.new_counselling_referral, name='new_counselling_referral'),
+    path('counselling/<int:referral_id>/start/', template_views.start_counselling, name='start_counselling'),
+    path('counselling/<int:referral_id>/complete/', template_views.complete_counselling, name='complete_counselling'),
+    path('counselling/history/', template_views.counselling_history, name='counselling_history'),
+    path('manage/counselling-types/', template_views.manage_counselling_types, name='manage_counselling_types'),
+    
+    # Scanning URLs
+    path('dashboard/scanning/', template_views.dashboard_scanning, name='dashboard_scanning'),
+    path('scanning/queue/', template_views.pending_scans, name='pending_scans'),
+    path('scanning/referral/new/', template_views.new_scan_referral, name='new_scan_referral'),
+    path('scanning/<int:referral_id>/start/', template_views.start_scan, name='start_scan'),
+    path('scanning/<int:referral_id>/complete/', template_views.complete_scan, name='complete_scan'),
+    path('scanning/history/', template_views.scan_history, name='scan_history'),
+    path('manage/scan-types/', template_views.manage_scan_types, name='manage_scan_types'),
+    
     # Legacy dashboard (kept for backward compatibility)
     path('dashboard/all/', template_views.dashboard, name='dashboard_all'),
     
@@ -70,8 +88,10 @@ urlpatterns = [
     path('lab/queue/', template_views.pending_labs, name='pending_labs'),
     path('lab/request/new/', template_views.new_lab_request, name='new_lab_request'),
     path('lab/<int:lab_id>/', template_views.lab_result_form, name='lab_result_form'),
+    path('lab/batch/<int:visit_id>/', template_views.batch_lab_results, name='batch_lab_results'),
     path('prescription/new/', template_views.new_prescription, name='new_prescription'),
     path('pharmacy/queue/', template_views.pending_prescriptions, name='pending_prescriptions'),
+    path('pharmacy/batch/<int:visit_id>/', template_views.batch_dispense, name='batch_dispense'),
     path('prescription/<int:prescription_id>/dispense/', template_views.dispense_medicine, name='dispense_medicine'),
     path('medicines/', template_views.medicines_list, name='medicines'),
     path('medicine/add/', template_views.add_medicine, name='add_medicine'),

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Scan History - Kumi University Clinic{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-3xl font-black text-[#0d141b] dark:text-white flex items-center gap-3">
+            <span class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <span class="material-symbols-outlined text-2xl">image</span>
+            </span>
+            Scan History
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-1">Completed scans</p>
+    </div>
+
+    {% if referrals %}
+    <div class="mb-4">
+        <input type="text" id="searchInput" placeholder="Search by patient name or scan type..." 
+               class="w-full md:w-1/3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full" id="historyTable">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Patient</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Scan Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Technician</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Date Completed</th>
+                        <th class="px-4 py-3"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for ref in referrals %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer" onclick="toggleDetails({{ forloop.counter }})">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-indigo-600 text-sm">person</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900 dark:text-white">{{ ref.visit.patient.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ ref.visit.patient.university_id|default:"No ID" }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                            {{ ref.custom_type|default:"Scan" }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {{ ref.handled_by.get_full_name|default:ref.handled_by.username }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                            {{ ref.completed_date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button class="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded">
+                                <span class="material-symbols-outlined text-gray-400 expand-icon-{{ forloop.counter }}">expand_more</span>
+                            </button>
+                        </td>
+                    </tr>
+                    {% if ref.findings %}
+                    <tr id="details-{{ forloop.counter }}" class="hidden bg-gray-50 dark:bg-gray-900/30">
+                        <td colspan="5" class="px-4 py-4">
+                            <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Findings</h4>
+                            <p class="text-sm text-gray-900 dark:text-white">{{ ref.findings }}</p>
+                            {% if ref.technician_notes %}
+                            <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 mt-3">Technician Notes</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ ref.technician_notes }}</p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+            <span class="material-symbols-outlined text-indigo-400 text-4xl">image</span>
+        </div>
+        <h3 class="text-lg font-bold text-[#0d141b] dark:text-white mb-2">No Scan History</h3>
+        <p class="text-gray-500">Completed scans will appear here</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleDetails(rowNum) {
+    const details = document.getElementById('details-' + rowNum);
+    const icon = document.querySelector('.expand-icon-' + rowNum);
+    
+    if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        icon.textContent = 'expand_less';
+    } else {
+        details.classList.add('hidden');
+        icon.textContent = 'expand_more';
+    }
+}
+
+document.getElementById('searchInput')?.addEventListener('keyup', function() {
+    const query = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#historyTable tbody tr:not([id^="details-"])');
+    
+    rows.forEach(function(row, index) {
+        const patientName = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+        const scanType = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        const detailsRow = document.getElementById('details-' + (index + 1));
+        
+        if (patientName.includes(query) || scanType.includes(query)) {
+            row.style.display = '';
+            if (detailsRow) detailsRow.style.display = '';
+        } else {
+            row.style.display = 'none';
+            if (detailsRow) detailsRow.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

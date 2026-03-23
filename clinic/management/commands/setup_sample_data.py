@@ -42,7 +42,7 @@ class Command(BaseCommand):
         self.stdout.write('Creating patients...')
         
         patients_data = [
-            {'name': 'John Okello', 'type': 'STUDENT', 'id': 'STU/2024/001', 'dept': 'Computer Science', 'gender': 'MALE'},
+            {'name': 'John Okello', 'type': 'STUDENT', 'id': '23/SS/03/003/BSCIT/FT', 'dept': 'Computer Science', 'gender': 'MALE'},
             {'name': 'Sarah Amoit', 'type': 'STUDENT', 'id': 'STU/2024/002', 'dept': 'Business Administration', 'gender': 'FEMALE'},
             {'name': 'Dr. Michael Otieno', 'type': 'STAFF', 'id': 'STF/2023/015', 'dept': 'Faculty of Medicine', 'gender': 'MALE'},
             {'name': 'Grace Nakato', 'type': 'STUDENT', 'id': 'STU/2024/003', 'dept': 'Nursing', 'gender': 'FEMALE'},

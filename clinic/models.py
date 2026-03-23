@@ -23,6 +23,8 @@ class User(AbstractUser):
         ('LAB_TECHNICIAN', 'Lab Technician'),
         ('PHARMACIST', 'Pharmacist'),
         ('STORE_MANAGER', 'Store Manager'),
+        ('COUNSELLOR', 'Counsellor'),
+        ('SCAN_TECHNICIAN', 'Scan Technician'),
         ('ADMIN', 'Admin'),
     ]
     
@@ -61,6 +63,14 @@ class User(AbstractUser):
     @property
     def is_admin(self):
         return self.role == 'ADMIN' or self.is_superuser
+    
+    @property
+    def is_counsellor(self):
+        return self.role == 'COUNSELLOR' or self.is_superuser
+    
+    @property
+    def is_scan_technician(self):
+        return self.role == 'SCAN_TECHNICIAN' or self.is_superuser
 
 
 class Patient(models.Model):
@@ -120,6 +130,8 @@ class Visit(models.Model):
         ('WAITING_FOR_TRIAGE', 'Waiting for Triage'),
         ('WAITING_FOR_DOCTOR', 'Waiting for Doctor'),
         ('IN_LAB', 'In Lab'),
+        ('IN_COUNSELLING', 'In Counselling'),
+        ('IN_SCANNING', 'In Scanning'),
         ('WAITING_FOR_PHARMACY', 'Waiting for Pharmacy'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),
@@ -149,8 +161,10 @@ class Visit(models.Model):
         transitions = {
             'REGISTERED': ['WAITING_FOR_TRIAGE', 'CANCELLED'],
             'WAITING_FOR_TRIAGE': ['WAITING_FOR_DOCTOR', 'CANCELLED'],
-            'WAITING_FOR_DOCTOR': ['IN_LAB', 'WAITING_FOR_PHARMACY', 'CANCELLED'],
+            'WAITING_FOR_DOCTOR': ['IN_LAB', 'IN_COUNSELLING', 'IN_SCANNING', 'WAITING_FOR_PHARMACY', 'CANCELLED'],
             'IN_LAB': ['WAITING_FOR_PHARMACY', 'WAITING_FOR_DOCTOR'],
+            'IN_COUNSELLING': ['WAITING_FOR_DOCTOR', 'WAITING_FOR_PHARMACY'],
+            'IN_SCANNING': ['WAITING_FOR_DOCTOR', 'WAITING_FOR_PHARMACY'],
             'WAITING_FOR_PHARMACY': ['COMPLETED'],
             'COMPLETED': [],
             'CANCELLED': [],
@@ -259,6 +273,10 @@ class Prescription(models.Model):
     quantity = models.PositiveIntegerField()
     notes = models.TextField(blank=True)
     is_dispensed = models.BooleanField(default=False)
+    cannot_dispense = models.BooleanField(default=False, help_text="Mark as cannot dispense (out of stock, etc.)")
+    cannot_dispense_reason = models.TextField(blank=True, help_text="Reason why cannot dispense")
+    dispensed_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='dispensed_prescriptions')
+    dispensed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -369,6 +387,8 @@ class Notification(models.Model):
         ('EXPIRED_MEDICINE', 'Expired Medicine'),
         ('NEW_VISIT', 'New Visit'),
         ('LAB_RESULT', 'Lab Result Ready'),
+        ('COUNSELLING_COMPLETE', 'Counselling Complete'),
+        ('SCAN_COMPLETE', 'Scan Complete'),
         ('SYSTEM', 'System'),
     ]
     
@@ -468,3 +488,116 @@ class AuditLog(models.Model):
     
     def __str__(self):
         return f"{self.user} - {self.action} - {self.timestamp}"
+
+
+class CounsellingType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+    
+    @classmethod
+    def get_choices(cls):
+        return [(t.code, t.name) for t in cls.objects.filter(is_active=True)]
+
+
+class CounsellingReferral(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    
+    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, related_name='counselling_referrals')
+    referral_type = models.ForeignKey(CounsellingType, on_delete=models.CASCADE, related_name='referrals', null=True, blank=True)
+    custom_type = models.CharField(max_length=200, blank=True, help_text="For custom counselling types")
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
+    reason = models.TextField(blank=True, help_text="Reason for referral")
+    notes = models.TextField(blank=True, help_text="Counsellor's notes")
+    session_date = models.DateTimeField(null=True, blank=True)
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='requested_counselling')
+    handled_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='handled_counselling')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_date = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['completed_date']),
+        ]
+    
+    def __str__(self):
+        return f"Referral for Visit #{self.visit_id} - {self.get_type_display()}"
+    
+    def get_type_display(self):
+        if self.referral_type:
+            return self.referral_type.name
+        return self.custom_type or 'Counselling'
+
+
+class ScanType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+    
+    @classmethod
+    def get_choices(cls):
+        return [(t.code, t.name) for t in cls.objects.filter(is_active=True)]
+
+
+class ScanReferral(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    
+    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, related_name='scan_referrals')
+    scan_type = models.ForeignKey(ScanType, on_delete=models.CASCADE, related_name='referrals', null=True, blank=True)
+    custom_type = models.CharField(max_length=200, blank=True, help_text="For custom scan types")
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
+    clinical_notes = models.TextField(blank=True, help_text="Clinical notes for the scan")
+    findings = models.TextField(blank=True, help_text="Scan findings/results")
+    technician_notes = models.TextField(blank=True, help_text="Technician notes")
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='requested_scans')
+    handled_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='handled_scans')
+    appointment_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_date = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['completed_date']),
+        ]
+    
+    def __str__(self):
+        return f"Scan for Visit #{self.visit_id} - {self.get_type_display()}"
+    
+    def get_type_display(self):
+        if self.scan_type:
+            return self.scan_type.name
+        return self.custom_type or 'Scan'

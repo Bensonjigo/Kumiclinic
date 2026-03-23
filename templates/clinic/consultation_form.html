@@ -75,6 +75,92 @@
                     Add Another Lab Test
                 </button>
             </div>
+
+            <!-- Counselling Section -->
+            <div class="border-t pt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold">Refer for Counselling</h3>
+                </div>
+                <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-800 mb-3">
+                    Refer patients who may benefit from mental health support, stress management, or other counselling services.
+                </div>
+                
+                <div id="counsellingRows">
+                    <div class="counselling-row grid grid-cols-12 gap-2 mb-2">
+                        <div class="col-span-10">
+                            <select name="counselling_type" class="w-full px-3 py-2 border rounded-lg">
+                                <option value="">Select Counselling Type</option>
+                                <option value="MENTAL_HEALTH">Mental Health Support</option>
+                                <option value="STRESS">Stress Management</option>
+                                <option value="CAREER">Career Counselling</option>
+                                <option value="SUBSTANCE">Substance Abuse Support</option>
+                                <option value="TRAUMA">Trauma & Grief Support</option>
+                                <option value="RELATIONSHIP">Relationship Counselling</option>
+                                <option value="ACADEMIC">Academic Support</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <button type="button" onclick="removeCounsellingRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-2">
+                    <textarea name="counselling_reason" rows="2" placeholder="Reason for referral (optional)"
+                        class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
+                </div>
+                
+                <button type="button" onclick="addCounsellingRow()" class="mt-2 text-sm text-purple-600 hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-lg">add</span>
+                    Add Another Counselling Referral
+                </button>
+            </div>
+
+            <!-- Scanning Section -->
+            <div class="border-t pt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold">Refer for Scanning</h3>
+                </div>
+                <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-800 mb-3">
+                    Refer patients for X-ray, ultrasound, or other imaging services.
+                </div>
+                
+                <div id="scanRows">
+                    <div class="scan-row grid grid-cols-12 gap-2 mb-2">
+                        <div class="col-span-10">
+                            <select name="scan_type" class="w-full px-3 py-2 border rounded-lg">
+                                <option value="">Select Scan Type</option>
+                                <option value="XRAY">X-Ray</option>
+                                <option value="ULTRASOUND">Ultrasound</option>
+                                <option value="CT_SCAN">CT Scan</option>
+                                <option value="MRI">MRI</option>
+                                <option value="ECG">ECG/EKG</option>
+                                <option value="ECHO">Echocardiogram</option>
+                                <option value="EEG">EEG</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <button type="button" onclick="removeScanRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-2">
+                    <textarea name="scan_clinical_notes" rows="2" placeholder="Clinical notes for scan (optional)"
+                        class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
+                </div>
+                
+                <button type="button" onclick="addScanRow()" class="mt-2 text-sm text-indigo-600 hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-lg">add</span>
+                    Add Another Scan Referral
+                </button>
+            </div>
             
             <!-- Prescriptions Section -->
             <div class="border-t pt-4" id="prescriptionsSection">
@@ -116,6 +202,18 @@
                 <button type="button" onclick="orderLabTests()" id="orderLabBtn" class="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 flex items-center gap-2">
                     <span class="material-symbols-outlined">science</span>
                     Order Lab Tests
+                </button>
+                
+                <!-- Refer to Counselling Button -->
+                <button type="button" onclick="referToCounselling()" id="referCounsellingBtn" class="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 flex items-center gap-2">
+                    <span class="material-symbols-outlined">psychology</span>
+                    Refer to Counselling
+                </button>
+                
+                <!-- Refer for Scanning Button -->
+                <button type="button" onclick="referForScanning()" id="referScanBtn" class="bg-indigo-500 text-white px-6 py-2 rounded-lg hover:bg-indigo-600 flex items-center gap-2">
+                    <span class="material-symbols-outlined">image</span>
+                    Refer for Scanning
                 </button>
                 
                 <!-- Save Consultation Button -->
@@ -205,6 +303,74 @@ function removeLabTestRow(button) {
         button.closest('.lab-test-row').remove();
     }
     checkLabTests();
+}
+
+function addCounsellingRow() {
+    const container = document.getElementById('counsellingRows');
+    const newRow = document.createElement('div');
+    newRow.className = 'counselling-row grid grid-cols-12 gap-2 mb-2';
+    newRow.innerHTML = `
+        <div class="col-span-10">
+            <select name="counselling_type" class="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select Counselling Type</option>
+                <option value="MENTAL_HEALTH">Mental Health Support</option>
+                <option value="STRESS">Stress Management</option>
+                <option value="CAREER">Career Counselling</option>
+                <option value="SUBSTANCE">Substance Abuse Support</option>
+                <option value="TRAUMA">Trauma & Grief Support</option>
+                <option value="RELATIONSHIP">Relationship Counselling</option>
+                <option value="ACADEMIC">Academic Support</option>
+                <option value="OTHER">Other</option>
+            </select>
+        </div>
+        <div class="col-span-2">
+            <button type="button" onclick="removeCounsellingRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
+                <span class="material-symbols-outlined">delete</span>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeCounsellingRow(button) {
+    const rows = document.querySelectorAll('.counselling-row');
+    if (rows.length > 1) {
+        button.closest('.counselling-row').remove();
+    }
+}
+
+function addScanRow() {
+    const container = document.getElementById('scanRows');
+    const newRow = document.createElement('div');
+    newRow.className = 'scan-row grid grid-cols-12 gap-2 mb-2';
+    newRow.innerHTML = `
+        <div class="col-span-10">
+            <select name="scan_type" class="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select Scan Type</option>
+                <option value="XRAY">X-Ray</option>
+                <option value="ULTRASOUND">Ultrasound</option>
+                <option value="CT_SCAN">CT Scan</option>
+                <option value="MRI">MRI</option>
+                <option value="ECG">ECG/EKG</option>
+                <option value="ECHO">Echocardiogram</option>
+                <option value="EEG">EEG</option>
+                <option value="OTHER">Other</option>
+            </select>
+        </div>
+        <div class="col-span-2">
+            <button type="button" onclick="removeScanRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
+                <span class="material-symbols-outlined">delete</span>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeScanRow(button) {
+    const rows = document.querySelectorAll('.scan-row');
+    if (rows.length > 1) {
+        button.closest('.scan-row').remove();
+    }
 }
 
 function addMedicineRow() {
@@ -310,6 +476,56 @@ function orderLabTests() {
     form.appendChild(input);
     
     // Submit the form
+    form.submit();
+}
+
+function referToCounselling() {
+    const counsellingSelects = document.querySelectorAll('#counsellingRows select');
+    let hasReferral = false;
+    for (const select of counsellingSelects) {
+        if (select.value) {
+            hasReferral = true;
+            break;
+        }
+    }
+    
+    if (!hasReferral) {
+        alert('Please select at least one counselling type');
+        return;
+    }
+    
+    const form = document.getElementById('consultationForm');
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'refer_counselling';
+    input.value = 'true';
+    form.appendChild(input);
+    
+    form.submit();
+}
+
+function referForScanning() {
+    const scanSelects = document.querySelectorAll('#scanRows select');
+    let hasReferral = false;
+    for (const select of scanSelects) {
+        if (select.value) {
+            hasReferral = true;
+            break;
+        }
+    }
+    
+    if (!hasReferral) {
+        alert('Please select at least one scan type');
+        return;
+    }
+    
+    const form = document.getElementById('consultationForm');
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'refer_scanning';
+    input.value = 'true';
+    form.appendChild(input);
+    
     form.submit();
 }
 </script>
