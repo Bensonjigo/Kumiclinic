@@ -353,21 +353,9 @@ def dashboard_pharmacy(request):
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
     
-<<<<<<< HEAD
-    # Get all pending prescriptions
-    prescriptions = Prescription.objects.filter(
-        is_dispensed=False,
-        cannot_dispense=False,
-        consultation__isnull=False
-||||||| 7cc7b6d
-    # Pending prescriptions
-    pending_prescriptions = Prescription.objects.filter(
-        is_dispensed=False
-=======
     # Pending prescriptions - group by visit
     prescriptions = Prescription.objects.filter(
         is_dispensed=False
->>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
     ).select_related(
         'consultation__visit__patient',
         'consultation__doctor',
@@ -426,13 +414,7 @@ def dashboard_pharmacy(request):
     low_stock_medicines = low_stock[:5]
     
     context = {
-<<<<<<< HEAD
-        'grouped_pending': grouped_pending,
-||||||| 7cc7b6d
-        'pending_prescriptions': pending_prescriptions,
-=======
-        'grouped_prescriptions': grouped_prescriptions.values(),
->>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
+        'grouped_prescriptions': grouped_pending,
         'dispensed_today': dispensed_today,
         'total_medicines': total_medicines,
         'low_stock_count': low_stock_count,
@@ -1342,12 +1324,8 @@ def batch_lab_results(request, visit_id):
 @login_required
 def pending_prescriptions(request):
     # Get all pending prescriptions with their visits
-    # Filter out both dispensed AND cannot_dispense
     prescriptions = Prescription.objects.filter(
-<<<<<<< HEAD
-        is_dispensed=False,
-        cannot_dispense=False,
-        consultation__isnull=False
+        is_dispensed=False
     ).select_related(
         'consultation__visit__patient',
         'consultation__doctor',
@@ -1378,30 +1356,6 @@ def pending_prescriptions(request):
         })
     
     return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped_prescriptions})
-||||||| 7cc7b6d
-        is_dispensed=False
-    ).select_related('consultation__visit__patient', 'medicine')
-    return render(request, 'clinic/pharmacy_queue.html', {'prescriptions': prescriptions})
-=======
-        is_dispensed=False
-    ).select_related('consultation__visit__patient', 'consultation__doctor', 'medicine').order_by('consultation__visit__visit_date')
-    
-    # Group by visit
-    grouped = {}
-    for rx in prescriptions:
-        visit = rx.consultation.visit
-        if visit.id not in grouped:
-            grouped[visit.id] = {
-                'visit': visit,
-                'patient': visit.patient,
-                'doctor': rx.consultation.doctor,
-                'prescriptions': [rx],
-            }
-        else:
-            grouped[visit.id]['prescriptions'].append(rx)
-    
-    return render(request, 'clinic/pharmacy_queue.html', {'grouped_prescriptions': grouped.values()})
->>>>>>> 893feb78ba24e091024b41bd0bc3f69576428461
 
 
 @login_required
