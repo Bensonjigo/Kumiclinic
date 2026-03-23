@@ -255,14 +255,8 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="border-b border-gray-200 dark:border-gray-700">
                     <div class="flex gap-0" id="tabButtons">
-                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn active" data-tab="history" onclick="switchTab('history')">
-                            Medical History
-                        </button>
-                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn" data-tab="lab" onclick="switchTab('lab')">
+                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn active" data-tab="lab" onclick="switchTab('lab')">
                             Lab Results
-                        </button>
-                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn" data-tab="medications" onclick="switchTab('medications')">
-                            Medications
                         </button>
                         <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn" data-tab="notes" onclick="switchTab('notes')">
                             Visit Notes
@@ -271,22 +265,10 @@
                 </div>
                 
                 <div class="p-6">
-                    <div id="tab-content-history" class="tab-content">
-                        <div class="text-center py-8 text-gray-500">
-                            <span class="material-symbols-outlined text-4xl mb-2">history</span>
-                            <p>Medical history will appear here</p>
-                        </div>
-                    </div>
-                    <div id="tab-content-lab" class="tab-content hidden">
+                    <div id="tab-content-lab" class="tab-content">
                         <div class="text-center py-8 text-gray-500">
                             <span class="material-symbols-outlined text-4xl mb-2">science</span>
                             <p>Lab results will appear here</p>
-                        </div>
-                    </div>
-                    <div id="tab-content-medications" class="tab-content hidden">
-                        <div class="text-center py-8 text-gray-500">
-                            <span class="material-symbols-outlined text-4xl mb-2">medication</span>
-                            <p>Current medications will appear here</p>
                         </div>
                     </div>
                     <div id="tab-content-notes" class="tab-content hidden">
@@ -418,9 +400,7 @@ function startConsultation() {
 
 function loadPatientData(visitId) {
     // Show loading state
-    document.getElementById('tab-content-history').innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
     document.getElementById('tab-content-lab').innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
-    document.getElementById('tab-content-medications').innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
     document.getElementById('tab-content-notes').innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
     
     // Fetch patient data via AJAX
@@ -431,32 +411,27 @@ function loadPatientData(visitId) {
             console.log('Response status:', response.status);
             if (!response.ok) {
                 console.error('Error response:', response.status, response.statusText);
-                return response.text().then(text => { 
-                    console.error('Response text:', text); 
-                    document.getElementById('tab-content-history').innerHTML = '<p class="text-red-500 text-sm">Error loading data</p>';
-                });
+                document.getElementById('tab-content-lab').innerHTML = '<p class="text-red-500 text-sm">Error loading data</p>';
             }
             return response.json();
         })
         .then(data => {
             console.log('Patient data:', data);
             // Update tabs with patient data
-            if (data.medical_history) {
-                document.getElementById('tab-content-history').innerHTML = data.medical_history;
-            }
             if (data.lab_results) {
                 document.getElementById('tab-content-lab').innerHTML = data.lab_results;
-            }
-            if (data.medications) {
-                document.getElementById('tab-content-medications').innerHTML = data.medications;
+            } else {
+                document.getElementById('tab-content-lab').innerHTML = '<div class="text-center py-8 text-gray-500"><span class="material-symbols-outlined text-4xl mb-2">science</span><p>No lab results recorded</p></div>';
             }
             if (data.visit_notes) {
                 document.getElementById('tab-content-notes').innerHTML = data.visit_notes;
+            } else {
+                document.getElementById('tab-content-notes').innerHTML = '<div class="text-center py-8 text-gray-500"><span class="material-symbols-outlined text-4xl mb-2">note</span><p>No visit notes recorded</p></div>';
             }
         })
         .catch(error => {
             console.error('Error loading patient data:', error);
-            document.getElementById('tab-content-history').innerHTML = '<p class="text-red-500 text-sm">Error: ' + error.message + '</p>';
+            document.getElementById('tab-content-lab').innerHTML = '<p class="text-red-500 text-sm">Error: ' + error.message + '</p>';
         });
 }
 
