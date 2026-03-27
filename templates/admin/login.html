@@ -8,35 +8,185 @@
     <div id="branding">
         <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Kumi University">
         <div id="site-name">
-            <span style="font-size:20px;font-weight:700;">Kumi University</span>
-            <span style="font-size:12px;opacity:0.8;display:block;margin-top:-2px;">Clinic Admin</span>
+            <span>Kumi University</span>
+            <span>Clinic Admin</span>
         </div>
     </div>
 </header>
 {% endblock %}
 
 {% block content %}
-<div class="login-container">
-    <div class="login-card">
-        <h1>Kumi University Clinic</h1>
+<style>
+    .login-page {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
+    }
+    
+    .login-card-new {
+        background: white;
+        border-radius: 24px;
+        padding: 48px;
+        width: 100%;
+        max-width: 440px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .login-card-new::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #0EA5E9, #38BDF8, #818CF8);
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 36px;
+    }
+    
+    .login-header h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #0F172A;
+        margin-bottom: 8px;
+        border: none;
+        padding: 0;
+    }
+    
+    .login-header p {
+        color: #64748B;
+        font-size: 14px;
+    }
+    
+    .login-form-new input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid #E2E8F0;
+        border-radius: 12px;
+        font-size: 15px;
+        margin-bottom: 20px;
+        transition: all 0.2s;
+        background: #F8FAFC;
+    }
+    
+    .login-form-new input:focus {
+        outline: none;
+        border-color: #0EA5E9;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+    }
+    
+    .login-form-new label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #374151;
+        font-size: 14px;
+    }
+    
+    .login-form-new input[type="submit"] {
+        width: 100%;
+        background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+        color: white;
+        border: none;
+        padding: 16px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 8px;
+    }
+    
+    .login-form-new input[type="submit"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+    }
+    
+    .login-error {
+        background: #FEE2E2;
+        color: #DC2626;
+        padding: 14px 16px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .login-footer {
+        text-align: center;
+        margin-top: 28px;
+        padding-top: 24px;
+        border-top: 1px solid #E2E8F0;
+    }
+    
+    .login-footer a {
+        color: #64748B;
+        font-weight: 500;
+        font-size: 14px;
+    }
+    
+    .login-footer a:hover {
+        color: #0EA5E9;
+    }
+    
+    .brand-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+        border-radius: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+    }
+    
+    .brand-badge i {
+        font-size: 32px;
+        color: white;
+    }
+</style>
+
+<div class="login-page">
+    <div class="login-card-new">
+        <div class="login-header">
+            <div class="brand-badge">
+                <i class="fas fa-hospital"></i>
+            </div>
+            <h1>Kumi University Clinic</h1>
+            <p>Sign in to access the admin panel</p>
+        </div>
         
-        <form method="post" class="login-form">
+        <form method="post" class="login-form-new">
             {% csrf_token %}
             
             {% if form.errors %}
-            <div style="background:#F8D7DA;color:#721C24;padding:12px;border-radius:4px;margin-bottom:15px;">
-                Please correct the errors below.
+            <div class="login-error">
+                <i class="fas fa-exclamation-circle"></i>
+                Please check your credentials and try again.
             </div>
             {% endif %}
             
             <div>
-                <label for="id_username">Username</label>
-                <input type="text" name="username" id="id_username" required autocomplete="username">
+                <label for="id_username"><i class="fas fa-user" style="margin-right: 8px; color: #64748B;"></i>Username</label>
+                <input type="text" name="username" id="id_username" required autocomplete="username" placeholder="Enter your username">
             </div>
             
             <div>
-                <label for="id_password">Password</label>
-                <input type="password" name="password" id="id_password" required autocomplete="current-password">
+                <label for="id_password"><i class="fas fa-lock" style="margin-right: 8px; color: #64748B;"></i>Password</label>
+                <input type="password" name="password" id="id_password" required autocomplete="current-password" placeholder="Enter your password">
             </div>
             
             <input type="hidden" name="next" value="{{ next }}">
@@ -44,8 +194,10 @@
             <input type="submit" value="Sign In">
         </form>
         
-        <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid #DEE2E6;">
-            <a href="/">Return to website</a>
+        <div class="login-footer">
+            <a href="/">
+                <i class="fas fa-arrow-left" style="margin-right: 8px;"></i>Return to website
+            </a>
         </div>
     </div>
 </div>
