@@ -14,7 +14,7 @@ from rest_framework.authtoken.models import Token
 
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, Notification, DailyReport
+    Medicine, StockMovement, LabRequest, Notification, DailyReport, ScanReferral
 )
 
 
@@ -706,6 +706,34 @@ def patient_data_view(request, visit_id):
     if not lab_results_html:
         lab_results_html = '<p class="text-gray-500 text-sm">No lab results found</p>'
     
+    scan_results_html = ''
+    scan_referrals = ScanReferral.objects.filter(visit=visit).order_by('-created_at')
+    for scan in scan_referrals:
+        status_class = 'bg-gray-100 text-gray-800'
+        if scan.status == 'COMPLETED':
+            status_class = 'bg-green-100 text-green-800'
+        elif scan.status == 'IN_PROGRESS':
+            status_class = 'bg-yellow-100 text-yellow-800'
+        elif scan.status == 'PENDING':
+            status_class = 'bg-blue-100 text-blue-800'
+        
+        scan_type = scan.get_type_display()
+        findings_display = scan.findings if scan.findings else 'No findings recorded'
+        date_display = scan.completed_date.strftime('%d %b %Y') if scan.completed_date else (scan.created_at.strftime('%d %b %Y') if scan.created_at else '')
+        
+        scan_results_html += f'''
+        <div class="border-b py-3">
+            <div class="flex justify-between items-start mb-1">
+                <span class="font-medium">{scan_type}</span>
+                <span class="text-xs {status_class} px-2 py-0.5 rounded">{scan.get_status_display()}</span>
+            </div>
+            <p class="text-sm text-gray-600">{findings_display}</p>
+            <p class="text-xs text-gray-400">{date_display}</p>
+        </div>
+        '''
+    if not scan_results_html:
+        scan_results_html = '<p class="text-gray-500 text-sm">No scan results found</p>'
+    
     medications_html = ''
     # Show only current visit's prescriptions, not historical data
     prescriptions = Prescription.objects.filter(consultation__visit=visit).select_related('medicine', 'consultation')
@@ -752,6 +780,7 @@ def patient_data_view(request, visit_id):
     return Response({
         'medical_history': medical_history_html,
         'lab_results': lab_results_html,
+        'scan_results': scan_results_html,
         'medications': medications_html,
         'visit_notes': visit_notes_html,
     })

@@ -89,6 +89,43 @@
     </div>
     {% endif %}
 
+    <!-- Section 1.5: Scan Results Ready - Need Review -->
+    {% if scan_results_ready %}
+    <div class="mb-8">
+        <h3 class="text-lg font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined">image</span>
+            Scan Results Ready - Need Review
+            <span class="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-800 text-xs rounded-full animate-pulse">{{ scan_results_ready|length }}</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {% for visit in scan_results_ready %}
+            <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-2 border-indigo-400 dark:border-indigo-600 p-4 hover:shadow-lg"
+                 onclick="showPatientDetail({{ visit.id }}, {{ visit.patient.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-indigo-600 text-xl">image</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</h3>
+                        <p class="text-sm text-gray-500">{{ visit.patient.university_id }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">check_circle</span>
+                        Scan Ready
+                    </span>
+                    <span class="text-gray-500">{{ visit.visit_date|time:"g:i A" }}</span>
+                </div>
+                <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <p class="text-xs text-indigo-600 font-medium">Click to review scan</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Section 2: Waiting for Lab Results -->
     {% if in_lab %}
     <div class="mb-8">
@@ -114,6 +151,40 @@
                     <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full flex items-center gap-1">
                         <span class="material-symbols-outlined text-xs">hourglass_top</span>
                         Processing ({{ visit.lab_completed }}/{{ visit.lab_total }})
+                    </span>
+                    <span class="text-gray-500">{{ visit.visit_date|time:"g:i A" }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Section 2.5: Waiting for Scan -->
+    {% if in_scan %}
+    <div class="mb-8">
+        <h3 class="text-lg font-bold text-orange-700 dark:text-orange-400 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined">hourglass_top</span>
+            Waiting for Scan
+            <span class="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full">{{ in_scan|length }}</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {% for visit in in_scan %}
+            <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border-2 border-orange-300 dark:border-orange-600 p-4 hover:shadow-lg"
+                 onclick="showPatientDetail({{ visit.id }}, {{ visit.patient.id }}, '{{ visit.patient.full_name|escapejs }}', '{{ visit.patient.date_of_birth|escapejs|default:"" }}', '{{ visit.patient.university_id|escapejs }}', '{{ visit.patient.phone|escapejs|default:"" }}', '{{ visit.patient.address|escapejs|default:"" }}', '{% if visit.triage %}{{ visit.triage.weight|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.blood_pressure|default:"-" }}{% else %}-{% endif %}', '{% if visit.triage %}{{ visit.triage.heart_rate|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.temperature|default:0 }}{% else %}0{% endif %}', '{% if visit.triage %}{{ visit.triage.oxygen_saturation|default:0 }}{% else %}0{% endif %}')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-orange-600 text-xl">image</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ visit.patient.full_name }}</h3>
+                        <p class="text-sm text-gray-500">{{ visit.patient.university_id }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">hourglass_top</span>
+                        Scanning ({{ visit.scan_completed }}/{{ visit.scan_total }})
                     </span>
                     <span class="text-gray-500">{{ visit.visit_date|time:"g:i A" }}</span>
                 </div>
@@ -258,6 +329,9 @@
                         <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn active" data-tab="lab" onclick="switchTab('lab')">
                             Lab Results
                         </button>
+                        <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn" data-tab="scans" onclick="switchTab('scans')">
+                            Scan Results
+                        </button>
                         <button class="tab px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white border-b-3 border-transparent tab-btn" data-tab="notes" onclick="switchTab('notes')">
                             Visit Notes
                         </button>
@@ -269,6 +343,12 @@
                         <div class="text-center py-8 text-gray-500">
                             <span class="material-symbols-outlined text-4xl mb-2">science</span>
                             <p>Lab results will appear here</p>
+                        </div>
+                    </div>
+                    <div id="tab-content-scans" class="tab-content hidden">
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-4xl mb-2">image</span>
+                            <p>Scan results will appear here</p>
                         </div>
                     </div>
                     <div id="tab-content-notes" class="tab-content hidden">
@@ -427,6 +507,11 @@ function loadPatientData(visitId) {
                 document.getElementById('tab-content-lab').innerHTML = data.lab_results;
             } else {
                 document.getElementById('tab-content-lab').innerHTML = '<div class="text-center py-8 text-gray-500"><span class="material-symbols-outlined text-4xl mb-2">science</span><p>No lab results recorded</p></div>';
+            }
+            if (data.scan_results) {
+                document.getElementById('tab-content-scans').innerHTML = data.scan_results;
+            } else {
+                document.getElementById('tab-content-scans').innerHTML = '<div class="text-center py-8 text-gray-500"><span class="material-symbols-outlined text-4xl mb-2">image</span><p>No scan results recorded</p></div>';
             }
             if (data.visit_notes) {
                 document.getElementById('tab-content-notes').innerHTML = data.visit_notes;

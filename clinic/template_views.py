@@ -186,6 +186,44 @@ def dashboard_doctor(request):
         if total_labs > 0 and completed_labs == total_labs and not getattr(visit, 'consultation', None):
             lab_results_ready.append(visit)
     
+    # 4. Patients currently waiting for scan (have scan referrals but not complete)
+    in_scan = []
+    scan_visits = Visit.objects.filter(
+        scan_referrals__isnull=False
+    ).exclude(
+        scan_referrals__status='COMPLETED'
+    ).exclude(
+        consultation__diagnosis__isnull=False
+    ).select_related('patient', 'triage').prefetch_related('scan_referrals').distinct().order_by('visit_date')
+    
+    for visit in scan_visits:
+        scan_referrals = list(visit.scan_referrals.all())
+        total_scans = len(scan_referrals)
+        completed_scans = sum(1 for sr in scan_referrals if sr.status == 'COMPLETED')
+        visit.scan_total = total_scans
+        visit.scan_completed = completed_scans
+        in_scan.append(visit)
+    
+    # 5. Scan results ready (all scans complete, need review)
+    scan_results_ready = []
+    scan_ready_visits = Visit.objects.filter(
+        scan_referrals__isnull=False
+    ).exclude(
+        consultation__diagnosis__isnull=False
+    ).select_related('patient', 'triage').prefetch_related('scan_referrals').distinct().order_by('visit_date')
+    
+    for visit in scan_ready_visits:
+        scan_referrals = list(visit.scan_referrals.all())
+        if not scan_referrals:
+            continue
+        total_scans = len(scan_referrals)
+        completed_scans = sum(1 for sr in scan_referrals if sr.status == 'COMPLETED')
+        visit.scan_total = total_scans
+        visit.scan_completed = completed_scans
+        # Only show if all scans are complete AND no consultation yet
+        if total_scans > 0 and completed_scans == total_scans:
+            scan_results_ready.append(visit)
+    
     # Today's consultation count
     consultations_today = Consultation.objects.filter(
         created_at__gte=today_start
@@ -201,6 +239,8 @@ def dashboard_doctor(request):
         'waiting_for_consultation': waiting_for_consultation,
         'in_lab': in_lab,
         'lab_results_ready': lab_results_ready,
+        'in_scan': in_scan,
+        'scan_results_ready': scan_results_ready,
         'consultations_today': consultations_today,
         'recent_completed': recent_completed,
     }
