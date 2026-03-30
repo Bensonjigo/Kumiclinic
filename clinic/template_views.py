@@ -1101,7 +1101,12 @@ def consultation_form(request, visit_id):
         return redirect('pending_consultations')
     
     medicines = Medicine.objects.all()
-    return render(request, 'clinic/consultation_form.html', {'visit': visit, 'medicines': medicines})
+    scan_referrals = ScanReferral.objects.filter(visit=visit).order_by('-created_at')
+    return render(request, 'clinic/consultation_form.html', {
+        'visit': visit, 
+        'medicines': medicines,
+        'scan_referrals': scan_referrals
+    })
 
 
 @login_required
@@ -1295,7 +1300,14 @@ def new_prescription(request):
         return redirect('dashboard_doctor')
     
     medicines = Medicine.objects.all()
-    return render(request, 'clinic/new_prescription.html', {'visit': visit, 'medicines': medicines})
+    scan_referrals = []
+    if visit:
+        scan_referrals = ScanReferral.objects.filter(visit=visit).order_by('-created_at')
+    return render(request, 'clinic/new_prescription.html', {
+        'visit': visit, 
+        'medicines': medicines,
+        'scan_referrals': scan_referrals
+    })
 
 
 @login_required

@@ -707,7 +707,8 @@ def patient_data_view(request, visit_id):
         lab_results_html = '<p class="text-gray-500 text-sm">No lab results found</p>'
     
     scan_results_html = ''
-    scan_referrals = ScanReferral.objects.filter(visit=visit).order_by('-created_at')
+    scan_referrals = list(ScanReferral.objects.filter(visit=visit).order_by('-created_at'))
+    has_scan_results = len(scan_referrals) > 0
     for scan in scan_referrals:
         status_class = 'bg-gray-100 text-gray-800'
         if scan.status == 'COMPLETED':
@@ -731,8 +732,6 @@ def patient_data_view(request, visit_id):
             <p class="text-xs text-gray-400">{date_display}</p>
         </div>
         '''
-    if not scan_results_html:
-        scan_results_html = '<p class="text-gray-500 text-sm">No scan results found</p>'
     
     medications_html = ''
     # Show only current visit's prescriptions, not historical data
@@ -780,7 +779,7 @@ def patient_data_view(request, visit_id):
     return Response({
         'medical_history': medical_history_html,
         'lab_results': lab_results_html,
-        'scan_results': scan_results_html,
+        'scan_results': scan_results_html if has_scan_results else None,
         'medications': medications_html,
         'visit_notes': visit_notes_html,
     })

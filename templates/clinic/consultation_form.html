@@ -161,6 +161,37 @@
                     Add Another Scan Referral
                 </button>
             </div>
+
+            <!-- Scan Results Section (if scan results exist) -->
+            {% if scan_referrals %}
+            <div class="border-t pt-4">
+                <div class="mb-3 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                    <h3 class="font-semibold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
+                        <span class="material-symbols-outlined">image</span>
+                        Scan Results
+                    </h3>
+                    <div class="space-y-2">
+                        {% for scan in scan_referrals %}
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-700 dark:text-gray-300">{{ scan.get_type_display }}</span>
+                            <span class="px-2 py-0.5 rounded text-xs 
+                                {% if scan.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                {% elif scan.status == 'IN_PROGRESS' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ scan.get_status_display }}
+                            </span>
+                        </div>
+                        {% if scan.findings %}
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1"><strong>Findings:</strong> {{ scan.findings }}</p>
+                        {% endif %}
+                        {% if scan.technician_notes %}
+                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1"><strong>Notes:</strong> {{ scan.technician_notes }}</p>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             
             <!-- Prescriptions Section -->
             <div class="border-t pt-4" id="prescriptionsSection">
