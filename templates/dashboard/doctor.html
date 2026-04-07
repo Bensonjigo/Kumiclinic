@@ -508,11 +508,14 @@ function loadPatientData(visitId) {
             } else {
                 document.getElementById('tab-content-lab').innerHTML = '<div class="text-center py-8 text-gray-500"><span class="material-symbols-outlined text-4xl mb-2">science</span><p>No lab results recorded</p></div>';
             }
-            if (data.scan_results) {
+            
+            // Always update scan results - show completed scan findings
+            if (data.scan_results && data.scan_results.trim() !== '') {
                 document.getElementById('tab-content-scans').innerHTML = data.scan_results;
             } else {
-                document.getElementById('tab-content-scans').innerHTML = '<div class="text-center py-8 text-gray-500"><span class="material-symbols-outlined text-4xl mb-2">image</span><p>No scan results recorded</p></div>';
+                document.getElementById('tab-content-scans').innerHTML = '<div class="text-center py-8 text-gray-500"><span class="material-symbols-outlined text-4xl mb-2">image</span><p>No completed scan results yet</p></div>';
             }
+            
             if (data.visit_notes) {
                 document.getElementById('tab-content-notes').innerHTML = data.visit_notes;
             } else {

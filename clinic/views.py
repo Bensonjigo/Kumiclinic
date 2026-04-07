@@ -707,31 +707,29 @@ def patient_data_view(request, visit_id):
         lab_results_html = '<p class="text-gray-500 text-sm">No lab results found</p>'
     
     scan_results_html = ''
-    scan_referrals = list(ScanReferral.objects.filter(visit=visit).order_by('-created_at'))
-    has_scan_results = len(scan_referrals) > 0
-    for scan in scan_referrals:
-        status_class = 'bg-gray-100 text-gray-800'
-        if scan.status == 'COMPLETED':
-            status_class = 'bg-green-100 text-green-800'
-        elif scan.status == 'IN_PROGRESS':
-            status_class = 'bg-yellow-100 text-yellow-800'
-        elif scan.status == 'PENDING':
-            status_class = 'bg-blue-100 text-blue-800'
-        
-        scan_type = scan.get_type_display()
-        findings_display = scan.findings if scan.findings else 'No findings recorded'
-        date_display = scan.completed_date.strftime('%d %b %Y') if scan.completed_date else (scan.created_at.strftime('%d %b %Y') if scan.created_at else '')
-        
-        scan_results_html += f'''
-        <div class="border-b py-3">
-            <div class="flex justify-between items-start mb-1">
-                <span class="font-medium">{scan_type}</span>
-                <span class="text-xs {status_class} px-2 py-0.5 rounded">{scan.get_status_display()}</span>
+    # Only show completed scans with findings
+    completed_scans = list(ScanReferral.objects.filter(visit=visit, status='COMPLETED').order_by('-completed_date'))
+    has_scan_results = len(completed_scans) > 0
+    if has_scan_results:
+        for scan in completed_scans:
+            scan_type = scan.get_type_display()
+            findings = scan.findings if scan.findings else 'No findings recorded'
+            technician_notes = scan.technician_notes if scan.technician_notes else ''
+            date_display = scan.completed_date.strftime('%d %b %Y') if scan.completed_date else ''
+            
+            notes_html = f'<p class="text-xs text-gray-500 mt-1"><strong>Tech:</strong> {technician_notes}</p>' if technician_notes else ''
+            
+            scan_results_html += f'''
+            <div class="border-b py-3">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-medium">{scan_type}</span>
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Completed</span>
+                </div>
+                <p class="text-sm text-gray-600 mt-2"><strong>Findings:</strong> {findings}</p>
+                {notes_html}
+                <p class="text-xs text-gray-400 mt-1">{date_display}</p>
             </div>
-            <p class="text-sm text-gray-600">{findings_display}</p>
-            <p class="text-xs text-gray-400">{date_display}</p>
-        </div>
-        '''
+            '''
     
     medications_html = ''
     # Show only current visit's prescriptions, not historical data
