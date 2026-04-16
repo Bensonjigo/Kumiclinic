@@ -158,6 +158,56 @@
         .dark ::placeholder {
             color: #9ca3af !important;
         }
+        
+        /* Fix slategm/gray colors */
+        .dark .text-slate-700 { color: #d1d5db !important; }
+        .dark .text-slate-600 { color: #9ca3af !important; }
+        .dark .text-slate-500 { color: #6b7280 !important; }
+        .dark .text-slate-400 { color: #9ca3af !important; }
+        .dark .text-slate-800 { color: #f3f4f6 !important; }
+        .dark .text-slate-900 { color: #f9fafb !important; }
+        
+        .dark .bg-slate-50 { background-color: #1f2937 !important; }
+        .dark .bg-slate-100 { background-color: #374151 !important; }
+        .dark .bg-slate-200 { background-color: #4b5563 !important; }
+        .dark .bg-slate-700 { background-color: #1f2937 !important; }
+        .dark .bg-slate-800 { background-color: #111827 !important; }
+        .dark .bg-slate-900 { background-color: #0f172a !important; }
+        
+        .dark .border-slate-200 { border-color: #374151 !important; }
+        .dark .border-slate-300 { border-color: #4b5563 !important; }
+        .dark .border-slate-700 { border-color: #374151 !important; }
+        
+        /* Fix rounded-lg bg colors */
+        .dark .rounded-lg {
+            border-color: #4b5563 !important;
+        }
+        
+        /* Fix shadow visibility in dark mode */
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+        }
+        .dark .shadow {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        /* Fix bg-opacity colors */
+        .dark .bg-primary\/10 { background-color: rgba(58, 125, 157, 0.2) !important; }
+        .dark .bg-primary\/20 { background-color: rgba(58, 125, 157, 0.3) !important; }
+        
+        /* Fix text-primary for links */
+        .dark .text-primary { color: #60a5fa !important; }
+        
+        /* Fix teal colors */
+        .dark .text-teal-600 { color: #2dd4bf !important; }
+        .dark .text-teal-700 { color: #14b8a6 !important; }
+        .dark .text-teal-800 { color: #0d9488 !important; }
+        .dark .bg-teal-100 { background-color: #134e4a !important; }
+        
+        /* Fix modal/overlay */
+        .dark .bg-black.bg-opacity-50 {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
