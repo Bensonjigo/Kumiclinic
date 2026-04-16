@@ -361,6 +361,66 @@
                         </div>
                     </div>
                     {% endif %}
+                    
+                    <!-- Counselling Stats -->
+                    {% if data.counselling %}
+                    <div>
+                        <h3 class="text-lg font-bold text-[#0d141b] dark:text-white mb-4 flex items-center gap-2">
+                            <span class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                                <span class="material-symbols-outlined text-purple-600">psychology</span>
+                            </span>
+                            Counselling
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="stat-card border-l-4 border-l-purple-500">
+                                <p class="text-3xl font-black text-purple-600">{{ data.counselling.total_referrals|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Referrals</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-green-500">
+                                <p class="text-3xl font-black text-green-600">{{ data.counselling.completed|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-blue-500">
+                                <p class="text-3xl font-black text-blue-600">{{ data.counselling.in_progress|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">In Progress</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-gray-400">
+                                <p class="text-3xl font-black text-gray-600">{{ data.counselling.pending|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Pending</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Scanning Stats -->
+                    {% if data.scanning %}
+                    <div>
+                        <h3 class="text-lg font-bold text-[#0d141b] dark:text-white mb-4 flex items-center gap-2">
+                            <span class="w-8 h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg flex items-center justify-center">
+                                <span class="material-symbols-outlined text-pink-600">image</span>
+                            </span>
+                            Scanning/Sonography
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="stat-card border-l-4 border-l-pink-500">
+                                <p class="text-3xl font-black text-pink-600">{{ data.scanning.total_referrals|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Referrals</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-green-500">
+                                <p class="text-3xl font-black text-green-600">{{ data.scanning.completed|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-blue-500">
+                                <p class="text-3xl font-black text-blue-600">{{ data.scanning.in_progress|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">In Progress</p>
+                            </div>
+                            <div class="stat-card border-l-4 border-l-gray-400">
+                                <p class="text-3xl font-black text-gray-600">{{ data.scanning.pending|default:0 }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Pending</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% else %}

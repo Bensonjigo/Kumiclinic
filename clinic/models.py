@@ -440,6 +440,8 @@ class Report(models.Model):
         ('DOCTOR', 'Doctor/Consultation'),
         ('LAB', 'Laboratory'),
         ('PHARMACY', 'Pharmacy'),
+        ('COUNSELLING', 'Counselling'),
+        ('SCANNING', 'Scanning'),
     ]
     
     title = models.CharField(max_length=200)
