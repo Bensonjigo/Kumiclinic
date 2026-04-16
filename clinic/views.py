@@ -222,6 +222,46 @@ class PatientViewSet(viewsets.ModelViewSet):
         return Response(data)
 
 
+# =============================================================================
+# PASSWORD RESET
+# =============================================================================
+
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.views import PasswordResetView
+from django import forms
+
+
+class CustomPasswordResetForm(PasswordResetForm):
+    """Custom form that validates email and shows error if not found"""
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip()
+        User = get_user_model()
+        
+        if email:
+            try:
+                user = User.objects.get(email=email)
+                if not user.is_active:
+                    raise forms.ValidationError("This account has been deactivated.")
+            except User.DoesNotExist:
+                raise forms.ValidationError("No account found with this email address.")
+        
+        return email
+
+
+class CustomPasswordResetView(PasswordResetView):
+    """Custom password reset view with email validation"""
+    form_class = CustomPasswordResetForm
+    template_name = 'clinic/password_reset.html'
+    email_template_name = 'clinic/password_reset_email.html'
+    subject_template_name = 'clinic/password_reset_subject.txt'
+    success_url = 'password_reset_done'
+    
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid(form)
+
+
 class VisitViewSet(viewsets.ModelViewSet):
     queryset = Visit.objects.select_related('patient', 'created_by', 'triage', 'consultation').prefetch_related('lab_requests', 'consultation__prescriptions').all()
     serializer_class = VisitListSerializer
