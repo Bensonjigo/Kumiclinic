@@ -16,29 +16,473 @@
 {% endblock %}
 
 {% block content %}
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    
+    .dashboard-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    
+    .dashboard-title h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0F172A;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+    
+    .dashboard-title-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .dashboard-title-icon i {
+        font-size: 22px;
+        color: white;
+    }
+    
+    .dashboard-date {
+        font-size: 14px;
+        color: #64748B;
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+    }
+    
+    .quick-action-btn {
+        background: white;
+        border: 1.5px solid #E2E8F0;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        color: #374151;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.2s;
+        font-size: 14px;
+    }
+    
+    .quick-action-btn i {
+        color: #0EA5E9;
+        font-size: 16px;
+    }
+    
+    .quick-action-btn:hover {
+        background: #0EA5E9;
+        color: white;
+        border-color: #0EA5E9;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+    
+    .quick-action-btn:hover i {
+        color: white;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        transition: all 0.2s;
+        border: 1px solid #E2E8F0;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+    
+    .stat-icon.blue { background: #DBEAFE; color: #2563EB; }
+    .stat-icon.green { background: #D1FAE5; color: #059669; }
+    .stat-icon.amber { background: #FEF3C7; color: #D97706; }
+    .stat-icon.red { background: #FEE2E2; color: #DC2626; }
+    .stat-icon.purple { background: #EDE9FE; color: #7C3AED; }
+    .stat-icon.pink { background: #FCE7F3; color: #DB2777; }
+    
+    .stat-content {
+        flex: 1;
+    }
+    
+    .stat-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #0F172A;
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+    }
+    
+    .stat-label {
+        font-size: 13px;
+        color: #64748B;
+        margin-top: 4px;
+        font-weight: 500;
+    }
+    
+    /* Recent Section */
+    .recent-section {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E2E8F0;
+        margin-bottom: 32px;
+        overflow: hidden;
+    }
+    
+    .recent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+    
+    .recent-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0F172A;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .recent-title i {
+        color: #0EA5E9;
+    }
+    
+    .recent-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .recent-table thead {
+        background: #F8FAFC;
+    }
+    
+    .recent-table th {
+        padding: 14px 24px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .recent-table td {
+        padding: 16px 24px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #374151;
+    }
+    
+    .recent-table tbody tr:hover {
+        background: #F8FAFC;
+    }
+    
+    .recent-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .patient-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #0F172A;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    
+    .patient-link:hover {
+        color: #0EA5E9;
+    }
+    
+    .patient-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #DBEAFE;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #2563EB;
+        font-weight: 700;
+        font-size: 14px;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .status-waiting_for_triage { background: #FEF3C7; color: #92400E; }
+    .status-waiting_for_doctor { background: #DBEAFE; color: #1E40AF; }
+    .status-in_lab { background: #EDE9FE; color: #5B21B6; }
+    .status-in_counselling { background: #FCE7F3; color: #9D174D; }
+    .status-in_scanning { background: #FED7AA; color: #9A3412; }
+    .status-waiting_for_pharmacy { background: #E0E7FF; color: #3730A3; }
+    .status-completed { background: #D1FAE5; color: #065F46; }
+    .status-registered { background: #F1F5F9; color: #475569; }
+    .status-cancelled { background: #FEE2E2; color: #991B1B; }
+    
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+        background: #0EA5E9;
+        color: white;
+        border-color: #0EA5E9;
+    }
+    
+    /* App List */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0F172A;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .section-title i {
+        color: #0EA5E9;
+    }
+    
+    .app-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    
+    .app-module {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s;
+    }
+    
+    .app-module:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .app-header {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .app-header i {
+        font-size: 18px;
+        color: #0EA5E9;
+    }
+    
+    .app-title {
+        color: white !important;
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .app-models {
+        padding: 8px;
+    }
+    
+    .model-item {
+        padding: 14px 16px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    
+    .model-item:hover {
+        background: #F8FAFC;
+    }
+    
+    .model-name {
+        color: #374151 !important;
+        font-weight: 500;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .model-name::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #0EA5E9;
+        border-radius: 50%;
+    }
+    
+    .add-link {
+        background: #DBEAFE;
+        color: #2563EB !important;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+    }
+    
+    .add-link:hover {
+        background: #0EA5E9;
+        color: white !important;
+    }
+    
+    /* Empty State */
+    .empty-message {
+        padding: 48px 24px;
+        text-align: center;
+        color: #94A3B8;
+        font-size: 14px;
+    }
+    
+    .empty-message i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.3;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .recent-table th,
+        .recent-table td {
+            padding: 12px 16px;
+        }
+        
+        .quick-actions {
+            flex-direction: column;
+        }
+        
+        .quick-action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
 <div class="dashboard-container">
-    <h1><i class="fas fa-chart-line" style="margin-right: 12px; color: var(--primary);"></i>Dashboard</h1>
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="dashboard-title">
+            <div class="dashboard-title-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div>
+                <h1>Dashboard</h1>
+                <p class="dashboard-date">{{ today_date }}</p>
+            </div>
+        </div>
+    </div>
     
     <!-- Quick Actions -->
     <div class="quick-actions">
         <a href="{% url 'admin:clinic_patient_add' %}" class="quick-action-btn">
-            <i class="fas fa-user-plus"></i> Add Patient
+            <i class="fas fa-user-plus"></i>
+            Add Patient
         </a>
         <a href="{% url 'admin:clinic_visit_add' %}" class="quick-action-btn">
-            <i class="fas fa-calendar-plus"></i> New Visit
+            <i class="fas fa-calendar-plus"></i>
+            New Visit
         </a>
         <a href="{% url 'admin:clinic_medicine_changelist' %}" class="quick-action-btn">
-            <i class="fas fa-pills"></i> View Medicines
+            <i class="fas fa-pills"></i>
+            View Medicines
         </a>
-        <a href="{% url 'admin:index' %}report/" class="quick-action-btn">
-            <i class="fas fa-chart-bar"></i> Reports
+        <a href="{% url 'admin:clinic_user_changelist' %}" class="quick-action-btn">
+            <i class="fas fa-users-cog"></i>
+            Manage Staff
         </a>
     </div>
     
     <!-- Stats Grid -->
     <div class="stats-grid">
-        <div class="stat-card stat-primary">
-            <div class="stat-icon">
+        <div class="stat-card">
+            <div class="stat-icon blue">
                 <i class="fas fa-users"></i>
             </div>
             <div class="stat-content">
@@ -47,9 +491,9 @@
             </div>
         </div>
         
-        <div class="stat-card stat-success">
-            <div class="stat-icon">
-                <i class="fas fa-calendar-day"></i>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-calendar-check"></i>
             </div>
             <div class="stat-content">
                 <span class="stat-value">{{ stats.today_visits|default:0 }}</span>
@@ -57,8 +501,8 @@
             </div>
         </div>
         
-        <div class="stat-card stat-warning">
-            <div class="stat-icon">
+        <div class="stat-card">
+            <div class="stat-icon amber">
                 <i class="fas fa-pills"></i>
             </div>
             <div class="stat-content">
@@ -67,8 +511,8 @@
             </div>
         </div>
         
-        <div class="stat-card stat-danger">
-            <div class="stat-icon">
+        <div class="stat-card">
+            <div class="stat-icon purple">
                 <i class="fas fa-flask"></i>
             </div>
             <div class="stat-content">
@@ -77,8 +521,8 @@
             </div>
         </div>
         
-        <div class="stat-card stat-info">
-            <div class="stat-icon">
+        <div class="stat-card">
+            <div class="stat-icon pink">
                 <i class="fas fa-prescription-bottle"></i>
             </div>
             <div class="stat-content">
@@ -87,8 +531,8 @@
             </div>
         </div>
         
-        <div class="stat-card stat-primary">
-            <div class="stat-icon" style="background: #FEE2E2; color: #DC2626;">
+        <div class="stat-card">
+            <div class="stat-icon red">
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
             <div class="stat-content">
@@ -100,72 +544,75 @@
 
     <!-- Recent Visits -->
     <div class="recent-section">
-        <h2 class="section-title">
-            <i class="fas fa-history" style="color: var(--primary);"></i>
-            Recent Visits
-        </h2>
-        <div class="table-container">
-            <table class="recent-table">
-                <thead>
-                    <tr>
-                        <th><i class="fas fa-user" style="margin-right: 8px;"></i>Patient</th>
-                        <th><i class="fas fa-calendar" style="margin-right: 8px;"></i>Date</th>
-                        <th><i class="fas fa-info-circle" style="margin-right: 8px;"></i>Status</th>
-                        <th><i class="fas fa-user-md" style="margin-right: 8px;"></i>Created By</th>
-                        <th><i class="fas fa-cogs" style="margin-right: 8px;"></i>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for visit in recent_visits %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'admin:clinic_visit_change' visit.id %}" style="color: var(--primary); text-decoration: none; font-weight: 600;">
-                                <i class="fas fa-user-circle" style="margin-right: 8px; color: var(--secondary);"></i>
-                                {{ visit.patient.full_name }}
-                            </a>
-                        </td>
-                        <td>
-                            <i class="fas fa-clock" style="margin-right: 8px; color: var(--secondary);"></i>
-                            {{ visit.visit_date|date:"M d, Y - g:i A" }}
-                        </td>
-                        <td>
-                            <span class="status-badge status-{{ visit.status|lower }}">
-                                {{ visit.get_status_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <i class="fas fa-user" style="margin-right: 8px; color: var(--secondary);"></i>
-                            {{ visit.created_by.get_full_name|default:visit.created_by.username|default:"—" }}
-                        </td>
-                        <td>
-                            <a href="{% url 'admin:clinic_visit_change' visit.id }}" style="color: var(--primary); font-weight: 500;">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="empty-message">
-                            <i class="fas fa-inbox" style="font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.5;"></i>
-                            No recent visits
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="recent-header">
+            <h2 class="recent-title">
+                <i class="fas fa-history"></i>
+                Recent Visits
+            </h2>
+            <a href="{% url 'admin:clinic_visit_changelist' %}" class="action-btn">
+                View All
+                <i class="fas fa-arrow-right"></i>
+            </a>
         </div>
+        <table class="recent-table">
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Created By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for visit in recent_visits %}
+                <tr>
+                    <td>
+                        <a href="{% url 'admin:clinic_visit_change' visit.id %}" class="patient-link">
+                            <div class="patient-avatar">
+                                {{ visit.patient.full_name|slice:":1"|upper }}
+                            </div>
+                            {{ visit.patient.full_name }}
+                        </a>
+                    </td>
+                    <td>{{ visit.visit_date|date:"M d, Y - g:i A" }}</td>
+                    <td>
+                        <span class="status-badge status-{{ visit.status|lower }}">
+                            {{ visit.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ visit.created_by.get_full_name|default:visit.created_by.username|default:"—" }}</td>
+                    <td>
+                        <a href="{% url 'admin:clinic_visit_change' visit.id %}" class="action-btn">
+                            <i class="fas fa-eye"></i>
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-message">
+                        <i class="fas fa-inbox"></i>
+                        <p>No recent visits found</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <!-- App List -->
-    <h2 class="section-title" style="margin-top: 32px;">
-        <i class="fas fa-cubes" style="color: var(--primary);"></i>
-        Manage Data
-    </h2>
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-cubes"></i>
+            Manage Data
+        </h2>
+    </div>
     <div class="app-list">
         {% for app in app_list %}
         <div class="app-module">
             <div class="app-header">
-                <i class="fas fa-folder"></i>
+                <i class="fas fa-folder-open"></i>
                 <h2 class="app-title">{{ app.name }}</h2>
             </div>
             <div class="app-models">
@@ -178,7 +625,7 @@
                     {% endif %}
                     {% if model.add_url %}
                     <a href="{{ model.add_url }}" class="add-link">
-                        <i class="fas fa-plus"></i> Add
+                        <i class="fas fa-plus"></i>
                     </a>
                     {% endif %}
                 </div>
@@ -186,10 +633,10 @@
             </div>
         </div>
         {% empty %}
-        <p class="empty-message" style="grid-column: 1 / -1;">
-            <i class="fas fa-lock" style="font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.5;"></i>
-            You don't have permission to view any models.
-        </p>
+        <div class="empty-message" style="grid-column: 1 / -1;">
+            <i class="fas fa-lock"></i>
+            <p>You don't have permission to view any models.</p>
+        </div>
         {% endfor %}
     </div>
 </div>
