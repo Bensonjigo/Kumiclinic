@@ -131,7 +131,7 @@ class Visit(models.Model):
         ('WAITING_FOR_DOCTOR', 'Waiting for Doctor'),
         ('IN_LAB', 'In Lab'),
         ('IN_COUNSELLING', 'In Counselling'),
-        ('IN_SCANNING', 'In Scanning'),
+        ('IN_SCANNING', 'In Sonography'),
         ('WAITING_FOR_PHARMACY', 'Waiting for Pharmacy'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),

@@ -9,19 +9,19 @@
 {% block dashboard_content %}
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
     <div class="stat-card">
-        <div class="stat-value text-yellow-600">{{ grouped_prescriptions|length }}</div>
+        <div class="stat-value text-yellow-600 dark:text-yellow-400">{{ grouped_prescriptions|length }}</div>
         <div class="stat-label">Pending Dispensing</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value text-green-600">{{ dispensed_today }}</div>
+        <div class="stat-value text-green-600 dark:text-green-400">{{ dispensed_today }}</div>
         <div class="stat-label">Dispensed Today</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value text-red-600">{{ low_stock_count }}</div>
+        <div class="stat-value text-red-600 dark:text-red-400">{{ low_stock_count }}</div>
         <div class="stat-label">Low Stock Items</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value text-gray-600">{{ total_medicines }}</div>
+        <div class="stat-value text-gray-600 dark:text-gray-400">{{ total_medicines }}</div>
         <div class="stat-label">Total Medicines</div>
     </div>
 </div>
@@ -29,8 +29,8 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div>
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Pending Prescriptions</h2>
-            <a href="{% url 'pending_prescriptions' %}" class="text-blue-600 hover:underline text-sm">View All</a>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Pending Prescriptions</h2>
+            <a href="{% url 'pending_prescriptions' %}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">View All</a>
         </div>
         
         {% if grouped_prescriptions %}
@@ -40,18 +40,18 @@
                     <div class="queue-header">
                         <div>
                             <div class="queue-patient">
-                                <a href="{% url 'patient_detail' group.patient.id %}" class="text-blue-600 hover:underline">
+                                <a href="{% url 'patient_detail' group.patient.id %}" class="text-blue-600 dark:text-blue-400 hover:underline">
                                     {{ group.patient.full_name }}
                                 </a>
-                                <span class="ml-2 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded">
+                                <span class="ml-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-xs px-2 py-0.5 rounded">
                                     {{ group.rx_count }} prescription{{ group.rx_count|pluralize }}
                                 </span>
                             </div>
                             <div class="queue-meta">
-                                <span>Dr. {{ group.doctor.get_full_name|default:group.doctor.username }}</span>
-                                <span class="mx-2">|</span>
-                                <span>{{ group.prescriptions.0.created_at|time:"g:i A" }}</span>
-                                <span class="mx-2">|</span>
+                                <span class="text-gray-700 dark:text-gray-300">Dr. {{ group.doctor.get_full_name|default:group.doctor.username }}</span>
+                                <span class="mx-2 text-gray-400">|</span>
+                                <span class="text-gray-600 dark:text-gray-400">{{ group.prescriptions.0.created_at|time:"g:i A" }}</span>
+                                <span class="mx-2 text-gray-400">|</span>
                                 <span class="text-primary font-medium">{{ group.prescriptions|length }} item(s)</span>
                             </div>
                         </div>
@@ -59,16 +59,16 @@
                             <i class="fas fa-eye mr-1"></i> View
                         </a>
                     </div>
-                    <div class="mt-2 p-2 bg-gray-50 rounded">
+                    <div class="mt-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
                         {% for rx in group.prescriptions %}
-                        <div class="flex items-center justify-between py-1 {% if not forloop.last %}border-b border-gray-200{% endif %}">
+                        <div class="flex items-center justify-between py-1 {% if not forloop.last %}border-b border-gray-200 dark:border-gray-600{% endif %}">
                             <div>
-                                <span class="font-medium">{{ rx.medicine.name }}</span>
-                                <span class="text-sm text-gray-600 ml-2">{{ rx.dosage }}</span>
+                                <span class="font-medium text-gray-900 dark:text-white">{{ rx.medicine.name }}</span>
+                                <span class="text-sm text-gray-600 dark:text-gray-400 ml-2">{{ rx.dosage }}</span>
                             </div>
                             <div class="text-sm">
-                                <span class="text-gray-500">Qty:</span>
-                                <span class="font-medium">{{ rx.quantity }} {{ rx.medicine.unit }}</span>
+                                <span class="text-gray-500 dark:text-gray-400">Qty:</span>
+                                <span class="font-medium text-gray-900 dark:text-white">{{ rx.quantity }} {{ rx.medicine.unit }}</span>
                             </div>
                         </div>
                         {% endfor %}
@@ -77,7 +77,7 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-500 dark:text-gray-400">
                 <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
                 <p>No pending prescriptions to dispense</p>
             </div>
@@ -86,25 +86,25 @@
 
     <div>
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Stock Alerts</h2>
-            <a href="{% url 'medicines' %}" class="text-blue-600 hover:underline text-sm">View All</a>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Stock Alerts</h2>
+            <a href="{% url 'medicines' %}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">View All</a>
         </div>
         
         {% if low_stock_medicines %}
         <div class="alert-low-stock mb-4">
-            <h3 class="font-medium text-red-800 mb-2">
+            <h3 class="font-medium text-red-800 dark:text-red-400 mb-2">
                 <i class="fas fa-exclamation-triangle mr-2"></i>Low Stock Items
             </h3>
             <div class="space-y-2">
                 {% for medicine in low_stock_medicines %}
-                <div class="flex justify-between items-center bg-white p-2 rounded">
+                <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-2 rounded">
                     <div>
-                        <span class="font-medium">{{ medicine.name }}</span>
-                        <span class="text-sm text-gray-500">({{ medicine.category }})</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ medicine.name }}</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">({{ medicine.category }})</span>
                     </div>
                     <div class="text-right">
-                        <span class="text-red-600 font-medium">{{ medicine.stock_quantity }}</span>
-                        <span class="text-gray-500 text-sm">/ {{ medicine.minimum_stock_level }} {{ medicine.unit }}</span>
+                        <span class="text-red-600 dark:text-red-400 font-medium">{{ medicine.stock_quantity }}</span>
+                        <span class="text-gray-500 dark:text-gray-400 text-sm">/ {{ medicine.minimum_stock_level }} {{ medicine.unit }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -112,14 +112,14 @@
         </div>
         {% endif %}
         
-        <div class="bg-white rounded-lg shadow p-4">
-            <h3 class="font-medium text-gray-700 mb-3">Quick Actions</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <h3 class="font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Actions</h3>
             <div class="space-y-2">
-                <a href="{% url 'medicines' %}" class="block p-3 bg-blue-50 rounded hover:bg-blue-100 transition">
-                    <i class="fas fa-box text-blue-600 mr-2"></i> View Inventory
+                <a href="{% url 'medicines' %}" class="block p-3 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-gray-900 dark:text-blue-300">
+                    <i class="fas fa-box text-blue-600 dark:text-blue-400 mr-2"></i> View Inventory
                 </a>
-                <a href="{% url 'pending_prescriptions' %}" class="block p-3 bg-green-50 rounded hover:bg-green-100 transition">
-                    <i class="fas fa-dispensing text-green-600 mr-2"></i> Dispense Queue
+                <a href="{% url 'pending_prescriptions' %}" class="block p-3 bg-green-50 dark:bg-green-900/20 rounded hover:bg-green-100 dark:hover:bg-green-900/30 transition text-gray-900 dark:text-green-300">
+                    <i class="fas fa-dispensing text-green-600 dark:text-green-400 mr-2"></i> Dispense Queue
                 </a>
             </div>
         </div>

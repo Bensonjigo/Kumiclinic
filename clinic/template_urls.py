@@ -10,6 +10,7 @@ urlpatterns = [
     
     # Profile and password change
     path('profile/', template_views.profile_view, name='profile'),
+    path('set-theme/', template_views.set_theme, name='set_theme'),
     path('password-change/', auth_views.PasswordChangeView.as_view(
         template_name='clinic/password_change.html',
         success_url=reverse_lazy('password_change_done')
@@ -48,7 +49,6 @@ urlpatterns = [
     path('dashboard/pharmacy/', template_views.dashboard_pharmacy, name='dashboard_pharmacy'),
     path('dashboard/pharmacy/history/', template_views.pharmacy_history, name='pharmacy_history'),
     path('dashboard/nurse/history/', template_views.nurse_history, name='nurse_history'),
-    path('manage/lab-tests/', template_views.manage_lab_tests, name='manage_lab_tests'),
     path('dashboard/inventory/', template_views.dashboard_inventory, name='dashboard_inventory'),
     path('dashboard/admin/', template_views.dashboard_admin, name='dashboard_admin'),
     
@@ -61,7 +61,7 @@ urlpatterns = [
     path('counselling/history/', template_views.counselling_history, name='counselling_history'),
     path('manage/counselling-types/', template_views.manage_counselling_types, name='manage_counselling_types'),
     
-    # Scanning URLs
+    # Sonography URLs
     path('dashboard/scanning/', template_views.dashboard_scanning, name='dashboard_scanning'),
     path('scanning/queue/', template_views.pending_scans, name='pending_scans'),
     path('scanning/referral/new/', template_views.new_scan_referral, name='new_scan_referral'),
