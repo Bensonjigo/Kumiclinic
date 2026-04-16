@@ -635,6 +635,31 @@ def profile_view(request):
 
 
 @login_required
+def set_theme(request):
+    """Toggle dark/light theme and save preference to session"""
+    from django.http import JsonResponse
+    from django.views.decorators.http import require_POST
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            theme = data.get('theme', 'light')
+            
+            # Validate theme value
+            if theme not in ['dark', 'light']:
+                return JsonResponse({'success': False, 'error': 'Invalid theme'}, status=400)
+            
+            # Save to session
+            request.session['theme'] = theme
+            
+            return JsonResponse({'success': True, 'theme': theme})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+
+@login_required
 def dashboard(request):
     today = timezone.now().date()
     today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))

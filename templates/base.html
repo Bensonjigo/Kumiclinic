@@ -47,11 +47,133 @@
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             font-family: 'Material Symbols Outlined', sans-serif;
         }
+        
+        /* Global dark mode text fixes */
+        .dark {
+            color-scheme: dark;
+        }
+        
+        /* Ensure all text is visible in dark mode */
+        .dark body {
+            color: #e5e7eb;
+        }
+        
+        .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+            color: #f3f4f6;
+        }
+        
+        /* Fix common text colors that are too dark */
+        .dark .text-gray-900,
+        .dark .text-gray-800,
+        .dark .text-gray-700 {
+            color: #f3f4f6 !important;
+        }
+        
+        .dark .text-gray-600 {
+            color: #d1d5db !important;
+        }
+        
+        .dark .text-gray-500 {
+            color: #9ca3af !important;
+        }
+        
+        /* Fix specific element colors */
+        .dark .bg-white {
+            background-color: #1f2937 !important;
+        }
+        
+        .dark .bg-gray-50 { background-color: #111827 !important; }
+        .dark .bg-gray-100 { background-color: #1f2937 !important; }
+        .dark .bg-gray-200 { background-color: #374151 !important; }
+        
+        .dark .border-gray-200 { border-color: #374151 !important; }
+        .dark .border-gray-300 { border-color: #4b5563 !important; }
+        
+        /* Fix input backgrounds */
+        .dark input[type="text"],
+        .dark input[type="email"],
+        .dark input[type="password"],
+        .dark input[type="number"],
+        .dark input[type="search"],
+        .dark textarea,
+        .dark select {
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+            border-color: #4b5563 !important;
+        }
+        
+        /* Fix table colors */
+        .dark table {
+            color: #e5e7eb;
+        }
+        
+        .dark th {
+            background-color: #1f2937 !important;
+            color: #d1d5db !important;
+        }
+        
+        .dark td {
+            color: #e5e7eb;
+        }
+        
+        .dark tr:hover {
+            background-color: #1f2937 !important;
+        }
+        
+        /* Fix status badges */
+        .dark .bg-green-100 { background-color: #064e3b !important; }
+        .dark .text-green-800 { color: #6ee7b7 !important; }
+        .dark .bg-red-100 { background-color: #7f1d1d !important; }
+        .dark .text-red-800 { color: #fca5a5 !important; }
+        .dark .bg-yellow-100 { background-color: #713f12 !important; }
+        .dark .text-yellow-800 { color: #fde047 !important; }
+        .dark .bg-blue-100 { background-color: #1e3a5f !important; }
+        .dark .text-blue-800 { color: #93c5fd !important; }
+        .dark .bg-purple-100 { background-color: #581c87 !important; }
+        .dark .text-purple-800 { color: #d8b4fe !important; }
+        .dark .bg-orange-100 { background-color: #7c2d12 !important; }
+        .dark .text-orange-800 { color: #fdba74 !important; }
+        .dark .bg-indigo-100 { background-color: #312e81 !important; }
+        .dark .text-indigo-800 { color: #a5b4fc !important; }
+        .dark .bg-pink-100 { background-color: #831843 !important; }
+        .dark .text-pink-800 { color: #f9a8d4 !important; }
+        .dark .bg-gray-100 { background-color: #1f2937 !important; }
+        .dark .text-gray-800 { color: #e5e7eb !important; }
+        
+        /* Fix form elements in cards */
+        .dark .card-body input,
+        .dark .card-body textarea,
+        .dark .card-body select {
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+        }
+        
+        /* Fix inline code */
+        .dark code {
+            background-color: #374151 !important;
+            color: #fde047 !important;
+        }
+        
+        /* Fix placeholder text */
+        .dark ::placeholder {
+            color: #9ca3af !important;
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
 </head>
 <body class="font-display bg-background-light dark:bg-background-dark text-[#0d141b] dark:text-gray-200">
+    <script>
+        // Apply theme from session on page load
+        (function() {
+            const theme = '{{ request.session.theme|default:"light" }}';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
     <!-- Offline Banner -->
     <div id="offline-banner" class="hidden bg-yellow-500 text-yellow-900 text-center py-1 px-4 text-sm font-medium">
         You are currently offline. Some features may be limited.

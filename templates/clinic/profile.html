@@ -87,6 +87,26 @@
         
         <!-- Sidebar -->
         <div class="lg:col-span-1">
+            <!-- Appearance Settings -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+                <h3 class="text-lg font-bold text-[#0d141b] dark:text-white mb-4">Appearance</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-400">dark_mode</span>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Dark Mode</p>
+                                <p class="text-xs text-gray-500">Switch between light and dark theme</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="themeToggle" class="sr-only peer" {% if request.session.theme == 'dark' %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Quick Actions -->
             <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
                 <h3 class="text-lg font-bold text-[#0d141b] dark:text-white mb-4">Security</h3>
@@ -106,11 +126,11 @@
                 <h3 class="text-lg font-bold text-[#0d141b] dark:text-white mb-4">Account Info</h3>
                 <div class="space-y-3 text-sm">
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Member since</span>
+                        <span class="text-gray-500 dark:text-gray-400">Member since</span>
                         <span class="text-gray-900 dark:text-white">{{ user.date_joined|date:"M d, Y" }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Last login</span>
+                        <span class="text-gray-500 dark:text-gray-400">Last login</span>
                         <span class="text-gray-900 dark:text-white">{{ user.last_login|date:"M d, Y g:i A" }}</span>
                     </div>
                 </div>
@@ -118,4 +138,52 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const themeToggle = document.getElementById('themeToggle');
+    
+    // Apply initial theme from checkbox state
+    if (themeToggle) {
+        if (themeToggle.checked) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }
+    
+    // Handle theme toggle changes
+    if (themeToggle) {
+        themeToggle.addEventListener('change', function() {
+            const isDark = this.checked;
+            
+            // Apply theme immediately
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            
+            // Save preference to server via fetch
+            fetch('{% url "set_theme" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ theme: isDark ? 'dark' : 'light' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Theme saved:', data.theme);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving theme:', error);
+            });
+        });
+    }
+});
+</script>
 {% endblock %}

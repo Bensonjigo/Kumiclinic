@@ -10,6 +10,7 @@ urlpatterns = [
     
     # Profile and password change
     path('profile/', template_views.profile_view, name='profile'),
+    path('set-theme/', template_views.set_theme, name='set_theme'),
     path('password-change/', auth_views.PasswordChangeView.as_view(
         template_name='clinic/password_change.html',
         success_url=reverse_lazy('password_change_done')
