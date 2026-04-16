@@ -1389,6 +1389,7 @@ def batch_lab_results(request, visit_id):
     lab_requests = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS'])
     
     if request.method == 'POST':
+        completed_count = 0
         # Process each lab result
         for lab in lab_requests:
             result_key = f'result_{lab.id}'
@@ -1401,15 +1402,40 @@ def batch_lab_results(request, visit_id):
                 lab.technician = request.user
                 lab.completed_date = timezone.now()
                 lab.save()
+                completed_count += 1
         
         # Check if there are still pending labs
         remaining_pending = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
         
         if remaining_pending == 0:
-            visit.update_status('WAITING_FOR_DOCTOR')
-            messages.success(request, 'All lab results recorded! Patient returned to doctor.')
+            # All labs done - check if patient needs anything else
+            has_pending_scans = visit.scan_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
+            has_pending_counselling = visit.counselling_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
+            has_prescriptions = Prescription.objects.filter(
+                consultation__visit=visit,
+                is_dispensed=False,
+                cannot_dispense=False
+            ).exists()
+            
+            if has_pending_scans or has_pending_counselling or has_prescriptions:
+                # Patient needs more work - send back to doctor
+                visit.update_status('WAITING_FOR_DOCTOR')
+                messages.success(request, f'{completed_count} lab results recorded! Patient returned to doctor.')
+            else:
+                # Lab-only visit - no scans, counselling, or prescriptions
+                has_dispensed = Prescription.objects.filter(
+                    consultation__visit=visit,
+                    is_dispensed=True
+                ).exists()
+                
+                if has_dispensed:
+                    visit.update_status('COMPLETED')
+                    messages.success(request, f'{completed_count} lab results recorded! Visit finished.')
+                else:
+                    visit.update_status('COMPLETED')
+                    messages.success(request, f'{completed_count} lab results recorded! Visit finished.')
         else:
-            messages.success(request, f'{lab_requests.count()} lab results recorded!')
+            messages.success(request, f'{completed_count} lab results recorded!')
         
         return redirect('pending_labs')
     
@@ -2165,14 +2191,47 @@ def complete_counselling(request, referral_id):
         ref.save()
         
         visit = ref.visit
-        pending = visit.counselling_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).exclude(id=ref.id).count()
         
-        if pending == 0:
-            visit.update_status('WAITING_FOR_DOCTOR')
-        else:
+        # Check if there are other pending counselling referrals
+        pending_counselling = visit.counselling_referrals.filter(
+            status__in=['PENDING', 'IN_PROGRESS']
+        ).exclude(id=ref.id).count()
+        
+        if pending_counselling > 0:
+            # Still have other counselling sessions
             visit.update_status('IN_COUNSELLING')
+            messages.success(request, 'Counselling completed!')
+        else:
+            # All counselling done - check if patient needs anything else
+            has_pending_labs = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
+            has_pending_scans = visit.scan_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
+            has_prescriptions = Prescription.objects.filter(
+                consultation__visit=visit,
+                is_dispensed=False,
+                cannot_dispense=False
+            ).exists()
+            
+            if has_pending_labs or has_pending_scans or has_prescriptions:
+                # Patient needs more work - send back to doctor
+                visit.update_status('WAITING_FOR_DOCTOR')
+                messages.success(request, 'Counselling completed! Patient returned to doctor queue.')
+            else:
+                # Counselling-only visit - no labs, scans, or prescriptions needed
+                # Check if doctor already added prescriptions that are dispensed
+                has_dispensed = Prescription.objects.filter(
+                    consultation__visit=visit,
+                    is_dispensed=True
+                ).exists()
+                
+                if has_dispensed:
+                    # Already has dispensed prescriptions - mark complete
+                    visit.update_status('COMPLETED')
+                    messages.success(request, 'Counselling completed! Visit finished.')
+                else:
+                    # No prescriptions at all - counselling only visit
+                    visit.update_status('COMPLETED')
+                    messages.success(request, 'Counselling completed! Visit finished.')
         
-        messages.success(request, 'Counselling completed!')
         return redirect('pending_counselling')
     
     return render(request, 'clinic/complete_counselling.html', {'referral': ref})
@@ -2372,12 +2431,44 @@ def complete_scan(request, referral_id):
         ref.save()
         
         visit = ref.visit
-        pending = visit.scan_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
         
-        if pending == 0:
-            visit.update_status('WAITING_FOR_DOCTOR')
+        # Check if there are other pending scans
+        pending_scans = visit.scan_referrals.filter(
+            status__in=['PENDING', 'IN_PROGRESS']
+        ).exclude(id=ref.id).count()
         
-        messages.success(request, 'Scan completed!')
+        if pending_scans > 0:
+            # Still have other scans
+            pass  # Stay in scanning
+        else:
+            # All scans done - check if patient needs anything else
+            has_pending_labs = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
+            has_pending_counselling = visit.counselling_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
+            has_pending_scans_check = visit.scan_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
+            has_prescriptions = Prescription.objects.filter(
+                consultation__visit=visit,
+                is_dispensed=False,
+                cannot_dispense=False
+            ).exists()
+            
+            if has_pending_labs or has_pending_counselling or has_pending_scans_check or has_prescriptions:
+                # Patient needs more work - send back to doctor
+                visit.update_status('WAITING_FOR_DOCTOR')
+                messages.success(request, 'Scan completed! Patient returned to doctor queue.')
+            else:
+                # Scan-only visit - no labs, counselling, scans, or prescriptions needed
+                has_dispensed = Prescription.objects.filter(
+                    consultation__visit=visit,
+                    is_dispensed=True
+                ).exists()
+                
+                if has_dispensed:
+                    visit.update_status('COMPLETED')
+                    messages.success(request, 'Scan completed! Visit finished.')
+                else:
+                    visit.update_status('COMPLETED')
+                    messages.success(request, 'Scan completed! Visit finished.')
+        
         return redirect('pending_scans')
     
     return render(request, 'clinic/complete_scan.html', {'referral': ref})
