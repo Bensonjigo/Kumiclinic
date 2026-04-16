@@ -1869,11 +1869,12 @@ def reports_dashboard(request):
             ('LAB', 'Laboratory'),
             ('NURSE', 'Nursing'),
             ('DOCTOR', 'Doctor/Consultation'),
+            ('COUNSELLING', 'Counselling'),
+            ('SCANNING', 'Scanning'),
             ('OVERALL', 'Overall Clinic'),
         ]
         report_for = request.GET.get('report_for', 'INVENTORY')
     elif role == 'NURSE':
-        # Nurse handles both reception (patient registration) and nursing
         allowed_reports = [('NURSE', 'Nursing & Reception')]
         report_for = 'NURSE'
     elif role == 'DOCTOR':
@@ -1885,6 +1886,12 @@ def reports_dashboard(request):
     elif role == 'PHARMACIST':
         allowed_reports = [('PHARMACY', 'Pharmacy')]
         report_for = 'PHARMACY'
+    elif role == 'COUNSELLOR':
+        allowed_reports = [('COUNSELLING', 'Counselling')]
+        report_for = 'COUNSELLING'
+    elif role == 'SCAN_TECHNICIAN':
+        allowed_reports = [('SCANNING', 'Scanning')]
+        report_for = 'SCANNING'
     else:
         allowed_reports = [('OVERALL', 'Overall Clinic')]
         report_for = 'OVERALL'
@@ -2025,6 +2032,26 @@ def generate_report_data(report_for, start_date, end_date):
             'total_received': movements.filter(movement_type='PURCHASE').aggregate(total=Sum('quantity'))['total'] or 0,
             'total_dispensed': movements.filter(movement_type='DISPENSE').aggregate(total=Sum('quantity'))['total'] or 0,
             'total_movements': movements.count(),
+        }
+    
+    if report_for in ['OVERALL', 'COUNSELLING']:
+        # Counselling stats
+        referrals = CounsellingReferral.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
+        data['counselling'] = {
+            'total_referrals': referrals.count(),
+            'completed': referrals.filter(status='COMPLETED').count(),
+            'pending': referrals.filter(status='PENDING').count(),
+            'in_progress': referrals.filter(status='IN_PROGRESS').count(),
+        }
+    
+    if report_for in ['OVERALL', 'SCANNING']:
+        # Scanning/Sonography stats
+        referrals = ScanReferral.objects.filter(created_at__gte=start_date, created_at__lte=end_date)
+        data['scanning'] = {
+            'total_referrals': referrals.count(),
+            'completed': referrals.filter(status='COMPLETED').count(),
+            'pending': referrals.filter(status='PENDING').count(),
+            'in_progress': referrals.filter(status='IN_PROGRESS').count(),
         }
     
     # Summary
