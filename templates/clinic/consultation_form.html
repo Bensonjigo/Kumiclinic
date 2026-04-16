@@ -119,10 +119,10 @@
                 </button>
             </div>
 
-            <!-- Scanning Section -->
+            <!-- Sonography Section -->
             <div class="border-t pt-4">
                 <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-semibold">Refer for Scanning</h3>
+                    <h3 class="font-semibold">Refer for Sonography</h3>
                 </div>
                 <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-800 mb-3">
                     Refer patients for X-ray, ultrasound, or other imaging services.
@@ -241,10 +241,10 @@
                     Refer to Counselling
                 </button>
                 
-                <!-- Refer for Scanning Button -->
-                <button type="button" onclick="referForScanning()" id="referScanBtn" class="bg-indigo-500 text-white px-6 py-2 rounded-lg hover:bg-indigo-600 flex items-center gap-2">
+                <!-- Refer for Sonography Button -->
+                <button type="button" onclick="referForSonography()" id="referScanBtn" class="bg-indigo-500 text-white px-6 py-2 rounded-lg hover:bg-indigo-600 flex items-center gap-2">
                     <span class="material-symbols-outlined">image</span>
-                    Refer for Scanning
+                    Refer for Sonography
                 </button>
                 
                 <!-- Save Consultation Button -->
@@ -535,7 +535,7 @@ function referToCounselling() {
     form.submit();
 }
 
-function referForScanning() {
+function referForSonography() {
     const scanSelects = document.querySelectorAll('#scanRows select');
     let hasReferral = false;
     for (const select of scanSelects) {

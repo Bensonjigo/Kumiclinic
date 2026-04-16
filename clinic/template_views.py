@@ -415,7 +415,8 @@ def dashboard_pharmacy(request):
     
     # Pending prescriptions - group by visit
     prescriptions = Prescription.objects.filter(
-        is_dispensed=False
+        is_dispensed=False,
+        consultation__visit__status__in=['WAITING_FOR_PHARMACY', 'WAITING_FOR_DOCTOR']
     ).select_related(
         'consultation__visit__patient',
         'consultation__doctor',
@@ -1397,7 +1398,8 @@ def batch_lab_results(request, visit_id):
 def pending_prescriptions(request):
     # Get all pending prescriptions with their visits
     prescriptions = Prescription.objects.filter(
-        is_dispensed=False
+        is_dispensed=False,
+        consultation__visit__status__in=['WAITING_FOR_PHARMACY', 'WAITING_FOR_DOCTOR']
     ).select_related(
         'consultation__visit__patient',
         'consultation__doctor',

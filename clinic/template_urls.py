@@ -60,7 +60,7 @@ urlpatterns = [
     path('counselling/history/', template_views.counselling_history, name='counselling_history'),
     path('manage/counselling-types/', template_views.manage_counselling_types, name='manage_counselling_types'),
     
-    # Scanning URLs
+    # Sonography URLs
     path('dashboard/scanning/', template_views.dashboard_scanning, name='dashboard_scanning'),
     path('scanning/queue/', template_views.pending_scans, name='pending_scans'),
     path('scanning/referral/new/', template_views.new_scan_referral, name='new_scan_referral'),
