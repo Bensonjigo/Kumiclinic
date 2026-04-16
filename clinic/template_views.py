@@ -1555,16 +1555,20 @@ def batch_dispense(request, visit_id):
         errors = []
         
         for prescription in prescriptions:
-            dispense_key = f'dispense_{prescription.id}'
-            partial_key = f'partial_{prescription.id}'
-            cannot_key = f'cannot_{prescription.id}'
+            # Check which action was selected
+            action_key = f'dispense_action_{prescription.id}'
             partial_qty_key = f'partial_qty_{prescription.id}'
             reason_key = f'reason_{prescription.id}'
             
+            action = request.POST.get(action_key)
             medicine = prescription.medicine
             
-            # Handle "Mark as Cannot Dispense"
-            if cannot_key in request.POST:
+            # Skip if no action selected
+            if not action:
+                continue
+            
+            # Handle "Cannot Dispense"
+            if action == 'cannot':
                 reason = request.POST.get(reason_key, 'Out of stock')
                 prescription.cannot_dispense = True
                 prescription.cannot_dispense_reason = reason
@@ -1581,9 +1585,9 @@ def batch_dispense(request, visit_id):
                 continue
             
             # Handle dispensing (full or partial)
-            if dispense_key in request.POST or partial_key in request.POST:
+            if action == 'full' or action == 'partial':
                 # Determine quantity to dispense
-                if partial_key in request.POST:
+                if action == 'partial':
                     qty_str = request.POST.get(partial_qty_key, '0')
                     try:
                         qty_to_dispense = int(qty_str)
