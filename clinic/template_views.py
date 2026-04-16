@@ -224,6 +224,25 @@ def dashboard_doctor(request):
         if total_scans > 0 and completed_scans == total_scans:
             scan_results_ready.append(visit)
     
+    # 6. Counselling results ready (all sessions complete, need review)
+    counselling_results_ready = []
+    counselling_ready_visits = Visit.objects.filter(
+        counselling_referrals__isnull=False
+    ).exclude(
+        consultation__diagnosis__isnull=False
+    ).select_related('patient', 'triage').prefetch_related('counselling_referrals').distinct().order_by('visit_date')
+    
+    for visit in counselling_ready_visits:
+        counselling_refs = list(visit.counselling_referrals.all())
+        if not counselling_refs:
+            continue
+        total_refs = len(counselling_refs)
+        completed_refs = sum(1 for cr in counselling_refs if cr.status == 'COMPLETED')
+        visit.counselling_total = total_refs
+        visit.counselling_completed = completed_refs
+        if total_refs > 0 and completed_refs == total_refs:
+            counselling_results_ready.append(visit)
+    
     # Today's consultation count
     consultations_today = Consultation.objects.filter(
         created_at__gte=today_start
@@ -241,6 +260,7 @@ def dashboard_doctor(request):
         'lab_results_ready': lab_results_ready,
         'in_scan': in_scan,
         'scan_results_ready': scan_results_ready,
+        'counselling_results_ready': counselling_results_ready,
         'consultations_today': consultations_today,
         'recent_completed': recent_completed,
     }

@@ -23,8 +23,8 @@ class Command(BaseCommand):
             )
             self.stdout.write(f'Created admin user: {admin.username}')
         
-        roles = ['RECEPTIONIST', 'NURSE', 'DOCTOR', 'LAB_TECHNICIAN', 'PHARMACIST']
-        role_names = ['Receptionist', 'Nurse', 'Doctor', 'Lab Technician', 'Pharmacist']
+        roles = ['RECEPTIONIST', 'NURSE', 'DOCTOR', 'LAB_TECHNICIAN', 'PHARMACIST', 'COUNSELLOR', 'SCAN_TECHNICIAN']
+        role_names = ['Receptionist', 'Nurse', 'Doctor', 'Lab Technician', 'Pharmacist', 'Counsellor', 'Scan Technician']
         
         for i, role in enumerate(roles):
             username = role.lower()
@@ -82,7 +82,6 @@ class Command(BaseCommand):
                     category=m['category'],
                     stock_quantity=m['stock'],
                     unit=m['unit'],
-                    expiry_date=date.today() + timedelta(days=365),
                     minimum_stock_level=m['min']
                 )
                 self.stdout.write(f'Created medicine: {medicine.name}')
@@ -96,3 +95,5 @@ class Command(BaseCommand):
         self.stdout.write('  Doctor: doctor / doctor123')
         self.stdout.write('  Lab Technician: lab_technician / lab_technician123')
         self.stdout.write('  Pharmacist: pharmacist / pharmacist123')
+        self.stdout.write('  Counsellor: counsellor / counsellor123')
+        self.stdout.write('  Scan Technician: scan_technician / scan_technician123')

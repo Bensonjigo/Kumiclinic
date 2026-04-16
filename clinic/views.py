@@ -14,7 +14,7 @@ from rest_framework.authtoken.models import Token
 
 from .models import (
     Patient, Visit, Triage, Consultation, Prescription,
-    Medicine, StockMovement, LabRequest, Notification, DailyReport, ScanReferral
+    Medicine, StockMovement, LabRequest, Notification, DailyReport, ScanReferral, CounsellingReferral
 )
 
 
@@ -625,13 +625,25 @@ def patient_data_view(request, visit_id):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    # Additional authorization: Doctors can only see patients they've treated
+    # Additional authorization: Doctors can see patients they have a consultation with OR 
+    # patients who have been referred to them (waiting for lab results, scan results, etc.)
     if user.role == 'DOCTOR' and not user.is_superuser:
-        has_access = Consultation.objects.filter(
+        # Check if doctor has a consultation for this patient
+        has_consultation = Consultation.objects.filter(
             visit__patient=patient,
             doctor=user
         ).exists()
-        if not has_access:
+        
+        # Check if patient was referred to this doctor (has lab/scan requests from this doctor)
+        has_referral = LabRequest.objects.filter(
+            visit__patient=patient,
+            requested_by=user
+        ).exists() or ScanReferral.objects.filter(
+            visit__patient=patient,
+            requested_by=user
+        ).exists()
+        
+        if not has_consultation and not has_referral:
             log_action(
                 user, 
                 'VIEW_DENIED', 
@@ -641,7 +653,7 @@ def patient_data_view(request, visit_id):
                 request
             )
             return Response(
-                {'error': 'You can only view records of patients you have treated'},
+                {'error': 'You can only view records of patients you have treated or referred'},
                 status=status.HTTP_403_FORBIDDEN
             )
     
@@ -731,6 +743,29 @@ def patient_data_view(request, visit_id):
             </div>
             '''
     
+    # Counselling results
+    counselling_results_html = ''
+    completed_counselling = list(CounsellingReferral.objects.filter(visit=visit, status='COMPLETED').order_by('-completed_date'))
+    has_counselling_results = len(completed_counselling) > 0
+    if has_counselling_results:
+        for ref in completed_counselling:
+            ref_type = ref.get_type_display()
+            notes = ref.notes if ref.notes else 'No session notes recorded'
+            handled_by = ref.handled_by.get_full_name() or ref.handled_by.username if ref.handled_by else 'Unknown'
+            date_display = ref.completed_date.strftime('%d %b %Y') if ref.completed_date else ''
+            
+            counselling_results_html += f'''
+            <div class="border-b py-3">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-medium">{ref_type}</span>
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Completed</span>
+                </div>
+                <p class="text-sm text-gray-600 mt-2"><strong>Notes:</strong> {notes}</p>
+                <p class="text-xs text-gray-400 mt-1"><strong>Counsellor:</strong> {handled_by}</p>
+                <p class="text-xs text-gray-400">{date_display}</p>
+            </div>
+            '''
+    
     medications_html = ''
     # Show only current visit's prescriptions, not historical data
     prescriptions = Prescription.objects.filter(consultation__visit=visit).select_related('medicine', 'consultation')
@@ -778,6 +813,7 @@ def patient_data_view(request, visit_id):
         'medical_history': medical_history_html,
         'lab_results': lab_results_html,
         'scan_results': scan_results_html if has_scan_results else None,
+        'counselling_results': counselling_results_html if has_counselling_results else None,
         'medications': medications_html,
         'visit_notes': visit_notes_html,
     })
