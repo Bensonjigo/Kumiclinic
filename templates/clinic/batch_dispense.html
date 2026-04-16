@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
     <div class="mb-6">
-        <a href="{% url 'pending_prescriptions' %}" class="text-blue-600 dark:text-blue-400 hover:underline">&larr; Back to Pharmacy Queue</a>
+        <a href="{% url 'pending_prescriptions' %}" class="text-primary hover:underline">&larr; Back to Pharmacy Queue</a>
     </div>
     
     <h2 class="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Dispense Medications for {{ visit.patient.full_name }}</h2>
@@ -17,7 +17,7 @@
         
         <div class="space-y-4">
             {% for rx in prescriptions %}
-            <div class="border rounded-lg p-4 {% if rx.medicine.stock_quantity < rx.quantity %}bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800{% elif rx.medicine.stock_quantity == 0 %}bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %}">
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 {% if rx.medicine.stock_quantity < rx.quantity %}bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800{% elif rx.medicine.stock_quantity == 0 %}bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %}">
                 <div class="flex justify-between items-start mb-3">
                     <div>
                         <h3 class="font-semibold text-lg text-gray-900 dark:text-white">{{ rx.medicine.name }}</h3>
@@ -34,16 +34,15 @@
                     </div>
                 </div>
                 
-                <!-- Options -->
+                <!-- Dispense Options -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
                     <!-- Option 1: Full Dispense -->
-                    <label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-white dark:hover:bg-gray-700 {% if rx.medicine.stock_quantity < rx.quantity or rx.medicine.stock_quantity == 0 %}opacity-50{% endif %}">
+                    <label class="flex items-center gap-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-white dark:hover:bg-gray-700 {% if rx.medicine.stock_quantity < rx.quantity or rx.medicine.stock_quantity == 0 %}opacity-50 cursor-not-allowed{% endif %}">
                         <input 
                             type="radio" 
-                            name="dispense_choice_{{ rx.id }}" 
+                            name="dispense_action_{{ rx.id }}" 
                             value="full"
                             {% if rx.medicine.stock_quantity < rx.quantity or rx.medicine.stock_quantity == 0 %}disabled{% endif %}
-                            onclick="toggleDispenseOptions({{ rx.id }}, 'full')"
                             class="w-4 h-4 text-green-600"
                         >
                         <span class="text-sm font-medium text-gray-900 dark:text-white">Dispense Full ({{ rx.quantity }} {{ rx.medicine.unit }})</span>
@@ -51,12 +50,11 @@
                     
                     <!-- Option 2: Partial Dispense (if stock is less) -->
                     {% if rx.medicine.stock_quantity > 0 and rx.medicine.stock_quantity < rx.quantity %}
-                    <label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-white dark:hover:bg-gray-700">
+                    <label class="flex items-center gap-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-white dark:hover:bg-gray-700">
                         <input 
                             type="radio" 
-                            name="dispense_choice_{{ rx.id }}" 
+                            name="dispense_action_{{ rx.id }}" 
                             value="partial"
-                            onclick="toggleDispenseOptions({{ rx.id }}, 'partial')"
                             class="w-4 h-4 text-yellow-600"
                         >
                         <span class="text-sm font-medium text-gray-900 dark:text-white">Partial (max {{ rx.medicine.stock_quantity }})</span>
@@ -64,41 +62,35 @@
                     {% endif %}
                     
                     <!-- Option 3: Cannot Dispense -->
-                    <label class="flex items-center gap-2 p-3 border border-red-200 dark:border-red-800 rounded-lg cursor-pointer hover:bg-white dark:hover:bg-gray-700 bg-red-50 dark:bg-red-900/20">
+                    <label class="flex items-center gap-2 p-3 border border-red-300 dark:border-red-700 rounded-lg cursor-pointer hover:bg-white dark:hover:bg-gray-700 bg-red-50 dark:bg-red-900/20">
                         <input 
                             type="radio" 
-                            name="dispense_choice_{{ rx.id }}" 
+                            name="dispense_action_{{ rx.id }}" 
                             value="cannot"
-                            onclick="toggleDispenseOptions({{ rx.id }}, 'cannot')"
                             class="w-4 h-4 text-red-600"
                         >
                         <span class="text-sm font-medium text-red-700 dark:text-red-400">Cannot Dispense</span>
                     </label>
                 </div>
                 
-                <!-- Hidden fields for each option -->
-                <input type="hidden" name="dispense_{{ rx.id }}" id="dispense_full_{{ rx.id }}">
-                <input type="hidden" name="partial_{{ rx.id }}" id="partial_{{ rx.id }}">
-                <input type="hidden" name="cannot_{{ rx.id }}" id="cannot_{{ rx.id }}">
-                
                 <!-- Partial quantity input -->
-                <div id="partial_options_{{ rx.id }}" class="hidden mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                    <label class="block text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">Enter quantity to dispense:</label>
+                <div id="partial_qty_{{ rx.id }}" class="hidden mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <label class="block text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">Quantity to dispense:</label>
                     <input 
                         type="number" 
                         name="partial_qty_{{ rx.id }}" 
                         min="1" 
                         max="{{ rx.medicine.stock_quantity }}"
                         value="{{ rx.medicine.stock_quantity }}"
-                        class="w-32 border rounded px-2 py-1 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                        class="w-32 border border-yellow-300 dark:border-yellow-700 rounded px-2 py-1 dark:bg-gray-700 dark:text-white"
                     >
                     <span class="text-sm text-yellow-700 dark:text-yellow-400 ml-2">(Max: {{ rx.medicine.stock_quantity }} {{ rx.medicine.unit }})</span>
                 </div>
                 
                 <!-- Cannot dispense reason -->
-                <div id="cannot_options_{{ rx.id }}" class="hidden mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <div id="cannot_reason_{{ rx.id }}" class="hidden mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                     <label class="block text-sm font-medium text-red-800 dark:text-red-300 mb-1">Reason:</label>
-                    <select name="reason_{{ rx.id }}" class="w-full border rounded px-2 py-1 dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                    <select name="reason_{{ rx.id }}" class="w-full border border-red-300 dark:border-red-700 rounded px-2 py-1 dark:bg-gray-700 dark:text-white">
                         <option value="Out of stock">Out of stock</option>
                         <option value="Medicine unavailable">Medicine unavailable</option>
                         <option value="Expired">Expired</option>
@@ -110,49 +102,50 @@
         </div>
         
         <div class="mt-6 flex gap-4">
-            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-                <i class="fas fa-check mr-2"></i>Submit
+            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                <span class="material-symbols-outlined">check</span>
+                Submit
             </button>
-            <a href="{% url 'pending_prescriptions' %}" class="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500">
+            <a href="{% url 'pending_prescriptions' %}" class="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">
                 Cancel
             </a>
         </div>
         
         <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p class="text-sm text-blue-700 dark:text-blue-300">
-                <i class="fas fa-info-circle mr-1"></i>
-                Select how to handle each prescription. If you mark all as "Cannot Dispense" or fully dispense them, the visit will be marked complete.
+            <p class="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">info</span>
+                Select how to handle each prescription. If you dispense all, the visit will be marked complete.
             </p>
         </div>
     </form>
     {% else %}
     <div class="text-center py-12">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+            <span class="material-symbols-outlined text-gray-400 text-4xl">medication</span>
+        </div>
         <p class="text-gray-500 dark:text-gray-400">No pending prescriptions for this patient.</p>
     </div>
     {% endif %}
 </div>
 
 <script>
-function toggleDispenseOptions(rxId, choice) {
-    // Hide all options first
-    document.getElementById('partial_options_' + rxId).classList.add('hidden');
-    document.getElementById('cannot_options_' + rxId).classList.add('hidden');
-    
-    // Reset hidden fields
-    document.getElementById('dispense_full_' + rxId).value = '';
-    document.getElementById('partial_' + rxId).value = '';
-    document.getElementById('cannot_' + rxId).value = '';
-    
-    // Show selected option
-    if (choice === 'full') {
-        document.getElementById('dispense_full_' + rxId).value = '1';
-    } else if (choice === 'partial') {
-        document.getElementById('partial_options_' + rxId).classList.remove('hidden');
-        document.getElementById('partial_' + rxId).value = '1';
-    } else if (choice === 'cannot') {
-        document.getElementById('cannot_options_' + rxId).classList.remove('hidden');
-        document.getElementById('cannot_' + rxId).value = '1';
-    }
-}
+document.querySelectorAll('input[name^="dispense_action_"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const rxId = this.name.replace('dispense_action_', '');
+        const partialQty = document.getElementById('partial_qty_' + rxId);
+        const cannotReason = document.getElementById('cannot_reason_' + rxId);
+        
+        // Hide all option containers
+        if (partialQty) partialQty.classList.add('hidden');
+        if (cannotReason) cannotReason.classList.add('hidden');
+        
+        // Show selected option
+        if (this.value === 'partial') {
+            if (partialQty) partialQty.classList.remove('hidden');
+        } else if (this.value === 'cannot') {
+            if (cannotReason) cannotReason.classList.remove('hidden');
+        }
+    });
+});
 </script>
 {% endblock %}
