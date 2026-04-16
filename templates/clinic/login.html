@@ -34,9 +34,28 @@
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        body {
+            background-image: url('/media/background.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(2px);
+            z-index: 0;
+        }
+        .relative, .absolute, main, footer {
+            position: relative;
+            z-index: 1;
+        }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-200">
+<body class="font-display text-slate-800 dark:text-slate-200">
     <div class="relative flex min-h-screen w-full flex-col items-center justify-center">
         <div class="absolute top-0 left-0 w-full px-4 sm:px-8 md:px-12 lg:px-20 py-6">
             <header class="flex items-center justify-between whitespace-nowrap">
