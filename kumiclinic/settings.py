@@ -19,6 +19,12 @@ if env_path.exists():
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
+# Required for password reset emails
+SITE_ID = 1
+
+# Email settings for password reset
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Kumi University Clinic <noreply@kumi.ac.ug>')
+
 SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
     if DEBUG:
@@ -56,6 +62,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
