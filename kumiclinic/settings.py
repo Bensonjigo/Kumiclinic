@@ -140,8 +140,7 @@ AUTH_USER_MODEL = 'clinic.User'
 
 # Session configuration - 30 minutes timeout
 SESSION_COOKIE_AGE = 1800  # 30 minutes in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_SAVE_EVERY_REQUEST = True  # Update session on every request to reset timeout
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 LANGUAGE_CODE = 'en-us'
 
