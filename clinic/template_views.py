@@ -2144,6 +2144,9 @@ def start_counselling(request, referral_id):
         ref.session_date = timezone.now()
         ref.save()
         
+        visit = ref.visit
+        visit.update_status('IN_COUNSELLING')
+        
         messages.success(request, 'Counselling session started!')
         return redirect('pending_counselling')
     
@@ -2162,10 +2165,12 @@ def complete_counselling(request, referral_id):
         ref.save()
         
         visit = ref.visit
-        pending = visit.counselling_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        pending = visit.counselling_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).exclude(id=ref.id).count()
         
         if pending == 0:
             visit.update_status('WAITING_FOR_DOCTOR')
+        else:
+            visit.update_status('IN_COUNSELLING')
         
         messages.success(request, 'Counselling completed!')
         return redirect('pending_counselling')
