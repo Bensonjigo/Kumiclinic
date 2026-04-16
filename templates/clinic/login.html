@@ -5,104 +5,215 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kumi University Clinic - Secure Login</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script id="tailwind-config">
+    <script>
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
                         "primary": "#3A7D9D",
-                        "background-light": "#F4F7F9",
-                        "background-dark": "#101922",
+                        "primary-dark": "#2a5f7a",
                     },
                     fontFamily: {
                         "display": ["Lexend", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
                     },
                 },
             },
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
     <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .login-bg {
+            background-image: url('/media/background.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .login-overlay {
+            background: linear-gradient(135deg, rgba(10, 27, 38, 0.85) 0%, rgba(58, 125, 157, 0.75) 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .glass-card {
+            background: rgba(15, 25, 35, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .input-field {
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            box-shadow: 0 0 0 3px rgba(58, 125, 157, 0.2);
+        }
+        .login-btn {
+            background: linear-gradient(135deg, #3A7D9D 0%, #2a5f7a 100%);
+            transition: all 0.3s ease;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(58, 125, 157, 0.4);
+        }
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-200">
-    <div class="relative flex min-h-screen w-full flex-col items-center justify-center">
-        <div class="absolute top-0 left-0 w-full px-4 sm:px-8 md:px-12 lg:px-20 py-6">
-            <header class="flex items-center justify-between whitespace-nowrap">
-                <div class="flex items-center gap-6 text-slate-900 dark:text-slate-50">
-                    <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Logo" class="h-14 w-auto">
-                    <h2 class="text-2xl font-bold leading-tight tracking-[-0.015em]">Kumi University Clinic</h2>
-                </div>
-            </header>
-        </div>
-        <main class="container mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-4 py-20">
-            <div class="grid w-full grid-cols-1 overflow-hidden rounded-xl bg-white shadow-lg dark:bg-background-dark dark:border dark:border-slate-800 md:grid-cols-2">
-                <div class="relative hidden h-full md:block">
-                    <img class="h-full w-full object-cover" data-alt="University Logo" src="/media/KUMI-UNIVERSITY-LOGO.png"/>
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                    <div class="absolute bottom-0 left-0 p-8 text-white">
-                        <h1 class="mb-2 text-3xl font-bold">Your Health, Connected</h1>
-                        <p class="text-lg text-slate-200">Secure access to your health information, anytime, anywhere.</p>
+<body class="login-bg min-h-screen flex items-center justify-center p-4">
+    <div class="login-overlay absolute inset-0"></div>
+    
+    <div class="relative z-10 w-full max-w-5xl fade-in">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <!-- Left Side - Branding -->
+            <div class="hidden lg:flex flex-col text-white space-y-6 fade-in" style="animation-delay: 0.2s;">
+                <div class="flex items-center gap-4">
+                    <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Logo" class="h-20 w-auto floating">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight">Kumi University</h1>
+                        <p class="text-xl text-white/80">Medical Center</p>
                     </div>
                 </div>
-                <div class="flex flex-col justify-center p-8 sm:p-12">
-                    <div class="mb-6">
-                        <p class="text-slate-900 dark:text-white text-3xl font-bold leading-tight tracking-[-0.033em]">Welcome Back</p>
-                        <p class="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal mt-2">Enter your credentials to access your dashboard.</p>
+                <div class="space-y-4">
+                    <h2 class="text-4xl font-bold leading-tight">
+                        Your Health,<br>Our Priority
+                    </h2>
+                    <p class="text-lg text-white/70 max-w-md">
+                        Access your health records, manage appointments, and connect with healthcare professionals - all in one secure platform.
+                    </p>
+                </div>
+                <div class="flex gap-6 pt-4">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold">24/7</div>
+                        <div class="text-sm text-white/60">Support</div>
                     </div>
-                    
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-800 border border-red-200{% else %}bg-primary/10 text-primary border border-primary/20{% endif %}">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold">100%</div>
+                        <div class="text-sm text-white/60">Secure</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold">Easy</div>
+                        <div class="text-sm text-white/60">Access</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Side - Login Form -->
+            <div class="glass-card rounded-2xl shadow-2xl p-8 sm:p-10 fade-in" style="animation-delay: 0.4s;">
+                <!-- Mobile Logo -->
+                <div class="lg:hidden flex items-center justify-center gap-3 mb-8">
+                    <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Logo" class="h-12 w-auto">
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-white">Kumi University</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Medical Center</p>
+                    </div>
+                </div>
+                
+                <div class="text-center lg:text-left mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome Back</h2>
+                    <p class="text-gray-500 dark:text-gray-400">Sign in to access your dashboard</p>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="mb-6 p-4 rounded-xl {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800{% else %}bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800{% endif %}">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined">
+                                    {% if message.tags == 'error' %}error{% else %}check_circle{% endif %}
+                                </span>
                                 {{ message }}
                             </div>
-                        {% endfor %}
-                    {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post" class="space-y-5">
+                    {% csrf_token %}
                     
-                    <form method="post" class="flex flex-col gap-4">
-                        {% csrf_token %}
-                        <div class="flex flex-col">
-                            <label class="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2" for="username">Username</label>
-                            <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-background-light dark:bg-slate-800 h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-4 text-base font-normal leading-normal" id="username" name="username" placeholder="Enter your username" type="text" value="" required/>
+                    <!-- Username -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="username">
+                            Username
+                        </label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">person</span>
+                            <input 
+                                class="input-field w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-0"
+                                id="username" 
+                                name="username" 
+                                placeholder="Enter your username" 
+                                type="text" 
+                                required
+                            />
                         </div>
-                        <div class="flex flex-col">
-                            <label class="text-slate-800 dark:text-slate-200 text-sm font-medium leading-normal pb-2" for="password">Password</label>
-                            <div class="relative flex w-full flex-1 items-stretch">
-                                <input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-slate-700 bg-background-light dark:bg-slate-800 h-12 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-4 pr-12 text-base font-normal leading-normal" id="password" name="password" placeholder="Enter your password" type="password" value="" required/>
-                                <button type="button" class="absolute inset-y-0 right-0 flex items-center justify-center pr-4 text-slate-400 hover:text-primary dark:text-slate-500 dark:hover:text-primary" onclick="togglePassword()">
-                                    <span class="material-symbols-outlined" id="password-icon">visibility</span>
-                                </button>
-                            </div>
+                    </div>
+                    
+                    <!-- Password -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="password">
+                            Password
+                        </label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">lock</span>
+                            <input 
+                                class="input-field w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary"
+                                id="password" 
+                                name="password" 
+                                placeholder="Enter your password" 
+                                type="password" 
+                                required
+                            />
+                            <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary dark:text-gray-500 dark:hover:text-primary transition-colors" onclick="togglePassword()">
+                                <span class="material-symbols-outlined" id="password-icon">visibility</span>
+                            </button>
                         </div>
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex items-center gap-2">
-                                <input class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-2 focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-background-light dark:focus:ring-offset-background-dark" id="remember-me" type="checkbox"/>
-                                <label class="text-slate-600 dark:text-slate-300 text-sm font-normal leading-normal select-none" for="remember-me">Remember me</label>
-                            </div>
-                            <a class="text-sm font-medium text-primary hover:underline" href="{% url 'password_reset' %}">Forgot Password?</a>
-                        </div>
-                        <button type="submit" class="mt-4 flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-bold text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background-light dark:focus:ring-offset-background-dark">Login</button>
-                    </form>
+                    </div>
+                    
+                    <!-- Remember & Forgot -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Remember me</span>
+                        </label>
+                        <a href="{% url 'password_reset' %}" class="text-sm font-medium text-primary hover:text-primary-dark transition-colors">
+                            Forgot Password?
+                        </a>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="login-btn w-full py-4 rounded-xl text-white font-semibold text-lg flex items-center justify-center gap-2">
+                        <span>Sign In</span>
+                        <span class="material-symbols-outlined">arrow_forward</span>
+                    </button>
+                </form>
+                
+                <!-- Footer -->
+                <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                    <p class="text-center text-sm text-gray-500 dark:text-gray-400">
+                        &copy; 2024 Kumi University Medical Center. All rights reserved.
+                    </p>
                 </div>
             </div>
-        </main>
-        <footer class="w-full max-w-6xl px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-            <div class="flex justify-center gap-6">
-                <a class="hover:text-primary hover:underline" href="#">Terms of Service</a>
-                <a class="hover:text-primary hover:underline" href="#">Privacy Policy</a>
-            </div>
-        </footer>
+        </div>
     </div>
     
     <script>
