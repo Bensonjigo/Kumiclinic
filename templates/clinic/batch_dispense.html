@@ -3,13 +3,13 @@
 {% block title %}Dispense Medications - {{ visit.patient.full_name }} - Kumi University Clinic{% endblock %}
 
 {% block content %}
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-    <div class="mb-6">
-        <a href="{% url 'pending_prescriptions' %}" class="text-primary hover:underline">&larr; Back to Pharmacy Queue</a>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+    <div class="mb-4 sm:mb-6">
+        <a href="{% url 'pending_prescriptions' %}" class="text-primary hover:underline text-sm sm:text-base">&larr; Back to Pharmacy Queue</a>
     </div>
     
-    <h2 class="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Dispense Medications for {{ visit.patient.full_name }}</h2>
-    <p class="text-gray-500 dark:text-gray-400 mb-6">Visit #{{ visit.id }} | {{ visit.visit_date|date:"M d, Y H:i" }} | Dr. {{ visit.consultation.doctor.get_full_name|default:visit.consultation.doctor.username }}</p>
+    <h2 class="text-xl sm:text-2xl font-bold mb-2 text-gray-900 dark:text-white">Dispense Medications for {{ visit.patient.full_name }}</h2>
+    <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4 sm:mb-6">Visit #{{ visit.id }} | {{ visit.visit_date|date:"M d, Y H:i" }} | Dr. {{ visit.consultation.doctor.get_full_name|default:visit.consultation.doctor.username }}</p>
     
     {% if prescriptions %}
     <form method="post">
