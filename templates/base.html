@@ -229,26 +229,32 @@
         You are currently offline. Some features may be limited.
     </div>
     
-    <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark px-6 py-4 shadow-sm">
-        <div class="flex items-center gap-6">
-            <a href="{% url 'dashboard' %}" class="flex items-center gap-4 text-[#0d141b] dark:text-white hover:opacity-80">
-                <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Logo" class="h-12 w-auto" onerror="this.style.display='none'">
+    <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark px-4 md:px-6 py-3 md:py-4 shadow-sm">
+        <div class="flex items-center gap-2 md:gap-6">
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" onclick="toggleMobileMenu()">
+                <span class="material-symbols-outlined text-2xl">menu</span>
+            </button>
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-2 md:gap-4 text-[#0d141b] dark:text-white hover:opacity-80">
+                <img src="/media/KUMI-UNIVERSITY-LOGO.png" alt="Logo" class="h-8 md:h-12 w-auto" onerror="this.style.display='none'">
+                <h2 class="hidden sm:block text-lg md:text-2xl font-bold tracking-[-0.015em] text-[#0d141b] dark:text-white">Kumi University Clinic</h2>
             </a>
-            <h2 class="text-2xl font-bold tracking-[-0.015em] text-[#0d141b] dark:text-white">Kumi University Clinic</h2>
         </div>
-        <div class="flex flex-1 justify-end gap-4 items-center">
+        
+        <!-- Desktop Navigation -->
+        <div class="hidden lg:flex flex-1 justify-end gap-2 md:gap-4 items-center">
             {% if user.is_authenticated %}
                 <!-- Dashboard Link -->
                 <a href="{% url 'dashboard' %}" class="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                     <span class="material-symbols-outlined text-lg">dashboard</span>
-                    <span class="text-sm font-medium">Dashboard</span>
+                    <span class="text-sm font-medium hidden md:inline">Dashboard</span>
                 </a>
                 
                 <!-- Patient Navigation -->
                 <div class="relative group">
                     <button class="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                         <span class="material-symbols-outlined text-lg">person</span>
-                        <span class="text-sm font-medium">Patients</span>
+                        <span class="text-sm font-medium hidden md:inline">Patients</span>
                         <span class="material-symbols-outlined text-sm">expand_more</span>
                     </button>
                     <div class="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
@@ -269,9 +275,9 @@
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-4">
-                    <span class="text-sm text-gray-600 dark:text-gray-300">Welcome, {{ user.get_full_name|default:user.username }}</span>
-                    <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">{{ user.get_role_display }}</span>
+                <div class="flex items-center gap-2 md:gap-4">
+                    <span class="hidden md:inline text-sm text-gray-600 dark:text-gray-300">Welcome, {{ user.get_full_name|default:user.username }}</span>
+                    <span class="bg-primary/10 text-primary px-2 md:px-3 py-1 rounded-full text-xs font-medium">{{ user.get_role_display }}</span>
                     
                     <!-- Profile Dropdown -->
                     <div class="relative group">
@@ -304,11 +310,121 @@
                 </div>
             {% endif %}
         </div>
+        
+        <!-- Mobile Header Right (Profile only) -->
+        <div class="lg:hidden flex items-center gap-2">
+            {% if user.is_authenticated %}
+            <div class="relative group">
+                <button class="flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary text-white hover:bg-primary/90">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="Profile" class="w-full h-full object-cover">
+                    {% else %}
+                        <span class="material-symbols-outlined text-lg">account_circle</span>
+                    {% endif %}
+                </button>
+                <div class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <a href="{% url 'profile' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
+                        <span class="material-symbols-outlined text-lg">settings</span>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{% url 'logout' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
+                        <span class="material-symbols-outlined text-lg">logout</span>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
     </header>
     
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleMobileMenu()">
+        <div class="bg-white dark:bg-gray-800 w-64 h-full p-4 shadow-lg" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg dark:text-white">Menu</h3>
+                <button onclick="toggleMobileMenu()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="space-y-2">
+                <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{% url 'patients' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">people</span>
+                    <span>All Patients</span>
+                </a>
+                {% if user.role != 'DOCTOR' and user.role != 'LAB_TECHNICIAN' and user.role != 'SCAN_TECHNICIAN' and user.role != 'PHARMACIST' and user.role != 'COUNSELLOR' %}
+                <a href="{% url 'register_patient' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span>Register Patient</span>
+                </a>
+                {% endif %}
+                <hr class="my-2 border-gray-200 dark:border-gray-700">
+                {% if user.role == 'RECEPTIONIST' or user.role == 'NURSE' %}
+                <a href="{% url 'new_visit' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    <span>New Visit</span>
+                </a>
+                {% endif %}
+                {% if user.role == 'DOCTOR' %}
+                <a href="{% url 'dashboard_doctor' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">stethoscope</span>
+                    <span>Consultations</span>
+                </a>
+                {% endif %}
+                {% if user.is_lab_technician %}
+                <a href="{% url 'pending_labs' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">science</span>
+                    <span>Lab</span>
+                </a>
+                {% endif %}
+                {% if user.is_pharmacist %}
+                <a href="{% url 'pending_prescriptions' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">medication</span>
+                    <span>Pharmacy</span>
+                </a>
+                {% endif %}
+                {% if user.role == 'COUNSELLOR' %}
+                <a href="{% url 'dashboard_counselling' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">psychology</span>
+                    <span>Counselling</span>
+                </a>
+                {% endif %}
+                {% if user.role == 'SCAN_TECHNICIAN' %}
+                <a href="{% url 'dashboard_scanning' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">image</span>
+                    <span>Sonography</span>
+                </a>
+                {% endif %}
+                <a href="{% url 'reports_dashboard' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">assessment</span>
+                    <span>Reports</span>
+                </a>
+                <hr class="my-2 border-gray-200 dark:border-gray-700">
+                <a href="{% url 'password_change' %}" class="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">lock</span>
+                    <span>Change Password</span>
+                </a>
+                <a href="{% url 'logout' %}" class="flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+    
     {% if user.is_authenticated %}
-    <!-- Simplified Navigation -->
-    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <!-- Simplified Navigation - Desktop Only -->
+    <nav class="hidden lg:block bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div class="container mx-auto px-4">
             <div class="flex gap-4 py-2 overflow-x-auto">
                 
@@ -419,7 +535,7 @@
     <!-- Toast Messages Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
     
-    <main class="flex-grow overflow-auto p-6 lg:p-8">
+    <main class="flex-grow overflow-auto p-4 md:p-6 lg:p-8">
         <div class="mx-auto max-w-screen-2xl">
             
             {% block content %}{% endblock %}

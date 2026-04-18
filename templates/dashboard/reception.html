@@ -49,11 +49,11 @@ window.onload = function() {
         <!-- Tabs -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-gray-700">
-                <div class="flex">
-                    <button class="flex-1 py-4 text-sm font-semibold text-primary border-b-3 border-primary bg-primary/5" onclick="switchQueue('recent')" id="tab-recent">
+                <div class="flex overflow-x-auto">
+                    <button class="flex-1 py-4 text-sm font-semibold text-primary border-b-3 border-primary bg-primary/5 whitespace-nowrap px-4" onclick="switchQueue('recent')" id="tab-recent">
                         Recent Patients ({{ recent_total }})
                     </button>
-                    <button class="flex-1 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-3 border-transparent" onclick="switchQueue('doctor')" id="tab-doctor">
+                    <button class="flex-1 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 border-b-3 border-transparent whitespace-nowrap px-4" onclick="switchQueue('doctor')" id="tab-doctor">
                         Waiting Doctor ({{ waiting_doctor }})
                     </button>
                 </div>
@@ -61,7 +61,7 @@ window.onload = function() {
             
             <!-- Queue Table -->
             <div class="overflow-x-auto">
-                <table class="w-full">
+                <table class="w-full min-w-[400px]">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Patient</th>
