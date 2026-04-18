@@ -115,7 +115,7 @@
 
 <!-- Quick Actions -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-    {% if user.role != 'PHARMACIST' %}
+    {% if user.role != 'PHARMACIST' and user.role != 'COUNSELLOR' %}
     <a href="{% url 'register_patient' %}" class="quick-action bg-gradient-to-r from-primary to-primary/80 text-white p-5 rounded-xl text-center hover:shadow-lg hover:shadow-primary/25 transition-all">
         <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3">
             <span class="material-symbols-outlined text-2xl">person_add</span>
