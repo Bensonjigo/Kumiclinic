@@ -224,25 +224,6 @@ def dashboard_doctor(request):
         if total_scans > 0 and completed_scans == total_scans:
             scan_results_ready.append(visit)
     
-    # 6. Counselling results ready (all sessions complete, need review)
-    counselling_results_ready = []
-    counselling_ready_visits = Visit.objects.filter(
-        counselling_referrals__isnull=False
-    ).exclude(
-        consultation__diagnosis__isnull=False
-    ).select_related('patient', 'triage').prefetch_related('counselling_referrals').distinct().order_by('visit_date')
-    
-    for visit in counselling_ready_visits:
-        counselling_refs = list(visit.counselling_referrals.all())
-        if not counselling_refs:
-            continue
-        total_refs = len(counselling_refs)
-        completed_refs = sum(1 for cr in counselling_refs if cr.status == 'COMPLETED')
-        visit.counselling_total = total_refs
-        visit.counselling_completed = completed_refs
-        if total_refs > 0 and completed_refs == total_refs:
-            counselling_results_ready.append(visit)
-    
     # Today's consultation count
     consultations_today = Consultation.objects.filter(
         created_at__gte=today_start
@@ -260,7 +241,6 @@ def dashboard_doctor(request):
         'lab_results_ready': lab_results_ready,
         'in_scan': in_scan,
         'scan_results_ready': scan_results_ready,
-        'counselling_results_ready': counselling_results_ready,
         'consultations_today': consultations_today,
         'recent_completed': recent_completed,
     }
@@ -2219,45 +2199,16 @@ def complete_counselling(request, referral_id):
         
         visit = ref.visit
         
-        # Check if there are other pending counselling referrals
         pending_counselling = visit.counselling_referrals.filter(
             status__in=['PENDING', 'IN_PROGRESS']
         ).exclude(id=ref.id).count()
         
         if pending_counselling > 0:
-            # Still have other counselling sessions
             visit.update_status('IN_COUNSELLING')
-            messages.success(request, 'Counselling completed!')
+            messages.success(request, 'Counselling session completed!')
         else:
-            # All counselling done - check if patient needs anything else
-            has_pending_labs = visit.lab_requests.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
-            has_pending_scans = visit.scan_referrals.filter(status__in=['PENDING', 'IN_PROGRESS']).exists()
-            has_prescriptions = Prescription.objects.filter(
-                consultation__visit=visit,
-                is_dispensed=False,
-                cannot_dispense=False
-            ).exists()
-            
-            if has_pending_labs or has_pending_scans or has_prescriptions:
-                # Patient needs more work - send back to doctor
-                visit.update_status('WAITING_FOR_DOCTOR')
-                messages.success(request, 'Counselling completed! Patient returned to doctor queue.')
-            else:
-                # Counselling-only visit - no labs, scans, or prescriptions needed
-                # Check if doctor already added prescriptions that are dispensed
-                has_dispensed = Prescription.objects.filter(
-                    consultation__visit=visit,
-                    is_dispensed=True
-                ).exists()
-                
-                if has_dispensed:
-                    # Already has dispensed prescriptions - mark complete
-                    visit.update_status('COMPLETED')
-                    messages.success(request, 'Counselling completed! Visit finished.')
-                else:
-                    # No prescriptions at all - counselling only visit
-                    visit.update_status('COMPLETED')
-                    messages.success(request, 'Counselling completed! Visit finished.')
+            visit.update_status('COMPLETED')
+            messages.success(request, 'Counselling completed! Visit finished.')
         
         return redirect('pending_counselling')
     
