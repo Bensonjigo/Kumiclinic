@@ -115,6 +115,7 @@
 
 <!-- Quick Actions -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    {% if user.role != 'PHARMACIST' %}
     <a href="{% url 'register_patient' %}" class="quick-action bg-gradient-to-r from-primary to-primary/80 text-white p-5 rounded-xl text-center hover:shadow-lg hover:shadow-primary/25 transition-all">
         <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3">
             <span class="material-symbols-outlined text-2xl">person_add</span>
@@ -122,6 +123,7 @@
         <p class="font-semibold">Register Patient</p>
         <p class="text-xs text-white/70 mt-1">Add new patient</p>
     </a>
+    {% endif %}
     <a href="{% url 'visits' %}" class="quick-action bg-gradient-to-r from-violet-500 to-violet-600 text-white p-5 rounded-xl text-center hover:shadow-lg hover:shadow-violet-500/25 transition-all">
         <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3">
             <span class="material-symbols-outlined text-2xl">list</span>
