@@ -3,10 +3,10 @@
 {% block title %}Consultation - Kumi University Clinic{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 class="text-2xl font-bold mb-2 text-[#0d141b] dark:text-white">Consultation</h2>
-        <p class="text-gray-500 dark:text-gray-400 mb-6">Patient: <strong class="text-gray-900 dark:text-white">{{ visit.patient.full_name }}</strong></p>
+<div class="max-w-4xl mx-auto px-4 sm:px-0">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+        <h2 class="text-xl sm:text-2xl font-bold mb-2 text-[#0d141b] dark:text-white">Consultation</h2>
+        <p class="text-gray-500 dark:text-gray-400 mb-4 sm:mb-6">Patient: <strong class="text-gray-900 dark:text-white">{{ visit.patient.full_name }}</strong></p>
         
         <form method="post" class="space-y-4" id="consultationForm">
             {% csrf_token %}
@@ -42,8 +42,8 @@
                 
                 <!-- Lab Test Rows -->
                 <div id="labTestRows">
-                    <div class="lab-test-row grid grid-cols-12 gap-2 mb-2">
-                        <div class="col-span-10">
+                    <div class="lab-test-row grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2">
+                        <div class="sm:col-span-10">
                             <select name="lab_test" class="w-full px-3 py-2 border rounded-lg" onchange="checkLabTests()">
                                 <option value="">Select Lab Test</option>
                                 <option value="CBC">Complete Blood Count (CBC)</option>
@@ -62,7 +62,7 @@
                                 <option value="OTHER">Other (Specify)</option>
                             </select>
                         </div>
-                        <div class="col-span-2">
+                        <div class="sm:col-span-2">
                             <button type="button" onclick="removeLabTestRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
                                 <span class="material-symbols-outlined">delete</span>
                             </button>
@@ -86,8 +86,8 @@
                 </div>
                 
                 <div id="counsellingRows">
-                    <div class="counselling-row grid grid-cols-12 gap-2 mb-2">
-                        <div class="col-span-10">
+                    <div class="counselling-row grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2">
+                        <div class="sm:col-span-10">
                             <select name="counselling_type" class="w-full px-3 py-2 border rounded-lg">
                                 <option value="">Select Counselling Type</option>
                                 <option value="MENTAL_HEALTH">Mental Health Support</option>
@@ -100,7 +100,7 @@
                                 <option value="OTHER">Other</option>
                             </select>
                         </div>
-                        <div class="col-span-2">
+                        <div class="sm:col-span-2">
                             <button type="button" onclick="removeCounsellingRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
                                 <span class="material-symbols-outlined">delete</span>
                             </button>
@@ -129,8 +129,8 @@
                 </div>
                 
                 <div id="scanRows">
-                    <div class="scan-row grid grid-cols-12 gap-2 mb-2">
-                        <div class="col-span-10">
+                    <div class="scan-row grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2">
+                        <div class="sm:col-span-10">
                             <select name="scan_type" class="w-full px-3 py-2 border rounded-lg">
                                 <option value="">Select Scan Type</option>
                                 <option value="XRAY">X-Ray</option>
@@ -143,7 +143,7 @@
                                 <option value="OTHER">Other</option>
                             </select>
                         </div>
-                        <div class="col-span-2">
+                        <div class="sm:col-span-2">
                             <button type="button" onclick="removeScanRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
                                 <span class="material-symbols-outlined">delete</span>
                             </button>
@@ -202,8 +202,8 @@
                     </button>
                 </div>
                 <div id="medicineRows">
-                    <div class="medicine-row grid grid-cols-12 gap-2 mb-2">
-                        <div class="col-span-5">
+                    <div class="medicine-row grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2">
+                        <div class="col-span-5 sm:col-span-5">
                             <select name="medicine" class="w-full px-3 py-2 border rounded-lg">
                                 <option value="">Select Medicine</option>
                                 {% for medicine in medicines %}
@@ -211,15 +211,15 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-span-4">
+                        <div class="col-span-4 sm:col-span-4">
                             <input type="text" name="dosage" placeholder="e.g., 2 tablets thrice daily"
                                 class="w-full px-3 py-2 border rounded-lg">
                         </div>
-                        <div class="col-span-2">
+                        <div class="col-span-2 sm:col-span-2">
                             <input type="number" name="quantity" min="1" placeholder="Qty"
                                 class="w-full px-3 py-2 border rounded-lg">
                         </div>
-                        <div class="col-span-1">
+                        <div class="col-span-1 sm:col-span-1">
                             <button type="button" onclick="removeMedicineRow(this)" class="text-red-500 hover:text-red-700 p-2">
                                 <span class="material-symbols-outlined">delete</span>
                             </button>
@@ -298,9 +298,9 @@ function checkLabTests() {
 function addLabTestRow() {
     const container = document.getElementById('labTestRows');
     const newRow = document.createElement('div');
-    newRow.className = 'lab-test-row grid grid-cols-12 gap-2 mb-2';
+    newRow.className = 'lab-test-row grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2';
     newRow.innerHTML = `
-        <div class="col-span-10">
+        <div class="sm:col-span-10">
             <select name="lab_test" class="w-full px-3 py-2 border rounded-lg" onchange="checkLabTests()">
                 <option value="">Select Lab Test</option>
                 <option value="CBC">Complete Blood Count (CBC)</option>
@@ -319,7 +319,7 @@ function addLabTestRow() {
                 <option value="OTHER">Other (Specify)</option>
             </select>
         </div>
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
             <button type="button" onclick="removeLabTestRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
                 <span class="material-symbols-outlined">delete</span>
             </button>
@@ -339,9 +339,9 @@ function removeLabTestRow(button) {
 function addCounsellingRow() {
     const container = document.getElementById('counsellingRows');
     const newRow = document.createElement('div');
-    newRow.className = 'counselling-row grid grid-cols-12 gap-2 mb-2';
+    newRow.className = 'counselling-row grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2';
     newRow.innerHTML = `
-        <div class="col-span-10">
+        <div class="sm:col-span-10">
             <select name="counselling_type" class="w-full px-3 py-2 border rounded-lg">
                 <option value="">Select Counselling Type</option>
                 <option value="MENTAL_HEALTH">Mental Health Support</option>
@@ -354,7 +354,7 @@ function addCounsellingRow() {
                 <option value="OTHER">Other</option>
             </select>
         </div>
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
             <button type="button" onclick="removeCounsellingRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
                 <span class="material-symbols-outlined">delete</span>
             </button>
@@ -373,9 +373,9 @@ function removeCounsellingRow(button) {
 function addScanRow() {
     const container = document.getElementById('scanRows');
     const newRow = document.createElement('div');
-    newRow.className = 'scan-row grid grid-cols-12 gap-2 mb-2';
+    newRow.className = 'scan-row grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2';
     newRow.innerHTML = `
-        <div class="col-span-10">
+        <div class="sm:col-span-10">
             <select name="scan_type" class="w-full px-3 py-2 border rounded-lg">
                 <option value="">Select Scan Type</option>
                 <option value="XRAY">X-Ray</option>
@@ -388,7 +388,7 @@ function addScanRow() {
                 <option value="OTHER">Other</option>
             </select>
         </div>
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
             <button type="button" onclick="removeScanRow(this)" class="text-red-500 hover:text-red-700 p-2 w-full flex justify-center">
                 <span class="material-symbols-outlined">delete</span>
             </button>
@@ -407,9 +407,9 @@ function removeScanRow(button) {
 function addMedicineRow() {
     const container = document.getElementById('medicineRows');
     const newRow = document.createElement('div');
-    newRow.className = 'medicine-row grid grid-cols-12 gap-2 mb-2';
+    newRow.className = 'medicine-row grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2';
     newRow.innerHTML = `
-        <div class="col-span-5">
+        <div class="col-span-5 sm:col-span-5">
             <select name="medicine" class="w-full px-3 py-2 border rounded-lg">
                 <option value="">Select Medicine</option>
                 {% for medicine in medicines %}
@@ -417,15 +417,15 @@ function addMedicineRow() {
                 {% endfor %}
             </select>
         </div>
-        <div class="col-span-4">
+        <div class="col-span-4 sm:col-span-4">
             <input type="text" name="dosage" placeholder="e.g., 2 tablets thrice daily"
                 class="w-full px-3 py-2 border rounded-lg">
         </div>
-        <div class="col-span-2">
+        <div class="col-span-2 sm:col-span-2">
             <input type="number" name="quantity" min="1" placeholder="Qty"
                 class="w-full px-3 py-2 border rounded-lg">
         </div>
-        <div class="col-span-1">
+        <div class="col-span-1 sm:col-span-1">
             <button type="button" onclick="removeMedicineRow(this)" class="text-red-500 hover:text-red-700 p-2">
                 <span class="material-symbols-outlined">delete</span>
             </button>
