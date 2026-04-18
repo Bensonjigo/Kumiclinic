@@ -49,7 +49,7 @@
                             {{ ref.custom_type|default:"Counselling" }}
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                            {{ ref.handled_by.get_full_name|default:ref.handled_by.username }}
+                            {% if ref.handled_by %}{{ ref.handled_by.get_full_name|default:ref.handled_by.username }}{% else %}—{% endif %}
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                             {{ ref.completed_date|date:"M d, Y" }}
